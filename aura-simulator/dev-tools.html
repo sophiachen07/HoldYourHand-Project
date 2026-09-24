@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aura 統計與換日測試控制台 (DevTools)</title>
+
+  <style>
+    :root {
+      --background: #07050f;
+      --panel: #120e24;
+      --card: rgba(255, 255, 255, 0.05);
+      --border: rgba(255, 255, 255, 0.1);
+
+      --purple: #8b5cf6;
+      --purple-glow: rgba(139, 92, 246, 0.3);
+      --cyan: #06b6d4;
+      --cyan-glow: rgba(6, 182, 212, 0.3);
+      --green: #14b8a6;
+      --yellow: #eab308;
+      --red: #ef4444;
+
+      --text: #f8fafc;
+      --muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      padding: 32px 20px;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(139, 92, 246, 0.22), transparent 35%),
+        radial-gradient(circle at 80% 70%, rgba(6, 182, 212, 0.18), transparent 35%),
+        var(--background);
+      color: var(--text);
+      font-family: Arial, "Microsoft JhengHei", sans-serif;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .page {
+      width: min(1000px, 100%);
+      margin: 0 auto;
+    }
+
+    .nav-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+    }
+
+    .nav-badge {
+      font-size: 11px;
+      background: linear-gradient(135deg, var(--purple), var(--cyan));
+      color: #fff;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 700;
+    }
+
+    .nav-links a {
+      color: var(--cyan);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 6px 14px;
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      border-radius: 10px;
+      background: rgba(6, 182, 212, 0.08);
+      transition: 0.2s;
+    }
+
+    .nav-links a:hover {
+      background: rgba(6, 182, 212, 0.2);
+      border-color: var(--cyan);
+    }
+
+    .page-header {
+      margin-bottom: 24px;
+    }
+
+    .page-title {
+      font-size: 26px;
+      margin-bottom: 8px;
+      background: linear-gradient(to right, #ffffff, #c084fc, #06b6d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .page-description {
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .panel {
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      background: rgba(18, 14, 36, 0.85);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .panel-title {
+      font-size: 18px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-description {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+
+    /* 連線卡片 */
+    .connection-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      background: var(--card);
+    }
+
+    .connection-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 12px rgba(20, 184, 166, 0.8);
+      transition: 0.3s;
+    }
+
+    .status-dot.disconnected {
+      background: var(--red);
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.8);
+    }
+
+    .connection-title {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .connection-subtitle {
+      color: var(--muted);
+      font-size: 11px;
+      margin-top: 3px;
+    }
+
+    /* 控制按鈕區 */
+    .actions-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .action-card {
+      padding: 18px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      transition: all 0.25s ease;
+    }
+
+    .action-card:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .action-info {
+      flex: 1;
+    }
+
+    .action-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .action-desc {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .btn {
+      cursor: pointer;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 13px;
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+      white-space: nowrap;
+      min-width: 140px;
+    }
+
+    .btn:active {
+      transform: scale(0.96);
+    }
+
+    .btn-purple {
+      background: linear-gradient(135deg, #8b5cf6, #d946ef);
+      box-shadow: 0 4px 16px rgba(139, 92, 246, 0.35);
+    }
+
+    .btn-purple:hover {
+      box-shadow: 0 6px 20px rgba(139, 92, 246, 0.55);
+    }
+
+    .btn-cyan {
+      background: linear-gradient(135deg, #06b6d4, #3b82f6);
+      box-shadow: 0 4px 16px rgba(6, 182, 212, 0.35);
+    }
+
+    .btn-cyan:hover {
+      box-shadow: 0 6px 20px rgba(6, 182, 212, 0.55);
+    }
+
+    .btn-yellow {
+      background: linear-gradient(135deg, #f59e0b, #ef4444);
+      box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35);
+    }
+
+    .btn-yellow:hover {
+      box-shadow: 0 6px 20px rgba(245, 158, 11, 0.55);
+    }
+
+    /* 伺服器終端與歷史紀錄 */
+    .terminal-panel {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .terminal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .terminal-clear {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .terminal-clear:hover {
+      color: var(--text);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .terminal {
+      flex: 1;
+      min-height: 280px;
+      max-height: 420px;
+      overflow-y: auto;
+      background: rgba(7, 5, 15, 0.95);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      font-family: Consolas, Monaco, monospace;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .log-item {
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      word-break: break-all;
+    }
+
+    .log-time {
+      color: var(--muted);
+      font-size: 10px;
+      margin-right: 6px;
+    }
+
+    .log-type {
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 10px;
+      margin-right: 6px;
+    }
+
+    .log-type.inject {
+      background: rgba(139, 92, 246, 0.2);
+      color: #c084fc;
+      border: 1px solid rgba(139, 92, 246, 0.4);
+    }
+
+    .log-type.pick {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+
+    .log-type.midnight {
+      background: rgba(6, 182, 212, 0.2);
+      color: #67e8f9;
+      border: 1px solid rgba(6, 182, 212, 0.4);
+    }
+
+    .log-type.system {
+      background: rgba(20, 184, 166, 0.2);
+      color: #2dd4bf;
+      border: 1px solid rgba(20, 184, 166, 0.4);
+    }
+
+    .log-msg {
+      color: #e2e8f0;
+    }
+
+    /* 說明區塊 */
+    .tips-card {
+      margin-top: 16px;
+      padding: 14px;
+      border-radius: 12px;
+      background: rgba(139, 92, 246, 0.08);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      font-size: 12px;
+      line-height: 1.6;
+      color: #cbd5e1;
+    }
+
+    .tips-card strong {
+      color: #e2e8f0;
+    }
+
+    @media (max-width: 768px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+      .action-card {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <div class="nav-bar">
+      <div class="nav-brand">
+        <span>Aura Simulator</span>
+        <span class="nav-badge">DevTools</span>
+      </div>
+      <div class="nav-links">
+        <a href="index.html">← 切換至感測器模擬器 (index.html)</a>
+      </div>
+    </div>
+
+    <header class="page-header">
+      <h1 class="page-title">Aura 統計分析與換日測試控制台</h1>
+      <p class="page-description">
+        本測試控制台提供向手機 App 遠端廣播「假數據注入」、「即時觸發 (+1)」與「00:00 換日結算」指令，便於驗證統計分析頁面的折線圖、時間篩選器與 GMT+8 跨日邏輯。
+      </p>
+    </header>
+
+    <div class="layout">
+      <!-- 控制指令面板 -->
+      <section class="panel">
+        <h2 class="panel-title">⚡ 遠端測試指令控制</h2>
+        <p class="panel-description">
+          點擊下方按鈕，指令將透過 WebSocket (Port 8080) 即時廣播給所有連線的手機端 App。
+        </p>
+
+        <!-- WebSocket 連線狀態 -->
+        <div class="connection-card">
+          <div class="connection-info">
+            <span class="status-dot disconnected" id="server-status-dot"></span>
+            <div>
+              <div class="connection-title" id="server-status-title">伺服器連線中...</div>
+              <div class="connection-subtitle" id="server-status-subtitle">ws://localhost:8080</div>
+            </div>
+          </div>
+          <button class="terminal-clear" id="reconnect-btn">重新連線</button>
+        </div>
+
+        <!-- 三個核心控制項 -->
+        <div class="actions-grid">
+          <!-- 1. 注入假資料 (支援 60 天與 30 天) -->
+          <div class="action-card">
+            <div class="action-info">
+              <div class="action-title">
+                <span>📊 注入歷史假資料</span>
+              </div>
+              <div class="action-desc">
+                自動為手機端寫入過去 60 天或 30 天的隨機歷史數據（每天 0~15 次），並將初次啟用日起點往前推算，可立即測試折線圖水平歷史滑動。
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button class="btn btn-purple" id="btn-inject-data-60">
+                注入 60 天假資料
+              </button>
+              <button class="btn btn-purple" id="btn-inject-data-30" style="opacity: 0.85; font-size: 12px; min-width: 120px;">
+                注入 30 天假資料
+              </button>
+            </div>
+          </div>
+
+          <!-- 2. 模擬觸發 (+1) -->
+          <div class="action-card">
+            <div class="action-info">
+              <div class="action-title">
+                <span>⚡ 模擬觸發 (+1)</span>
+              </div>
+              <div class="action-desc">
+                模擬一次摳抓感測觸發事件，手機端今日次數立即 +1，並自動同步更新行為統計與資料庫。
+              </div>
+            </div>
+            <button class="btn btn-yellow" id="btn-trigger-pick">
+              模擬觸發 (+1)
+            </button>
+          </div>
+
+          <!-- 3. 模擬跨夜換日 -->
+          <div class="action-card">
+            <div class="action-info">
+              <div class="action-title">
+                <span>🌙 模擬跨夜換日結算</span>
+              </div>
+              <div class="action-desc">
+                強制觸發台灣時區 (GMT+8) 00:00 換日結算機制，將當日數據結算封存並將「今日次數」重置歸零。
+              </div>
+            </div>
+            <button class="btn btn-cyan" id="btn-trigger-midnight">
+              模擬跨夜換日
+            </button>
+          </div>
+        </div>
+
+        <div class="tips-card">
+          💡 <strong>測試提示：</strong>
+          點擊「注入 60 天假資料」後，請切換手機 App 至「統計分析」分頁，可點選「日、週、月、全部」查看動態總次數，並水平往左滑動查看多週平滑折線圖。
+        </div>
+      </section>
+
+      <!-- 終端日誌面板 -->
+      <section class="panel terminal-panel">
+        <div class="terminal-header">
+          <h2 class="panel-title" style="margin: 0; font-size: 16px;">
+            📟 即時日誌與封包傳輸
+          </h2>
+          <button class="terminal-clear" id="clear-log-btn">清除日誌</button>
+        </div>
+
+        <div class="terminal" id="terminal">
+          <div class="log-item">
+            <span class="log-time">[系統啟動]</span>
+            <span class="log-type system">INIT</span>
+            <span class="log-msg">DevTools 測試控制台已就緒，正在連接 WebSocket 伺服器...</span>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const PORT = 8080;
+    const socketUrl = `ws://${window.location.hostname || "localhost"}:${PORT}`;
+
+    const statusDot = document.getElementById("server-status-dot");
+    const statusTitle = document.getElementById("server-status-title");
+    const statusSubtitle = document.getElementById("server-status-subtitle");
+    const terminal = document.getElementById("terminal");
+    const clearLogBtn = document.getElementById("clear-log-btn");
+    const reconnectBtn = document.getElementById("reconnect-btn");
+
+    const btnInject60 = document.getElementById("btn-inject-data-60");
+    const btnInject30 = document.getElementById("btn-inject-data-30");
+    const btnPick = document.getElementById("btn-trigger-pick");
+    const btnMidnight = document.getElementById("btn-trigger-midnight");
+
+    let socket = null;
+    let reconnectTimer = null;
+
+    function addLog(type, typeClass, message) {
+      const timeStr = new Date().toLocaleTimeString("zh-TW", { hour12: false });
+      const item = document.createElement("div");
+      item.className = "log-item";
+      item.innerHTML = `
+        <span class="log-time">[${timeStr}]</span>
+        <span class="log-type ${typeClass}">${type}</span>
+        <span class="log-msg">${message}</span>
+      `;
+      terminal.appendChild(item);
+      terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    function updateServerStatus(connected, text) {
+      if (connected) {
+        statusDot.classList.remove("disconnected");
+        statusTitle.textContent = "WebSocket 伺服器已連線";
+        statusSubtitle.textContent = socketUrl;
+      } else {
+        statusDot.classList.add("disconnected");
+        statusTitle.textContent = text || "伺服器未連線";
+        statusSubtitle.textContent = `請確認 server.js 正在執行 (${socketUrl})`;
+      }
+    }
+
+    function connectWebSocket() {
+      if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
+        return;
+      }
+
+      updateServerStatus(false, "連線中...");
+
+      try {
+        socket = new WebSocket(socketUrl);
+
+        socket.onopen = () => {
+          updateServerStatus(true);
+          addLog("CONNECTED", "system", `已成功連線至 WebSocket 伺服器 (${socketUrl})`);
+        };
+
+        socket.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === "server-status") {
+              addLog("SERVER", "system", `${data.message} (Client #${data.clientId})`);
+            } else if (data.type === "server-ack") {
+              // 伺服器確認封包
+            } else {
+              addLog("BROADCAST", "system", `收到廣播封包: ${JSON.stringify(data)}`);
+            }
+          } catch (e) {
+            // ignore non-json
+          }
+        };
+
+        socket.onclose = () => {
+          updateServerStatus(false, "連線中斷，兩秒後重試");
+          addLog("DISCONNECTED", "system", "WebSocket 連線已關閉，2 秒後將嘗試自動重新連線...");
+          clearTimeout(reconnectTimer);
+          reconnectTimer = setTimeout(connectWebSocket, 2000);
+        };
+
+        socket.onerror = (err) => {
+          updateServerStatus(false, "連線失敗");
+        };
+      } catch (err) {
+        updateServerStatus(false, "無法建立連線");
+      }
+    }
+
+    function sendCommand(type, description, logType, logClass, extraData = {}) {
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        alert("WebSocket 尚未連線，請確認 server.js 正在執行中！");
+        addLog("ERROR", "system", "發送失敗：WebSocket 尚未連線");
+        return;
+      }
+
+      const payload = {
+        type: type,
+        ...extraData,
+        timestamp: new Date().toISOString(),
+        source: "aura-dev-tools"
+      };
+
+      socket.send(JSON.stringify(payload));
+      addLog(logType, logClass, `已送出「${description}」指令: ${JSON.stringify(payload)}`);
+    }
+
+    // 按鈕監聽
+    if (btnInject60) {
+      btnInject60.addEventListener("click", () => {
+        sendCommand("dev-inject-data", "注入 60 天假資料", "INJECT", "inject", { days: 60 });
+      });
+    }
+
+    if (btnInject30) {
+      btnInject30.addEventListener("click", () => {
+        sendCommand("dev-inject-data", "注入 30 天假資料", "INJECT", "inject", { days: 30 });
+      });
+    }
+
+    btnPick.addEventListener("click", () => {
+      sendCommand("dev-trigger-pick", "模擬觸發 (+1)", "TRIGGER", "pick");
+    });
+
+    btnMidnight.addEventListener("click", () => {
+      sendCommand("dev-trigger-midnight", "模擬跨夜換日結算", "MIDNIGHT", "midnight");
+    });
+
+    clearLogBtn.addEventListener("click", () => {
+      terminal.innerHTML = "";
+      addLog("CLEARED", "system", "日誌已清空。");
+    });
+
+    reconnectBtn.addEventListener("click", () => {
+      if (socket) {
+        socket.close();
+      }
+      connectWebSocket();
+    });
+
+    // 啟動連線
+    connectWebSocket();
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,4648 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aura - 穿戴式壓力監測 App 原型</title>
+  <!-- Google Fonts for premium typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <!-- Lucide Icons for modern, clean iconography -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js for premium dark data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Global Reset & Base Variables */
+    :root {
+      --bg-dark: #07050f;
+      --panel-bg: rgba(18, 14, 36, 0.65);
+      --glass-bg: rgba(255, 255, 255, 0.03);
+      --glass-border: rgba(255, 255, 255, 0.07);
+      --glass-border-focus: rgba(255, 255, 255, 0.2);
+      --primary-cyan: #06b6d4;
+      --primary-purple: #8b5cf6;
+      --primary-pink: #ec4899;
+      --text-white: #f8fafc;
+      --text-muted: #94a3b8;
+
+      --accent-normal: #14b8a6;
+      /* Teal */
+      --accent-warning: #ef4444;
+      /* Neon Red */
+      --glow-normal: rgba(20, 184, 166, 0.4);
+      --glow-warning: rgba(239, 68, 68, 0.6);
+
+      --transition-smooth: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-white);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow-x: hidden;
+      position: relative;
+      padding: 40px 20px;
+    }
+
+    /* Animated Glowing Ambient Blobs */
+    .ambient-glows {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.25;
+      animation: float-blob 20s infinite alternate;
+    }
+
+    .blob-1 {
+      top: 15%;
+      left: 20%;
+      width: 350px;
+      height: 350px;
+      background: var(--primary-purple);
+    }
+
+    .blob-2 {
+      bottom: 20%;
+      right: 15%;
+      width: 450px;
+      height: 450px;
+      background: var(--primary-cyan);
+      animation-delay: -5s;
+    }
+
+    .blob-3 {
+      top: 50%;
+      left: 45%;
+      width: 250px;
+      height: 250px;
+      background: var(--primary-pink);
+      animation-delay: -10s;
+      opacity: 0.15;
+    }
+
+    @keyframes float-blob {
+      0% {
+        transform: translate(0, 0) scale(1);
+      }
+
+      100% {
+        transform: translate(50px, 40px) scale(1.15);
+      }
+    }
+
+    /* Main Container Grid layout */
+    .app-container {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 50px;
+      z-index: 10;
+      width: 100%;
+      max-width: 1000px;
+      flex-wrap: nowrap;
+    }
+
+    /* Mobile Mockup (Phone Outer Shell) */
+    .mobile-mockup {
+      position: relative;
+      width: 385px;
+      height: 790px;
+      background: #000;
+      border-radius: 52px;
+      padding: 13px;
+      box-shadow:
+        0px 25px 60px -15px rgba(0, 0, 0, 0.8),
+        inset 0 0 4px 2px rgba(255, 255, 255, 0.15),
+        0 0 0 12px #1c1a24;
+      outline: 2px solid #2f2a3c;
+      transition: var(--transition-smooth);
+      flex-shrink: 0;
+    }
+
+    /* Screen Notch (Dynamic Island Style) */
+    .phone-notch {
+      position: absolute;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 110px;
+      height: 28px;
+      background: #000;
+      border-radius: 14px;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 10px;
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+    }
+
+    .phone-camera {
+      width: 10px;
+      height: 10px;
+      background: #111;
+      border-radius: 50%;
+      border: 1px solid #222;
+      box-shadow: inset 0 0 2px rgba(255, 255, 255, 0.3);
+    }
+
+    .phone-speaker {
+      width: 45px;
+      height: 4px;
+      background: #222;
+      border-radius: 2px;
+    }
+
+    /* Screen Content Window */
+    .screen-window {
+      width: 100%;
+      height: 100%;
+      background: #0c0915;
+      border-radius: 40px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* Status Bar Inside Phone */
+    .phone-status-bar {
+      height: 44px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding: 0 28px 8px 28px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #fff;
+      z-index: 90;
+      pointer-events: none;
+    }
+
+    .status-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Screen Frame Views Container */
+    .screen-views {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Generic View Styles */
+    .screen-view {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(30px);
+      transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      padding: 10px 24px 30px 24px;
+      overflow-y: auto;
+      scrollbar-width: none;
+      /* Hide scrollbars */
+    }
+
+    .screen-view::-webkit-scrollbar {
+      display: none;
+    }
+
+    .screen-view.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(0);
+    }
+
+    /* Typography inside mobile app */
+    .view-title {
+      font-size: 24px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #fff 40%, var(--text-muted) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+      margin-top: 15px;
+    }
+
+    .view-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    /* Premium Form Inputs */
+    .input-group {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+
+    .input-label {
+      display: block;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .input-field {
+      width: 100%;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+      transition: var(--transition-smooth);
+    }
+
+    .input-field:focus {
+      border-color: var(--primary-cyan);
+      box-shadow: 0 0 15px rgba(6, 182, 212, 0.15);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    /* Gender Selector (Segmented tabs) */
+    .gender-selector {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .gender-btn {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      color: var(--text-muted);
+      padding: 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: var(--transition-smooth);
+      text-align: center;
+    }
+
+    .gender-btn.active {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(6, 182, 212, 0.2));
+      border-color: var(--primary-cyan);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(6, 182, 212, 0.1);
+    }
+
+    /* Glow Buttons */
+    .btn-glow {
+      position: relative;
+      background: linear-gradient(135deg, var(--primary-purple) 0%, var(--primary-cyan) 100%);
+      border: none;
+      color: #fff;
+      padding: 15px 24px;
+      border-radius: 14px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      margin-top: auto;
+      box-shadow: 0 8px 24px -6px rgba(139, 92, 246, 0.4);
+      transition: var(--transition-smooth);
+      outline: none;
+    }
+
+    .btn-glow:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px -4px rgba(139, 92, 246, 0.5);
+    }
+
+    .btn-glow:active {
+      transform: translateY(0);
+    }
+
+    /* --- SCREEN 1: LOGIN --- */
+    #screen-login {
+      justify-content: center;
+    }
+
+    .brand-logo-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 40px;
+    }
+
+    .brand-logo {
+      width: 70px;
+      height: 70px;
+      background: linear-gradient(135deg, var(--primary-purple) 0%, var(--primary-cyan) 100%);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      box-shadow: 0 10px 30px rgba(139, 92, 246, 0.3);
+      margin-bottom: 16px;
+      position: relative;
+    }
+
+    .brand-logo::after {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, var(--primary-purple), var(--primary-cyan));
+      z-index: -1;
+      opacity: 0.5;
+    }
+
+    .brand-name {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      background: linear-gradient(135deg, #ffffff 30%, var(--text-muted) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-slogan {
+      font-size: 11px;
+      color: var(--primary-cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    .social-login-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .social-btn {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 10px;
+      color: #fff;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: var(--transition-smooth);
+    }
+
+    .social-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--glass-border-focus);
+    }
+
+    /* --- SCREEN 2: PROFILE --- */
+    #screen-profile {
+      justify-content: space-between;
+    }
+
+    /* --- SCREEN 4: WEARABLE GUIDE --- */
+    #screen-wear {
+      justify-content: space-between;
+      text-align: center;
+    }
+
+    .pairing-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      margin: 20px 0;
+    }
+
+    .pairing-circles {
+      position: relative;
+      width: 180px;
+      height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 30px;
+    }
+
+    .pulse-ring {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 1px dashed rgba(6, 182, 212, 0.3);
+      animation: rotate-pulse 12s linear infinite;
+    }
+
+    .pulse-ring-inner {
+      position: absolute;
+      width: 80%;
+      height: 80%;
+      border-radius: 50%;
+      border: 2px solid rgba(139, 92, 246, 0.1);
+      box-shadow: inset 0 0 20px rgba(139, 92, 246, 0.05);
+      animation: pulse-ring 2.5s ease-out infinite;
+    }
+
+    .wearable-center-icon {
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1b1632 0%, #111e2a 100%);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary-cyan);
+      box-shadow: 0 10px 30px rgba(6, 182, 212, 0.15);
+      z-index: 2;
+    }
+
+    @keyframes rotate-pulse {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes pulse-ring {
+      0% {
+        transform: scale(0.9);
+        opacity: 0.8;
+      }
+
+      50% {
+        transform: scale(1.1);
+        opacity: 0.3;
+      }
+
+      100% {
+        transform: scale(0.9);
+        opacity: 0.8;
+      }
+    }
+
+    .status-text-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--glass-border);
+      padding: 8px 16px;
+      border-radius: 20px;
+      margin-top: 10px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--accent-normal);
+      border-radius: 50%;
+      animation: blink 1.5s infinite;
+    }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 0.3;
+      }
+
+      50% {
+        opacity: 1;
+      }
+    }
+
+    /* --- SCREEN 5: DASHBOARD --- */
+    #screen-dashboard {
+      padding: 10px 18px 24px 18px;
+    }
+
+    /* User Profile Mini Bar */
+    .dashboard-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      margin-top: 10px;
+    }
+
+    .profile-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .profile-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary-purple) 0%, var(--primary-pink) 100%);
+      border: 1px solid var(--glass-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      color: #fff;
+    }
+
+    .profile-meta {
+      display: flex;
+      flex-direction: column;
+      text-align: left;
+    }
+
+    .profile-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .profile-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .habits-badge-container {
+      display: flex;
+      gap: 4px;
+      max-width: 170px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .habits-badge-container::-webkit-scrollbar {
+      display: none;
+    }
+
+    .habit-badge {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--glass-border);
+      color: var(--primary-cyan);
+      padding: 2px 6px;
+      border-radius: 8px;
+      font-size: 9px;
+      white-space: nowrap;
+    }
+
+    /* Stress Index Circle Gauge */
+    .stress-gauge-section {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      padding: 16px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+
+    .stress-gauge-container {
+      position: relative;
+      width: 140px;
+      height: 140px;
+      margin: 0 auto 10px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .stress-gauge-svg {
+      transform: rotate(-90deg);
+      width: 100%;
+      height: 100%;
+    }
+
+    .gauge-bg {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.03);
+      stroke-width: 8;
+    }
+
+    .gauge-fill {
+      fill: none;
+      stroke: url(#gaugeGradientNormal);
+      stroke-width: 8;
+      stroke-linecap: round;
+      stroke-dasharray: 377;
+      /* 2 * PI * r (r=60) */
+      stroke-dashoffset: 377;
+      transition: stroke-dashoffset 0.8s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.4s;
+    }
+
+    .stress-gauge-inner {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+
+    .stress-score-val {
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1;
+      background: linear-gradient(135deg, #fff 50%, var(--text-muted) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .stress-score-lbl {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .stress-status-tag {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #000;
+      background: var(--accent-normal);
+      box-shadow: 0 4px 10px var(--glow-normal);
+      transition: var(--transition-smooth);
+    }
+
+    /* Metrics Grid styling */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .metric-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      text-align: left;
+    }
+
+    .metric-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .metric-label {
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .metric-icon {
+      color: var(--primary-cyan);
+    }
+
+    .metric-value-row {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .metric-val {
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .metric-unit {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .metric-status {
+      font-size: 9px;
+      font-weight: 600;
+      margin-top: 4px;
+      color: var(--accent-normal);
+    }
+
+    /* Full Width Force Metric style */
+    .metric-card.full-width {
+      grid-column: span 2;
+    }
+
+    .force-bar-container {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 3px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+
+    .force-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary-purple) 0%, var(--primary-cyan) 100%);
+      width: 15%;
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+
+    /* Canvas Realtime Wave Graph */
+    .graph-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      height: 120px;
+      position: relative;
+    }
+
+    .graph-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .graph-title {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .graph-canvas {
+      width: 100%;
+      height: 70px;
+      display: block;
+    }
+
+    /* --- EMERGENCY/STRESS ALERTS OVERLAY --- */
+    .stress-alert-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(24, 7, 10, 0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      z-index: 150;
+      display: flex;
+      flex-direction: column;
+      padding: 44px 24px 30px 24px;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(100%);
+      transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .stress-alert-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .alert-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      margin-top: 20px;
+      margin-bottom: 30px;
+    }
+
+    .alert-icon-ring {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: rgba(239, 68, 68, 0.15);
+      border: 2px dashed rgba(239, 68, 68, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-warning);
+      box-shadow: 0 0 25px rgba(239, 68, 68, 0.3);
+      animation: alert-pulse 2s infinite alternate;
+      margin-bottom: 16px;
+    }
+
+    @keyframes alert-pulse {
+      0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
+      }
+
+      100% {
+        transform: scale(1.08);
+        box-shadow: 0 0 35px rgba(239, 68, 68, 0.5);
+      }
+    }
+
+    .alert-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--accent-warning);
+      text-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+    }
+
+    .alert-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+
+    .alert-stats-box {
+      background: rgba(239, 68, 68, 0.05);
+      border: 1px solid rgba(239, 68, 68, 0.15);
+      border-radius: 16px;
+      padding: 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 30px;
+    }
+
+    .alert-stat-card {
+      text-align: center;
+    }
+
+    .alert-stat-lbl {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .alert-stat-val {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      margin-top: 4px;
+    }
+
+    /* Calming Guided Breathing circle */
+    .breathing-box {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .breathing-circle-outer {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: rgba(6, 182, 212, 0.05);
+      border: 1px solid rgba(6, 182, 212, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      margin-bottom: 12px;
+    }
+
+    .breathing-circle-inner {
+      width: 70%;
+      height: 70%;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary-cyan) 0%, var(--primary-purple) 100%);
+      opacity: 0.8;
+      box-shadow: 0 0 30px rgba(6, 182, 212, 0.3);
+      animation: breathe 8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+
+    @keyframes breathe {
+
+      0%,
+      100% {
+        transform: scale(0.7);
+        opacity: 0.4;
+        box-shadow: 0 0 15px rgba(6, 182, 212, 0.2);
+      }
+
+      40% {
+        transform: scale(1.15);
+        opacity: 0.9;
+        box-shadow: 0 0 45px rgba(6, 182, 212, 0.5);
+      }
+
+      60% {
+        transform: scale(1.15);
+        opacity: 0.9;
+      }
+
+      90% {
+        transform: scale(0.7);
+        opacity: 0.4;
+      }
+    }
+
+    .breathing-instruction {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--primary-cyan);
+      letter-spacing: 0.05em;
+    }
+
+    .btn-alert-dismiss {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--glass-border);
+      color: #fff;
+      padding: 14px 20px;
+      border-radius: 14px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      width: 100%;
+      transition: var(--transition-smooth);
+    }
+
+    .btn-alert-dismiss:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    /* --- EXTERNAL CONTROLLER (Simulation Controller) --- */
+    .simulation-panel {
+      width: 360px;
+      background: var(--panel-bg);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-radius: 28px;
+      padding: 26px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      align-self: center;
+      display: flex;
+      flex-direction: column;
+      z-index: 10;
+      position: relative;
+    }
+
+    .simulation-panel::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0) 100%);
+      border-radius: 28px;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .panel-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .panel-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      line-height: 1.4;
+    }
+
+    .sim-mode-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      transition: var(--transition-smooth);
+    }
+
+    .sim-mode-card.manual-active {
+      border-color: var(--primary-cyan);
+      background: rgba(6, 182, 212, 0.03);
+    }
+
+    .mode-info {
+      text-align: left;
+    }
+
+    .mode-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .mode-desc {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .btn-reset-sim {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      color: #fff;
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+    }
+
+    .btn-reset-sim:hover {
+      background: var(--primary-cyan);
+      border-color: var(--primary-cyan);
+      color: #000;
+    }
+
+    /* Custom Beautiful Sliders */
+    .slider-box {
+      margin-bottom: 24px;
+      text-align: left;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .slider-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .slider-val-bubble {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--primary-cyan);
+      background: rgba(6, 182, 212, 0.1);
+      padding: 2px 8px;
+      border-radius: 8px;
+    }
+
+    .custom-range {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 3px;
+      outline: none;
+      transition: var(--transition-smooth);
+    }
+
+    .custom-range::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #fff;
+      border: 2px solid var(--primary-cyan);
+      box-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+      cursor: pointer;
+      transition: var(--transition-smooth);
+    }
+
+    .custom-range::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+      background: var(--primary-cyan);
+    }
+
+    /* Specific slider configurations */
+    .slider-box.warning-state .slider-val-bubble {
+      color: var(--accent-warning);
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    .slider-box.warning-state .custom-range::-webkit-slider-thumb {
+      border-color: var(--accent-warning);
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+    }
+
+    /* Simulation Status Indicator */
+    .indicator-box {
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      padding-top: 20px;
+      margin-top: auto;
+      text-align: left;
+    }
+
+    .indicator-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+
+    .indicator-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 12px;
+    }
+
+    .indicator-state {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+    }
+
+    /* --- UPGRADED STYLES FOR NEW FEATURES --- */
+    /* 1. Phone Shaking & Vibration feedback visual alert */
+    @keyframes phone-shake {
+
+      0%,
+      100% {
+        transform: translate(0, 0) rotate(0deg);
+      }
+
+      10% {
+        transform: translate(-2px, -1px) rotate(-0.5deg);
+      }
+
+      20% {
+        transform: translate(-1px, 2px) rotate(0.5deg);
+      }
+
+      30% {
+        transform: translate(1px, -2px) rotate(-0.5deg);
+      }
+
+      40% {
+        transform: translate(-2px, 1px) rotate(0.5deg);
+      }
+
+      50% {
+        transform: translate(2px, -1px) rotate(-0.5deg);
+      }
+
+      60% {
+        transform: translate(1px, 2px) rotate(0.5deg);
+      }
+
+      70% {
+        transform: translate(-1px, -2px) rotate(-0.5deg);
+      }
+
+      80% {
+        transform: translate(-2px, 1px) rotate(0.5deg);
+      }
+
+      90% {
+        transform: translate(2px, 2px) rotate(-0.5deg);
+      }
+    }
+
+    .phone-shake {
+      animation: phone-shake 0.15s infinite;
+    }
+
+    .vibration-feedback-indicator {
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px dashed rgba(239, 68, 68, 0.3);
+      border-radius: 12px;
+      padding: 8px 14px;
+      font-size: 11px;
+      color: var(--accent-warning);
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 10px;
+      width: 100%;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.05);
+    }
+
+    .alert-glow-red {
+      animation: red-glow-pulse 2s infinite alternate;
+    }
+
+    @keyframes red-glow-pulse {
+      0% {
+        background-color: rgba(24, 7, 10, 0.88);
+      }
+
+      100% {
+        background-color: rgba(60, 10, 15, 0.93);
+      }
+    }
+
+    /* 2. Dashboard Tabs Style */
+    .dashboard-tabs {
+      display: flex;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 14px;
+      position: relative;
+      z-index: 5;
+    }
+
+    .tab-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(6, 182, 212, 0.15));
+      color: #fff;
+      border: 1px solid rgba(6, 182, 212, 0.2);
+    }
+
+    .tab-content {
+      display: none;
+      flex-direction: column;
+    }
+
+    .tab-content.active {
+      display: flex;
+    }
+
+    /* 3. IMU Card Style */
+    .imu-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 12px 14px;
+      text-align: left;
+      margin-bottom: 14px;
+      transition: var(--transition-smooth);
+    }
+
+    .imu-card.active-shake {
+      border-color: var(--accent-warning);
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.15);
+      background: rgba(239, 68, 68, 0.02);
+    }
+
+    .imu-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .imu-axis {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--glass-border);
+      border-radius: 10px;
+      padding: 8px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      transition: var(--transition-smooth);
+    }
+
+    .imu-card.active-shake .imu-axis {
+      border-color: rgba(239, 68, 68, 0.2);
+      background: rgba(239, 68, 68, 0.05);
+    }
+
+    .imu-axis-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .imu-axis-val {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .imu-shake-indicator {
+      font-size: 9px;
+      color: var(--accent-warning);
+      font-weight: 700;
+      margin-top: 6px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      animation: blink 1s infinite;
+    }
+
+    /* 4. Statistics Page Tab Components */
+    .stats-card-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .stats-summary-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      padding: 16px;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      gap: 12px;
+    }
+
+    .stats-desc-box {
+      text-align: left;
+      flex: 1;
+    }
+
+    .stats-desc-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .stats-desc-text {
+      font-size: 10px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .stats-count-circle {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%);
+      border: 2px solid rgba(6, 182, 212, 0.3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 15px rgba(6, 182, 212, 0.15);
+      flex-shrink: 0;
+    }
+
+    .stats-count-val {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--primary-cyan);
+      line-height: 1.1;
+    }
+
+    .stats-count-lbl {
+      font-size: 8px;
+      color: var(--text-muted);
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    .stats-chart-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      padding: 14px;
+      text-align: left;
+    }
+
+    .stats-chart-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chart-container {
+      position: relative;
+      height: 130px;
+      width: 100%;
+    }
+
+    /* 5. Relax Screen Layout & Calming Breathing */
+    .relax-header {
+      margin-top: 15px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .btn-back-dash {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 50%;
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #fff;
+      transition: var(--transition-smooth);
+    }
+
+    .btn-back-dash:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--glass-border-focus);
+    }
+
+    .relax-circle-box {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 15px 0;
+    }
+
+    .relax-breathing-circle-outer {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      background: rgba(6, 182, 212, 0.03);
+      border: 1px dashed rgba(6, 182, 212, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      margin-bottom: 16px;
+      box-shadow: 0 0 30px rgba(6, 182, 212, 0.02);
+    }
+
+    .relax-breathing-circle-inner {
+      width: 65%;
+      height: 65%;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary-cyan) 0%, var(--primary-purple) 100%);
+      opacity: 0.8;
+      box-shadow: 0 0 35px rgba(6, 182, 212, 0.4);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: #fff;
+      transition: transform 5s cubic-bezier(0.4, 0, 0.2, 1), background 5s, box-shadow 5s;
+    }
+
+    .relax-breathing-circle-inner.inhale {
+      transform: scale(1.35);
+      background: linear-gradient(135deg, var(--primary-cyan) 0%, var(--primary-purple) 100%);
+      box-shadow: 0 0 50px rgba(6, 182, 212, 0.6);
+    }
+
+    .relax-breathing-circle-inner.hold {
+      transform: scale(1.35);
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      box-shadow: 0 0 50px rgba(16, 185, 129, 0.6);
+    }
+
+    .relax-breathing-circle-inner.exhale {
+      transform: scale(1.0);
+      background: linear-gradient(135deg, var(--primary-purple) 0%, var(--primary-pink) 100%);
+      box-shadow: 0 0 35px rgba(139, 92, 246, 0.4);
+    }
+
+    .relax-breathe-text {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .relax-breathe-sub {
+      font-size: 9px;
+      color: rgba(255, 255, 255, 0.7);
+      margin-top: 2px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+    }
+
+    .relax-breathe-desc {
+      font-size: 13px;
+      color: var(--primary-cyan);
+      font-weight: 600;
+      height: 18px;
+    }
+
+    /* Modal Relax & Game Menu */
+    .relax-menu-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(7, 5, 15, 0.8);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .relax-menu-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .relax-menu-card {
+      width: 100%;
+      max-width: 340px;
+      background: #120e24;
+      border: 1px solid rgba(168, 85, 247, 0.3);
+      border-radius: 22px;
+      padding: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(139, 92, 246, 0.2);
+      transform: scale(0.92);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .relax-menu-overlay.active .relax-menu-card {
+      transform: scale(1);
+    }
+    .relax-menu-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .relax-menu-option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: left;
+    }
+    .relax-menu-option:hover {
+      background: rgba(255, 255, 255, 0.07);
+      border-color: rgba(168, 85, 247, 0.4);
+      transform: translateY(-1px);
+    }
+
+    /* Web Game Styles */
+    .web-game-play-area {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      overflow: hidden;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.015);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      margin: 10px 0;
+    }
+    .web-game-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .web-game-target-frame {
+      border: 2.5px dashed rgba(168, 85, 247, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(168, 85, 247, 0.02);
+      box-shadow: 0 0 20px rgba(139, 92, 246, 0.25);
+      transition: border-radius 0.2s ease;
+      position: relative;
+      z-index: 5;
+    }
+    .web-game-filled-shape {
+      background: #8b5cf6;
+      box-shadow: 0 0 15px rgba(168, 85, 247, 0.6);
+      transition: background 0.15s ease, box-shadow 0.15s ease, border-radius 0.2s ease;
+    }
+    .web-game-result-badge {
+      position: absolute;
+      top: 15px;
+      z-index: 20;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-weight: 800;
+      text-align: center;
+      color: #fff;
+    }
+    .web-game-tip-box {
+      position: absolute;
+      bottom: 12px;
+      font-size: 11px;
+      color: var(--text-muted);
+      background: rgba(0, 0, 0, 0.4);
+      padding: 4px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      pointer-events: none;
+    }
+    @keyframes screenShake {
+      0%, 100% { transform: translate(0, 0); }
+      20% { transform: translate(-6px, 4px); }
+      40% { transform: translate(5px, -5px); }
+      60% { transform: translate(-4px, 3px); }
+      80% { transform: translate(3px, -2px); }
+    }
+    .screen-shake {
+      animation: screenShake 0.25s ease-in-out;
+    }
+    @keyframes flashRedAlert {
+      0% { background: rgba(239, 68, 68, 0.4); }
+      100% { background: transparent; }
+    }
+    .screen-flash-red {
+      animation: flashRedAlert 0.4s ease-out;
+    }
+
+    /* 6. Calm White Noise Selector */
+    .noise-section {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      padding: 16px;
+      margin-bottom: 12px;
+      text-align: left;
+    }
+
+    .noise-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .noise-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .noise-btn {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--glass-border);
+      color: var(--text-muted);
+      border-radius: 12px;
+      padding: 12px 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .noise-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--glass-border-focus);
+    }
+
+    .noise-btn.active {
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.12), rgba(139, 92, 246, 0.12));
+      border-color: var(--primary-cyan);
+      color: #fff;
+      box-shadow: 0 0 15px rgba(6, 182, 212, 0.15);
+    }
+
+    .noise-btn i {
+      transition: var(--transition-smooth);
+    }
+
+    .noise-btn.active i {
+      color: var(--primary-cyan);
+      transform: scale(1.1);
+    }
+
+    .noise-player-control {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 11px;
+      color: var(--text-muted);
+      border: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .noise-volume-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .noise-volume-slider {
+      width: 70px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: rgba(255, 255, 255, 0.08);
+      height: 4px;
+      border-radius: 2px;
+      outline: none;
+    }
+
+    .noise-volume-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--primary-cyan);
+      cursor: pointer;
+    }
+
+    .audio-waves-anim {
+      display: flex;
+      gap: 2.5px;
+      align-items: flex-end;
+      height: 12px;
+    }
+
+    .audio-wave-bar {
+      width: 2px;
+      background: var(--primary-cyan);
+      border-radius: 1px;
+      height: 3px;
+      animation: wave-bounce 0.8s ease-in-out infinite alternate;
+      animation-play-state: paused;
+    }
+
+    .audio-wave-bar:nth-child(2) {
+      animation-delay: 0.15s;
+    }
+
+    .audio-wave-bar:nth-child(3) {
+      animation-delay: 0.3s;
+    }
+
+    .audio-wave-bar:nth-child(4) {
+      animation-delay: 0.45s;
+    }
+
+    @keyframes wave-bounce {
+      0% {
+        height: 3px;
+      }
+
+      100% {
+        height: 12px;
+      }
+    }
+
+    .noise-btn.active .audio-wave-bar {
+      animation-play-state: running;
+    }
+
+    /* 7. Top Navigation Bar for Screens */
+    .app-nav-bar {
+      position: sticky;
+      top: -10px;
+      background: rgba(12, 9, 21, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      margin-bottom: 8px;
+      flex-shrink: 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .btn-nav-back {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #fff;
+      transition: var(--transition-smooth);
+    }
+
+    .btn-nav-back:hover {
+      background: rgba(255, 255, 255, 0.10);
+      border-color: var(--glass-border-focus);
+    }
+
+    .nav-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-white);
+      letter-spacing: 0.03em;
+    }
+
+    /* 8. Alert Drag Dismiss Handle */
+    .drag-handle-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      cursor: grab;
+      padding: 8px;
+      margin-top: -15px;
+      margin-bottom: 12px;
+      width: 100%;
+      user-select: none;
+    }
+
+    .drag-handle-container:active {
+      cursor: grabbing;
+    }
+
+    .drag-handle-bar {
+      width: 44px;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.25);
+      border-radius: 3px;
+      transition: var(--transition-smooth);
+    }
+
+    .drag-handle-container:hover .drag-handle-bar {
+      background: rgba(255, 255, 255, 0.4);
+    }
+
+    .drag-handle-text {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      animation: bounce-text 1.5s infinite alternate;
+    }
+
+    @keyframes bounce-text {
+      0% {
+        transform: translateY(0);
+        opacity: 0.6;
+      }
+
+      100% {
+        transform: translateY(-2px);
+        opacity: 1;
+      }
+    }
+
+    /* 9. Visual Vibration Feedback / Ripples for breathing */
+    .ripple-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 1.5px solid rgba(6, 182, 212, 0.35);
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      opacity: 0;
+      pointer-events: none;
+      transform-origin: center;
+    }
+
+    .ripple-ring:nth-child(2) {
+      border-color: rgba(139, 92, 246, 0.3);
+      animation-delay: 1.66s;
+    }
+
+    .ripple-ring:nth-child(3) {
+      border-color: rgba(236, 72, 153, 0.25);
+      animation-delay: 3.33s;
+    }
+
+    .ripple-active .ripple-ring {
+      animation: ripple-expand-relax 5s infinite cubic-bezier(0.1, 0.8, 0.3, 1);
+    }
+
+    @keyframes ripple-expand-relax {
+      0% {
+        transform: scale(1);
+        opacity: 0.7;
+        box-shadow: 0 0 10px rgba(6, 182, 212, 0.1);
+      }
+
+      50% {
+        transform: scale(1.65);
+        opacity: 0.15;
+        box-shadow: 0 0 25px rgba(139, 92, 246, 0.2);
+      }
+
+      100% {
+        transform: scale(2.2);
+        opacity: 0;
+      }
+    }
+
+    /* UI Responsive Adaptation */
+    @media (max-width: 750px) {
+      body {
+        padding: 20px;
+      }
+
+      .app-container {
+        flex-direction: column;
+        gap: 30px;
+      }
+
+      .mobile-mockup {
+        width: 350px;
+        height: 720px;
+      }
+
+      .simulation-panel {
+        width: 350px;
+      }
+    }
+
+    /* Fixed on right side of screen for wide desktop viewports (min-width: 992px) */
+    @media (min-width: 992px) {
+      body {
+        padding-right: 420px;
+        /* leaves centered area for mockup */
+      }
+
+      .simulation-panel {
+        position: fixed;
+        right: 40px;
+        top: 50%;
+        transform: translateY(-50%);
+        margin: 0;
+        max-height: calc(100vh - 80px);
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+      }
+
+      .simulation-panel::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .simulation-panel::-webkit-scrollbar-thumb {
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+      }
+    }
+
+    /* --- NEW BFRB UI STYLES --- */
+    .bfrb-survey-container {
+      margin-bottom: 24px;
+      text-align: left;
+    }
+
+    .bfrb-survey-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--primary-cyan);
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--glass-border);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .bfrb-option-group {
+      margin-bottom: 12px;
+    }
+
+    .bfrb-group-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .bfrb-option-btn {
+      width: 100%;
+      text-align: left;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      color: #fff;
+      font-size: 12px;
+      line-height: 1.4;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+    }
+
+    .bfrb-option-btn.active {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(6, 182, 212, 0.15));
+      border-color: var(--primary-cyan);
+      box-shadow: 0 4px 15px rgba(6, 182, 212, 0.1);
+    }
+
+    .bfrb-option-btn span.highlight {
+      color: var(--primary-cyan);
+      font-weight: 700;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .threshold-banner {
+      background: rgba(18, 14, 36, 0.4);
+      border: 1px solid transparent;
+      border-radius: 12px;
+      padding: 10px 14px;
+      margin-bottom: 16px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+      background-clip: padding-box;
+      line-height: 1.4;
+    }
+
+    .threshold-banner::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border-radius: 12px;
+      padding: 1px;
+      background: linear-gradient(135deg, var(--primary-cyan), var(--primary-purple), var(--primary-pink));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: destination-out;
+      mask-composite: exclude;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .history-log-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      padding: 16px;
+      margin-bottom: 14px;
+      text-align: left;
+    }
+
+    .history-log-header {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .history-log-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .history-log-item:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .history-log-icon {
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .history-log-content {
+      flex: 1;
+    }
+
+    .history-log-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .history-log-count {
+      color: var(--primary-cyan);
+    }
+
+    .history-log-desc {
+      font-size: 10px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* --- END NEW BFRB UI STYLES --- */
+  </style>
+</head>
+
+<body>
+
+  <!-- Ambient background blobs -->
+  <div class="ambient-glows">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <div class="app-container">
+
+    <!-- MOBILE PHONE MOCKUP -->
+    <div class="mobile-mockup" id="phoneMockup">
+      <!-- Screen Notch -->
+      <div class="phone-notch">
+        <div class="phone-camera"></div>
+        <div class="phone-speaker"></div>
+        <div class="phone-camera" style="opacity: 0.3;"></div>
+      </div>
+
+      <!-- Phone Inner Screen Container -->
+      <div class="screen-window">
+        <!-- Status Bar -->
+        <div class="phone-status-bar">
+          <span id="statusBarTime">10:09</span>
+          <div class="status-right">
+            <i data-lucide="signal" style="width:12px; height:12px;"></i>
+            <i data-lucide="wifi" style="width:12px; height:12px;"></i>
+            <i data-lucide="battery" style="width:14px; height:14px;"></i>
+          </div>
+        </div>
+
+        <!-- Inner Screens -->
+        <div class="screen-views">
+
+          <!-- 1. LOGIN SCREEN -->
+          <div class="screen-view active" id="screen-login">
+            <div class="brand-logo-container">
+              <div class="brand-logo">
+                <i data-lucide="activity" style="width:36px; height:36px; color:#fff;"></i>
+              </div>
+              <h1 class="brand-name">Aura</h1>
+              <p class="brand-slogan">Bio-Stress Monitor</p>
+            </div>
+
+            <div class="input-group">
+              <label class="input-label" for="login-email">電子信箱 / 使用者帳號</label>
+              <input type="email" id="login-email" class="input-field" placeholder="aura@example.com"
+                value="demo@aura.io">
+            </div>
+
+            <div class="input-group">
+              <label class="input-label" for="login-password">密碼</label>
+              <input type="password" id="login-password" class="input-field" placeholder="輸入您的密碼" value="••••••••">
+            </div>
+
+            <div class="social-login-grid">
+              <button class="social-btn">
+                <i data-lucide="chrome" style="width:14px; height:14px; color:#ea4335;"></i> Google
+              </button>
+              <button class="social-btn">
+                <i data-lucide="apple" style="width:14px; height:14px; color:#fff;"></i> Apple
+              </button>
+            </div>
+
+            <button class="btn-glow" onclick="nextScreen('screen-profile')">
+              登入帳號 <i data-lucide="arrow-right" style="width:16px; height:16px;"></i>
+            </button>
+          </div>
+
+          <!-- 2. USER PROFILE INFO SCREEN -->
+          <div class="screen-view" id="screen-profile">
+            <div class="app-nav-bar">
+              <button class="btn-nav-back" onclick="nextScreen('screen-login')">
+                <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i>
+              </button>
+              <span class="nav-title">基本資料</span>
+            </div>
+            <div>
+              <h2 class="view-title" style="margin-top: 5px;">個人基本資料</h2>
+              <p class="view-subtitle">請填寫基本資訊，這將幫助我們為您精準評估壓力模型。</p>
+
+              <div class="input-group">
+                <label class="input-label" for="profile-name">姓名 / 暱稱</label>
+                <input type="text" id="profile-name" class="input-field" placeholder="請輸入姓名" value="宇航">
+              </div>
+
+              <div class="input-group">
+                <label class="input-label" for="profile-age">年齡</label>
+                <input type="number" id="profile-age" class="input-field" placeholder="請輸入年齡" value="21" min="1"
+                  max="120">
+              </div>
+
+              <div class="input-group">
+                <label class="input-label">性別</label>
+                <div class="gender-selector">
+                  <button class="gender-btn active" onclick="setGender(this, '男')">男性</button>
+                  <button class="gender-btn" onclick="setGender(this, '女')">女性</button>
+                  <button class="gender-btn" onclick="setGender(this, '其他')">多元</button>
+                </div>
+              </div>
+
+              <!-- BFRB Survey Area -->
+              <div class="bfrb-survey-container">
+                <div class="bfrb-survey-title">
+                  <i data-lucide="brain" style="width: 14px; height: 14px;"></i>
+                  BFRB 內在驅動篩查 (初次設定)
+                </div>
+
+                <div class="bfrb-option-group">
+                  <div class="bfrb-group-label">【主分類一：無意識問題】</div>
+                  <button class="bfrb-option-btn active" onclick="setBfrbType(this, 'stress')">
+                    <span class="highlight">壓力與焦慮驅動</span>
+                    在放空、高壓思考時不自覺發生。
+                  </button>
+                </div>
+
+                <div class="bfrb-option-group">
+                  <div class="bfrb-group-label">【主分類二：有意識而無法控制】</div>
+                  <button class="bfrb-option-btn" onclick="setBfrbType(this, 'adhd')">
+                    <span class="highlight">過動症 (ADHD/注意力不集中)</span>
+                    因無聊、缺乏環境刺激，大腦需要多巴胺而藉由身體動作找到專注點與樂趣。
+                  </button>
+                  <button class="bfrb-option-btn" onclick="setBfrbType(this, 'ocd')">
+                    <span class="highlight">強迫症 (強迫傾向)</span>
+                    無法接受不平整、有倒刺或死皮，視覺或觸覺看不順眼就一定要動手處理。
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            <button class="btn-glow" onclick="validateProfileAndContinue()">
+              下一步 <i data-lucide="chevron-right" style="width:16px; height:16px;"></i>
+            </button>
+          </div>
+
+          <!-- 4. DEVICE WEAR GUIDE SCREEN -->
+          <div class="screen-view" id="screen-wear">
+            <div class="app-nav-bar">
+              <button class="btn-nav-back" onclick="nextScreen('screen-profile')">
+                <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i>
+              </button>
+              <span class="nav-title">裝置配戴</span>
+            </div>
+            <h2 class="view-title" style="margin-top: 5px;">配戴您的裝置</h2>
+            <p class="view-subtitle">請戴上您的 Aura 智慧手環，並確保傳感器與手腕緊密貼合。</p>
+
+            <div class="pairing-container">
+              <div class="pairing-circles">
+                <div class="pulse-ring"></div>
+                <div class="pulse-ring-inner"></div>
+                <div class="wearable-center-icon">
+                  <i data-lucide="watch" style="width:40px; height:40px;"></i>
+                </div>
+              </div>
+
+              <div class="status-text-row">
+                <div class="status-dot"></div>
+                <span style="font-size: 13px; font-weight: 500;" id="wear-status-txt">偵測到 Aura Band-X 裝置...</span>
+              </div>
+            </div>
+
+            <button class="btn-glow" onclick="startAppMonitoring()">
+              開始監測 <i data-lucide="play" style="width:16px; height:16px;"></i>
+            </button>
+          </div>
+
+          <!-- 5. MONITORING DASHBOARD SCREEN -->
+          <div class="screen-view" id="screen-dashboard">
+            <div class="app-nav-bar" style="margin-bottom: 0;">
+              <button class="btn-nav-back" onclick="nextScreen('screen-wear')">
+                <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i>
+              </button>
+              <span class="nav-title">健康儀表板</span>
+            </div>
+            <!-- Header bar -->
+            <div class="dashboard-header">
+              <div class="profile-card">
+                <div class="profile-avatar" id="userAvatar">A</div>
+                <div class="profile-meta">
+                  <span class="profile-name" id="displayUserName">使用者</span>
+                  <span class="profile-sub" id="displayUserAge">21 歲 · 男性</span>
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="habits-badge-container" id="dashboardHabitTags">
+                  <span class="habit-badge" style="color:var(--text-muted);">生物壓力監測中</span>
+                </div>
+                <button class="btn-back-dash"
+                  style="width: 28px; height: 28px; background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.3); color: #c084fc; flex-shrink: 0; display: flex; align-items: center; justify-content: center;"
+                  onclick="openRelaxMenuModal()" title="放鬆與解壓中心">
+                  <i data-lucide="flower" style="width:14px; height:14px;"></i>
+                </button>
+                <button class="btn-back-dash"
+                  style="width: 28px; height: 28px; background: rgba(255, 255, 255, 0.08); border: 1px solid var(--glass-border); color: #fff; flex-shrink: 0; display: flex; align-items: center; justify-content: center;"
+                  onclick="nextScreen('screen-settings')" title="設定">
+                  <i data-lucide="settings" style="width:14px; height:14px;"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Segmented Dashboard Tabs -->
+            <div class="dashboard-tabs">
+              <button class="tab-btn active" id="tabBtnRealtime" onclick="switchDashboardTab('realtime')">
+                <i data-lucide="activity" style="width: 13px; height: 13px;"></i>即時數據
+              </button>
+              <button class="tab-btn" id="tabBtnStats" onclick="switchDashboardTab('stats')">
+                <i data-lucide="bar-chart-2" style="width: 13px; height: 13px;"></i>統計分析
+              </button>
+            </div>
+
+            <!-- Tab Content 1: Real-time Monitor -->
+            <div class="tab-content active" id="tabContentRealtime">
+
+              <div class="threshold-banner">
+                💡 輔助防護系統觸發標準：心率 &gt; 85 BPM 或 按壓力道 &gt; 90,000 單位 或 IMU 摳抓加速度 &gt; 2.5g
+              </div>
+
+              <!-- Stress Index Gauge -->
+              <div class="stress-gauge-section">
+                <div class="stress-gauge-container">
+                  <svg class="stress-gauge-svg" viewBox="0 0 140 140">
+                    <defs>
+                      <linearGradient id="gaugeGradientNormal" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#06b6d4" />
+                        <stop offset="100%" stop-color="#8b5cf6" />
+                      </linearGradient>
+                      <linearGradient id="gaugeGradientAlert" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#ef4444" />
+                        <stop offset="100%" stop-color="#ec4899" />
+                      </linearGradient>
+                    </defs>
+                    <circle class="gauge-bg" cx="70" cy="70" r="60"></circle>
+                    <circle class="gauge-fill" id="gaugeProgress" cx="70" cy="70" r="60"></circle>
+                  </svg>
+                  <div class="stress-gauge-inner">
+                    <span class="stress-score-val" id="stressScoreVal">42</span>
+                    <span class="stress-score-lbl">壓力指數</span>
+                  </div>
+                </div>
+                <span class="stress-status-tag" id="stressStatusTag">狀態良好</span>
+              </div>
+
+              <!-- Bio Metrics Grid -->
+              <div class="metrics-grid">
+                <!-- Heart Rate Card -->
+                <div class="metric-card">
+                  <div class="metric-card-header">
+                    <span class="metric-label">心率</span>
+                    <i data-lucide="heart" class="metric-icon" id="heartIcon" style="width:14px; height:14px;"></i>
+                  </div>
+                  <div class="metric-value-row">
+                    <span class="metric-val" id="hrValue">72</span>
+                    <span class="metric-unit">BPM</span>
+                  </div>
+                  <span class="metric-status" id="hrStatus">平穩</span>
+                </div>
+
+                <!-- SpO2 Oxygen Card -->
+                <div class="metric-card">
+                  <div class="metric-card-header">
+                    <span class="metric-label">血氧濃度</span>
+                    <i data-lucide="droplet" class="metric-icon" style="width:14px; height:14px; color:#22d3ee;"></i>
+                  </div>
+                  <div class="metric-value-row">
+                    <span class="metric-val" id="spo2Value">98</span>
+                    <span class="metric-unit">%</span>
+                  </div>
+                  <span class="metric-status" id="spo2Status" style="color:#14b8a6;">極佳</span>
+                </div>
+
+                <!-- Force Sensor Card -->
+                <div class="metric-card full-width">
+                  <div class="metric-card-header">
+                    <span class="metric-label">按壓力道 (Squeeze Force)</span>
+                    <i data-lucide="zap" class="metric-icon" style="width:14px; height:14px; color:#eab308;"></i>
+                  </div>
+                  <div class="metric-value-row">
+                    <span class="metric-val" id="forceValue">12,450</span>
+                    <span class="metric-unit">單位</span>
+                  </div>
+                  <div class="force-bar-container">
+                    <div class="force-bar-fill" id="forceBarFill"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- IMU Dynamic Pose Sensor Card -->
+              <div class="imu-card" id="imuCard">
+                <div class="metric-card-header" style="margin-bottom: 4px;">
+                  <span class="metric-label">即時摳抓與肢體活動強度資訊 (IMU 三軸 $g$ 值)</span>
+                  <i data-lucide="compass" class="metric-icon" style="width:14px; height:14px; color:#a78bfa;"></i>
+                </div>
+                <div class="imu-grid">
+                  <div class="imu-axis">
+                    <span class="imu-axis-label">X 軸 (側向)</span>
+                    <span class="imu-axis-val" id="imuValX">+0.05 g</span>
+                  </div>
+                  <div class="imu-axis">
+                    <span class="imu-axis-label">Y 軸 (前後)</span>
+                    <span class="imu-axis-val" id="imuValY">-0.02 g</span>
+                  </div>
+                  <div class="imu-axis">
+                    <span class="imu-axis-label">Z 軸 (垂直)</span>
+                    <span class="imu-axis-val" id="imuValZ">+0.98 g</span>
+                  </div>
+                </div>
+                <div class="imu-shake-indicator" id="imuShakeIndicator">
+                  <i data-lucide="alert-circle" style="width:12px; height:12px;"></i>
+                  偵測到異常手部劇烈晃動與摳抓！
+                </div>
+              </div>
+
+              <!-- Live Chart Graph -->
+              <div class="graph-card">
+                <div class="graph-header">
+                  <span class="graph-title">即時脈搏生理波形 (ECG Emulation)</span>
+                  <span style="font-size: 9px; color: var(--primary-cyan); font-weight:600;" id="liveGraphPulse"></span>
+                </div>
+                <canvas id="liveChart" class="graph-canvas"></canvas>
+              </div>
+            </div>
+
+            <!-- Tab Content 2: Statistics & Charts -->
+            <div class="tab-content" id="tabContentStats">
+              <div class="stats-card-container">
+                <!-- BFRB History Log -->
+                <div class="history-log-card">
+                  <div class="history-log-header">
+                    <i data-lucide="clipboard-list" style="width: 16px; height: 16px; color: var(--primary-cyan);"></i>
+                    BFRB 行為歷史日誌紀錄
+                  </div>
+
+                  <div class="history-log-item">
+                    <div class="history-log-icon">🖐️</div>
+                    <div class="history-log-content">
+                      <div class="history-log-title">
+                        <span>摳皮行為 (指緣、死皮、手)</span>
+                        <span class="history-log-count" id="logCountSkin">累計 12 次</span>
+                      </div>
+                      <div class="history-log-desc">高發情境：任務瓶頸焦慮、缺乏刺激時。</div>
+                    </div>
+                  </div>
+
+                  <div class="history-log-item">
+                    <div class="history-log-icon">💇</div>
+                    <div class="history-log-content">
+                      <div class="history-log-title">
+                        <span>拉扯皮 / 拔毛行為傾向</span>
+                        <span class="history-log-count" id="logCountHair">累計 4 次</span>
+                      </div>
+                      <div class="history-log-desc">高發情境：深夜放空思考時。</div>
+                    </div>
+                  </div>
+
+                  <div class="history-log-item">
+                    <div class="history-log-icon">🦷</div>
+                    <div class="history-log-content">
+                      <div class="history-log-title">
+                        <span>咬指甲 / 啃咬指肉動作</span>
+                        <span class="history-log-count" id="logCountNail">累計 8 次</span>
+                      </div>
+                      <div class="history-log-desc">高發情境：視覺或觸覺看不順眼。</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Summary Count Box -->
+                <div class="stats-summary-card">
+                  <div class="stats-desc-box">
+                    <span class="stats-desc-title">行為壓力事件分析報告</span>
+                    <p class="stats-desc-text">系統結合 IMU 姿態、肌肉按壓壓力與心率變化，精準記錄您今日無意識高壓收縮與摳抓動作的累計次數。</p>
+                  </div>
+                  <div class="stats-count-circle">
+                    <span class="stats-count-val" id="statsScratchCount">3</span>
+                    <span class="stats-count-lbl">今日觸發</span>
+                  </div>
+                </div>
+
+                <!-- Weekly Chart -->
+                <div class="stats-chart-card">
+                  <div class="stats-chart-title">
+                    <i data-lucide="calendar" style="width: 14px; height: 14px; color: #06b6d4;"></i>
+                    <span>每週事件次數趨勢</span>
+                  </div>
+                  <div class="chart-container">
+                    <canvas id="weeklyChart"></canvas>
+                  </div>
+                </div>
+
+                <!-- Monthly Chart -->
+                <div class="stats-chart-card">
+                  <div class="stats-chart-title">
+                    <i data-lucide="trending-up" style="width: 14px; height: 14px; color: #8b5cf6;"></i>
+                    <span>月份累計趨勢</span>
+                  </div>
+                  <div class="chart-container">
+                    <canvas id="monthlyChart"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 6. CALMING GUIDE ZONE SCREEN (舒壓引導專區) -->
+          <div class="screen-view" id="screen-relax">
+            <div class="app-nav-bar">
+              <button class="btn-nav-back" onclick="exitRelaxScreen()" title="返回原本畫面">
+                <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i>
+              </button>
+              <span class="nav-title">舒壓引導專區</span>
+            </div>
+
+            <p class="view-subtitle" style="margin-bottom: 10px; font-size: 11px;">跟隨深呼吸節奏，選擇適合您的正念舒壓音效以緩和身心壓力。</p>
+
+            <!-- Calming Breathing Guide Circle -->
+            <div class="relax-circle-box" style="margin: 10px 0;">
+              <div class="relax-breathing-circle-outer ripple-active" id="relaxBreatheOuter">
+                <div class="ripple-ring"></div>
+                <div class="ripple-ring"></div>
+                <div class="ripple-ring"></div>
+                <div class="relax-breathing-circle-inner" id="relaxBreatheCircle">
+                  <span class="relax-breathe-text" id="relaxBreatheWord">吸氣</span>
+                  <span class="relax-breathe-sub" id="relaxBreatheTime">5 秒</span>
+                </div>
+              </div>
+              <div class="relax-breathe-desc" id="relaxBreatheDesc">深深吸氣，感受身心平靜...</div>
+            </div>
+
+            <!-- Calm White Noise & Music Selector Card -->
+            <div class="noise-section">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <div class="noise-title" style="margin-bottom:0;">
+                  <i data-lucide="music" style="width: 15px; height: 15px; color: var(--primary-cyan);"></i>
+                  <span>無版權放鬆音效</span>
+                </div>
+                <span style="font-size:9px; background:rgba(6,182,212,0.12); color:var(--primary-cyan); padding:2px 8px; border-radius:10px; border:1px solid rgba(6,182,212,0.25); font-weight:600;">
+                  100% 公眾無版權
+                </span>
+              </div>
+
+              <!-- 3 Sound Themes Grid -->
+              <div class="noise-grid">
+                <button class="noise-btn" id="noiseBtnMind" onclick="toggleNoise('mind')">
+                  <i data-lucide="sun" style="width:20px; height:20px;"></i>
+                  <span style="font-weight:700;">正念靜心</span>
+                  <span style="font-size:9px; color:var(--text-muted); opacity:0.8;">禪音冥想</span>
+                  <div class="audio-waves-anim">
+                    <div class="audio-wave-bar"></div>
+                    <div class="audio-wave-bar"></div>
+                    <div class="audio-wave-bar"></div>
+                    <div class="audio-wave-bar"></div>
+                  </div>
+                </button>
+                <button class="noise-btn" id="noiseBtnOcean" onclick="toggleNoise('ocean')">
+                  <i data-lucide="waves" style="width:20px; height:20px;"></i>
+                  <span style="font-weight:700;">海浪撫慰</span>
+                  <span style="font-size:9px; color:var(--text-muted); opacity:0.8;">自然潮聲</span>
+                  <div class="audio-waves-anim">
+                    <div class="audio-wave-bar"></div>
+                    <div class="audio-wave-bar"></div>
+                    <div class="audio-wave-bar"></div>
+                    <div class="audio-wave-bar"></div>
+                  </div>
+                </button>
+                <button class="noise-btn" id="noiseBtnRain" onclick="toggleNoise('rain')">
+                  <i data-lucide="cloud-rain" style="width:20px; height:20px;"></i>
+                  <span style="font-weight:700;">雨聲綿綿</span>
+                  <span style="font-size:9px; color:var(--text-muted); opacity:0.8;">雨滴白噪音</span>
+                  <div class="audio-waves-anim">
+                    <div class="audio-wave-bar"></div>
+                    <div class="audio-wave-bar"></div>
+                    <div class="audio-wave-bar"></div>
+                    <div class="audio-wave-bar"></div>
+                  </div>
+                </button>
+              </div>
+
+              <!-- Bottom Volume Control Bar (下方拉霸) -->
+              <div class="noise-player-control" style="flex-direction:column; gap:8px; padding:10px 12px; background:rgba(0,0,0,0.3); border-radius:12px; border:1px solid rgba(255,255,255,0.05); margin-top:10px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+                  <span id="noisePlayerState" style="font-size:11px; font-weight:600; color:var(--text-muted); display:flex; align-items:center; gap:6px;">
+                    <i data-lucide="disc" style="width:13px; height:13px;"></i> 已暫停播放
+                  </span>
+                  <span id="noiseVolumePercent" style="font-size:11px; font-weight:700; color:var(--primary-cyan);">音量: 50%</span>
+                </div>
+                <div class="noise-volume-wrapper" style="width:100%; gap:8px;">
+                  <i data-lucide="volume-2" id="volumeIcon" style="width: 15px; height: 15px; color:var(--primary-cyan);"></i>
+                  <input type="range" class="custom-range noise-volume-slider" id="noiseVolume" min="0" max="1" step="0.01"
+                    value="0.5" oninput="setNoiseVolume(this.value)" style="flex:1;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Finish Practice Button (按下完成練習會回到原本畫面且停止播放聲音) -->
+            <button class="btn-glow" style="margin-top: 8px; padding: 12px 18px;" onclick="exitRelaxScreen()">
+              完成練習，返回原本畫面 <i data-lucide="check-circle" style="width:16px; height:16px;"></i>
+            </button>
+          </div>
+
+          <!-- 6. LIMIT PROGRESS GAME SCREEN (好玩互動遊戲) -->
+          <div class="screen-view" id="screen-game" style="user-select: none;">
+            <div class="app-nav-bar" style="margin-bottom: 0;">
+              <button class="btn-nav-back" onclick="exitGameScreen()">
+                <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i>
+              </button>
+              <div style="display:flex; flex-direction:column; align-items:center;">
+                <span class="nav-title">好玩互動遊戲</span>
+                <span style="font-size:10px; color:var(--text-muted);">極限進度條 · 專注與精準挑戰</span>
+              </div>
+              <div style="width:28px; height:28px;"></div>
+            </div>
+
+            <!-- Score Dashboard -->
+            <div style="display:flex; gap:8px; margin: 12px 0;">
+              <div style="flex:1; background:rgba(255,255,255,0.035); border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:8px 10px; text-align:center;">
+                <div style="font-size:10px; color:var(--text-muted); display:flex; align-items:center; justify-content:center; gap:4px;"><i data-lucide="trophy" style="width:11px; height:11px; color:#eab308;"></i>得分</div>
+                <div id="webGameScore" style="font-size:18px; font-weight:700; color:#fff; margin-top:2px;">0</div>
+              </div>
+              <div style="flex:1; background:rgba(255,255,255,0.035); border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:8px 10px; text-align:center;">
+                <div style="font-size:10px; color:var(--text-muted); display:flex; align-items:center; justify-content:center; gap:4px;"><i data-lucide="flame" style="width:11px; height:11px; color:#f97316;"></i>連擊 Combo</div>
+                <div id="webGameCombo" style="font-size:18px; font-weight:700; color:#f97316; margin-top:2px;">0</div>
+              </div>
+              <div style="flex:1; background:rgba(255,255,255,0.035); border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:8px 10px; text-align:center;">
+                <div style="font-size:10px; color:var(--text-muted); display:flex; align-items:center; justify-content:center; gap:4px;"><i data-lucide="award" style="width:11px; height:11px; color:#8b5cf6;"></i>最高得分</div>
+                <div id="webGameHighScore" style="font-size:18px; font-weight:700; color:#fff; margin-top:2px;">0</div>
+              </div>
+            </div>
+
+            <!-- Game Touch Play Area -->
+            <div id="webGamePlayArea" class="web-game-play-area">
+              <!-- Confetti Canvas -->
+              <canvas id="webGameConfettiCanvas" class="web-game-canvas"></canvas>
+
+              <!-- Target Dashed Frame -->
+              <div id="webGameTargetFrame" class="web-game-target-frame">
+                <!-- Inner Solid Shape -->
+                <div id="webGameFilledShape" class="web-game-filled-shape"></div>
+              </div>
+
+              <!-- Result Float Badge -->
+              <div id="webGameResultBadge" class="web-game-result-badge" style="display:none;"></div>
+
+              <!-- Tip text -->
+              <div class="web-game-tip-box" id="webGameTipText">長按任意處生長，在完全重合時鬆手</div>
+            </div>
+
+            <!-- Game Control Buttons -->
+            <div style="display:flex; gap:10px; margin-top: auto; padding-top: 10px;">
+              <button class="btn-secondary" style="flex:1; padding:11px;" onclick="resetWebGameFully()">
+                <i data-lucide="rotate-ccw" style="width:14px; height:14px;"></i> 重設分數
+              </button>
+              <button class="btn-glow" style="flex:1; padding:11px; margin-top:0;" onclick="resetWebGameRound()">
+                <i data-lucide="zap" style="width:14px; height:14px;"></i> 下一局 (微調外框)
+              </button>
+            </div>
+          </div>
+
+          <!-- 7. PREFERENCES SETTINGS SCREEN -->
+          <div class="screen-view" id="screen-settings">
+            <div class="app-nav-bar">
+              <button class="btn-nav-back" onclick="nextScreen('screen-dashboard')" title="返回儀表板">
+                <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i>
+              </button>
+              <span class="nav-title">設定</span>
+            </div>
+
+            <div style="flex: 1; display: flex; flex-direction: column; text-align: left;">
+              <!-- BFRB Profile Memory -->
+              <div class="bfrb-survey-container"
+                style="background: rgba(255,255,255,0.02); padding: 16px; border-radius: 16px; border: 1px solid var(--glass-border);">
+                <div class="bfrb-survey-title" style="border-bottom: none; padding-bottom: 0; margin-bottom: 8px;">
+                  <i data-lucide="brain" style="width: 14px; height: 14px;"></i>
+                  您的 BFRB 內在驅動設定
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">系統已智慧記憶您的選擇：</div>
+                <div id="settingsBfrbTypeDisplay"
+                  style="font-size: 13px; font-weight: 600; color: #fff; background: rgba(6, 182, 212, 0.1); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(6, 182, 212, 0.2);">
+                  壓力與焦慮驅動
+                </div>
+              </div>
+
+              <h2 class="view-title" style="margin-top: 5px;">手環回饋設定</h2>
+              <p class="view-subtitle" style="margin-bottom: 20px;">客製化調整智慧手環的防摳防焦慮振動反饋強度。</p>
+
+              <div class="input-group">
+                <label class="input-label" style="margin-bottom: 10px;">手環振動反饋強度</label>
+
+                <!-- Quick Preset Buttons -->
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px;">
+                  <button class="gender-btn" id="btnVibeLight" onclick="setVibePreset('light')">輕度 (30%)</button>
+                  <button class="gender-btn active" id="btnVibeMedium" onclick="setVibePreset('medium')">中度
+                    (60%)</button>
+                  <button class="gender-btn" id="btnVibeStrong" onclick="setVibePreset('strong')">強度 (100%)</button>
+                </div>
+
+                <!-- Custom Range Slider -->
+                <div
+                  style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; margin-top: 14px;">
+                  <span class="input-label"
+                    style="margin-bottom: 0; font-size: 10px; color: var(--text-muted);">自訂百分比</span>
+                  <span id="vibeSettingsValText"
+                    style="font-size: 13px; font-weight: 700; color: var(--primary-cyan);">60%</span>
+                </div>
+                <input type="range" class="custom-range" id="settingsVibeStrength" min="0" max="100" step="10"
+                  value="60" oninput="updateVibeStrengthFromSettings(this.value)">
+              </div>
+            </div>
+
+            <button class="btn-glow" style="margin-top: auto; padding: 12px 18px;"
+              onclick="nextScreen('screen-dashboard')">
+              儲存並返回 <i data-lucide="check" style="width:16px; height:16px;"></i>
+            </button>
+          </div>
+
+        </div> <!-- /screen-views -->
+
+        <!-- RELAX & GAME MENU POPUP MODAL -->
+        <div class="relax-menu-overlay" id="modalRelaxMenu" onclick="closeRelaxMenuModal(event)">
+          <div class="relax-menu-card" onclick="event.stopPropagation()">
+            <div class="relax-menu-header">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:28px; height:28px; border-radius:14px; background:rgba(192,132,252,0.15); display:flex; align-items:center; justify-content:center; color:#c084fc;">
+                  <i data-lucide="flower" style="width:15px; height:15px;"></i>
+                </div>
+                <span style="font-size:16px; font-weight:700; color:#fff;">放鬆與解壓中心</span>
+              </div>
+              <button class="btn-nav-back" style="width:28px; height:28px;" onclick="closeRelaxMenuModal()">
+                <i data-lucide="x" style="width:14px; height:14px;"></i>
+              </button>
+            </div>
+            <p style="font-size:12px; color:var(--text-muted); margin: 6px 0 16px 0;">選擇您希望進行的舒壓或互動模式</p>
+            <div style="display:flex; flex-direction:column; gap:12px;">
+              <!-- Option 1 -->
+              <div class="relax-menu-option" onclick="selectRelaxOption('relax')">
+                <div style="width:40px; height:40px; border-radius:12px; background:rgba(139,92,246,0.2); display:flex; align-items:center; justify-content:center; color:#c084fc; flex-shrink:0;">
+                  <i data-lucide="wind" style="width:20px; height:20px;"></i>
+                </div>
+                <div style="flex:1;">
+                  <div style="display:flex; align-items:center; gap:6px; margin-bottom:3px;">
+                    <span style="font-size:14px; font-weight:700; color:#fff;">舒壓引導專區</span>
+                    <span style="font-size:9px; font-weight:700; color:#c084fc; background:rgba(192,132,252,0.18); padding:1px 6px; border-radius:4px;">呼吸 · 白噪音</span>
+                  </div>
+                  <div style="font-size:11px; color:var(--text-muted); line-height:1.4;">科學節律呼吸引導與高沉浸白噪音音效，舒緩身心壓力</div>
+                </div>
+                <i data-lucide="chevron-right" style="width:16px; height:16px; color:var(--text-muted);"></i>
+              </div>
+              <!-- Option 2 -->
+              <div class="relax-menu-option" onclick="selectRelaxOption('game')">
+                <div style="width:40px; height:40px; border-radius:12px; background:rgba(6,182,212,0.2); display:flex; align-items:center; justify-content:center; color:var(--primary-cyan); flex-shrink:0;">
+                  <i data-lucide="sparkles" style="width:20px; height:20px;"></i>
+                </div>
+                <div style="flex:1;">
+                  <div style="display:flex; align-items:center; gap:6px; margin-bottom:3px;">
+                    <span style="font-size:14px; font-weight:700; color:#fff;">好玩互動遊戲</span>
+                    <span style="font-size:9px; font-weight:700; color:var(--primary-cyan); background:rgba(6,182,212,0.18); padding:1px 6px; border-radius:4px;">極限進度條</span>
+                  </div>
+                  <div style="font-size:11px; color:var(--text-muted); line-height:1.4;">長按蓄力挑戰幾何尺寸 100% 完美重合，享受粒子震動回饋</div>
+                </div>
+                <i data-lucide="chevron-right" style="width:16px; height:16px; color:var(--text-muted);"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- HIGH STRESS RED ALERT OVERLAY -->
+        <div class="stress-alert-overlay alert-glow-red" id="alertOverlay" style="user-select: none;">
+          <!-- Drag dismiss instructions and handle -->
+          <div class="drag-handle-container" id="alertDragHandle">
+            <div class="drag-handle-bar"></div>
+            <span class="drag-handle-text">↑ 向上或向下拖曳以解除警報</span>
+          </div>
+
+          <div class="alert-header">
+            <div class="alert-icon-ring">
+              <i data-lucide="shield-alert" style="width:36px; height:36px;"></i>
+            </div>
+            <h3 class="alert-title">偵測到高壓生理警報</h3>
+            <p class="alert-subtitle" id="alertReasonTxt">系統檢測到您出現異常的高心率與肢體緊壓行為，請跟隨指引緩和情緒。</p>
+            <div class="vibration-feedback-indicator" id="alertVibeStrengthIndicator">
+              <i data-lucide="radio" style="width:14px; height:14px; animation: blink 1s infinite;"></i>
+              <span>當前手環正以您設定的 60% 振動強度進行反饋制止</span>
+            </div>
+          </div>
+
+          <div class="alert-stats-box">
+            <div class="alert-stat-card">
+              <span class="alert-stat-lbl">當前心率</span>
+              <div class="alert-stat-val" id="alertHRVal" style="color:var(--accent-warning)">98 BPM</div>
+            </div>
+            <div class="alert-stat-card">
+              <span class="alert-stat-lbl">按壓力道</span>
+              <div class="alert-stat-val" id="alertForceVal" style="color:var(--accent-warning)">92,500</div>
+            </div>
+          </div>
+
+          <div class="breathing-box">
+            <div class="breathing-circle-outer">
+              <div class="breathing-circle-inner"></div>
+            </div>
+            <div class="breathing-instruction" id="breatheText">慢慢吸氣...</div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: auto;">
+            <button class="btn-glow"
+              style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.25); padding: 14px 20px; font-weight: 700; font-size: 14px; margin-top: 0;"
+              onclick="goToCalmPortal()">
+              <i data-lucide="flower" style="width:18px; height:18px;"></i> 進入輔助調節
+            </button>
+            <button class="btn-alert-dismiss" onclick="dismissAlert()"
+              style="background: rgba(255, 255, 255, 0.08); border: 1px solid var(--glass-border); color: #fff; padding: 14px 20px; border-radius: 14px; font-weight: 700; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: var(--transition-smooth); width: 100%;">
+              <i data-lucide="bell-off" style="width:18px; height:18px;"></i> 暫停手環警報
+            </button>
+          </div>
+        </div>
+
+      </div> <!-- /screen-window -->
+    </div> <!-- /mobile-mockup -->
+
+
+    <!-- EXTERNAL SIMULATION CONTROLLER PANEL -->
+    <div class="simulation-panel">
+      <div class="panel-title">
+        <i data-lucide="sliders" style="width:20px; height:20px; color:var(--primary-cyan)"></i>
+        <span>模擬數據測試面板</span>
+      </div>
+      <p class="panel-subtitle">此面板代表穿戴裝置傳回之即時數據。您可以拖曳滑桿，手動引發或解除高壓狀態。</p>
+
+      <div class="threshold-banner" style="margin-top: -10px; margin-bottom: 20px;">
+        💡 輔助防護系統觸發標準：心率 &gt; 85 BPM 或 按壓力道 &gt; 90,000 單位 或 IMU 摳抓加速度 &gt; 2.5g
+      </div>
+
+      <!-- Mode display card -->
+      <div class="sim-mode-card" id="simModeCard">
+        <div class="mode-info">
+          <span class="mode-name" id="simModeName">自動感應模式</span>
+          <p class="mode-desc" id="simModeDesc">數據由穿戴式虛擬感應器自動模擬跳動。</p>
+        </div>
+        <button class="btn-reset-sim" id="btnRestoreAuto" style="display:none;" onclick="restoreAutoMode()">
+          恢復自動
+        </button>
+      </div>
+
+      <!-- Slider 1: Heart Rate -->
+      <div class="slider-box" id="hrSliderBox">
+        <div class="slider-header">
+          <span class="slider-label">模擬手腕心率 (Heart Rate)</span>
+          <span class="slider-val-bubble" id="valHR">72 BPM</span>
+        </div>
+        <input type="range" class="custom-range" id="sliderHR" min="40" max="150" value="72" oninput="manualControl()">
+      </div>
+
+      <!-- Slider 2: Squeeze Force -->
+      <div class="slider-box" id="forceSliderBox">
+        <div class="slider-header">
+          <span class="slider-label">模擬捏壓按壓力道 (Squeeze Force)</span>
+          <span class="slider-val-bubble" id="valForce">12,500</span>
+        </div>
+        <input type="range" class="custom-range" id="sliderForce" min="0" max="100000" step="500" value="12500"
+          oninput="manualControl()">
+      </div>
+
+      <!-- IMU Simulation Trigger -->
+      <div style="margin-bottom: 24px; text-align: left;">
+        <span class="slider-label" style="display: block; margin-bottom: 8px;">動態姿態模擬</span>
+        <button class="btn-glow"
+          style="margin-top: 0; padding: 12px 18px; background: linear-gradient(135deg, var(--primary-purple) 0%, var(--primary-pink) 100%); font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px;"
+          onclick="triggerImuScratch()">
+          <i data-lucide="hand" style="width:16px; height:16px;"></i> 模擬異常摳抓動作 (觸發 IMU)
+        </button>
+      </div>
+
+      <!-- Simulation State Indicators -->
+      <div class="indicator-box">
+        <div class="indicator-title">後端監控邏輯</div>
+
+        <div class="indicator-item">
+          <span>觸發條件：</span>
+          <span style="font-weight: 500; font-size:11px; color:var(--text-muted);">心率 > 85 或 力道 > 90,000</span>
+        </div>
+
+        <div class="indicator-item">
+          <span>高壓警報判定：</span>
+          <span class="indicator-state" id="logicStressState">
+            <span class="status-dot" style="background:var(--accent-normal); animation:none;"></span>正常狀態
+          </span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // --- STAGE AND DATA MANAGEMENT ---
+    let appState = {
+      currentScreen: 'screen-login',
+      user: {
+        name: '宇航',
+        age: 21,
+        gender: '男',
+        habits: [],
+        bfrbType: '壓力與焦慮驅動'
+      },
+      // Sensor Data
+      heartRate: 72,
+      spo2: 98,
+      squeezeForce: 12500,
+
+      // Simulation mode
+      isManualMode: false,
+      lastActiveManualTime: 0,
+
+      // New properties for upgrades
+      vibrationStrength: 60,
+      scratchCount: 3,
+      imu: { x: 0.05, y: -0.02, z: 0.98 },
+      imuScratchActive: false,
+      currentDashboardTab: 'realtime'
+    };
+
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // Setup Status Bar clock
+    function updateClock() {
+      const now = new Date();
+      let hours = now.getHours().toString().padStart(2, '0');
+      let minutes = now.getMinutes().toString().padStart(2, '0');
+      document.getElementById('statusBarTime').innerText = `${hours}:${minutes}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // View Routing Controller
+    function nextScreen(screenId) {
+      // Deactivate current active view
+      const current = document.querySelector('.screen-view.active');
+      if (current) {
+        current.classList.remove('active');
+      }
+
+      // Activate next view
+      const next = document.getElementById(screenId);
+      if (next) {
+        next.classList.add('active');
+        appState.currentScreen = screenId;
+      }
+    }
+
+    // --- SCREEN 2: PROFILE LOGIC ---
+    function setGender(btnElement, genderValue) {
+      // Toggle gender button active classes
+      const parent = btnElement.parentElement;
+      parent.querySelectorAll('.gender-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      btnElement.classList.add('active');
+      appState.user.gender = genderValue;
+    }
+
+    function setBfrbType(btnElement, typeKey) {
+      document.querySelectorAll('.bfrb-option-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      btnElement.classList.add('active');
+
+      if (typeKey === 'stress') appState.user.bfrbType = '壓力與焦慮驅動';
+      else if (typeKey === 'adhd') appState.user.bfrbType = '過動症 (ADHD/注意力不集中)';
+      else if (typeKey === 'ocd') appState.user.bfrbType = '強迫症 (強迫傾向)';
+
+      const displayEl = document.getElementById('settingsBfrbTypeDisplay');
+      if (displayEl) {
+        displayEl.innerText = appState.user.bfrbType;
+      }
+    }
+
+    // Update wristband vibration strength state and UI bubble
+    function updateVibeStrength(val) {
+      appState.vibrationStrength = parseInt(val);
+
+      const settingsValEl = document.getElementById('vibeSettingsValText');
+      if (settingsValEl) {
+        settingsValEl.innerText = val + '%';
+      }
+
+      const settingsSlider = document.getElementById('settingsVibeStrength');
+      if (settingsSlider) {
+        settingsSlider.value = val;
+      }
+
+      // Update text in the alert overlay indicator if it exists
+      const alertIndicator = document.getElementById('alertVibeStrengthIndicator');
+      if (alertIndicator) {
+        alertIndicator.querySelector('span').innerText = `當前手環正以您設定的 ${val}% 振動強度進行反饋制止`;
+      }
+    }
+
+    // Handles sliders in settings page
+    function updateVibeStrengthFromSettings(val) {
+      updateVibeStrength(val);
+
+      // Sync preset buttons highlights
+      const btnLight = document.getElementById('btnVibeLight');
+      const btnMedium = document.getElementById('btnVibeMedium');
+      const btnStrong = document.getElementById('btnVibeStrong');
+      if (btnLight && btnMedium && btnStrong) {
+        btnLight.classList.remove('active');
+        btnMedium.classList.remove('active');
+        btnStrong.classList.remove('active');
+
+        const strengthNum = parseInt(val);
+        if (strengthNum === 30) btnLight.classList.add('active');
+        else if (strengthNum === 60) btnMedium.classList.add('active');
+        else if (strengthNum === 100) btnStrong.classList.add('active');
+      }
+    }
+
+    // Handles preset button selection
+    function setVibePreset(preset) {
+      let val = 60;
+      if (preset === 'light') val = 30;
+      else if (preset === 'medium') val = 60;
+      else if (preset === 'strong') val = 100;
+
+      updateVibeStrengthFromSettings(val);
+    }
+
+    // Switch between dashboard segmented tabs
+    function switchDashboardTab(tabId) {
+      appState.currentDashboardTab = tabId;
+
+      // Tab buttons
+      const btnRealtime = document.getElementById('tabBtnRealtime');
+      const btnStats = document.getElementById('tabBtnStats');
+
+      // Tab contents
+      const contentRealtime = document.getElementById('tabContentRealtime');
+      const contentStats = document.getElementById('tabContentStats');
+
+      if (tabId === 'realtime') {
+        btnRealtime.classList.add('active');
+        btnStats.classList.remove('active');
+        contentRealtime.classList.add('active');
+        contentStats.classList.remove('active');
+      } else {
+        btnRealtime.classList.remove('active');
+        btnStats.classList.add('active');
+        contentRealtime.classList.remove('active');
+        contentStats.classList.add('active');
+
+        // Trigger Chart.js render and stats count sync
+        updateStatsUI();
+      }
+    }
+
+    // Input Validations
+    function validateProfileAndContinue() {
+      const nameInput = document.getElementById('profile-name').value.trim();
+      const ageInput = document.getElementById('profile-age').value.trim();
+
+      if (!nameInput) {
+        alert('請填寫姓名以利進行個人化監測。');
+        return;
+      }
+      if (!ageInput || ageInput <= 0) {
+        alert('請輸入正確的年齡。');
+        return;
+      }
+
+      appState.user.name = nameInput;
+      appState.user.age = parseInt(ageInput);
+
+      // 直接跳過習慣設定，前往配戴裝置畫面
+      nextScreen('screen-wear');
+    }
+
+    // --- SCREEN 4: WEAR INSTRUCTIONS ---
+    let weeklyChartInstance = null;
+    let monthlyChartInstance = null;
+
+    function startAppMonitoring() {
+      // Update UI elements based on gathered profile
+      document.getElementById('displayUserName').innerText = appState.user.name;
+      document.getElementById('displayUserAge').innerText = `${appState.user.age} 歲 · ${appState.user.gender}性`;
+      document.getElementById('userAvatar').innerText = appState.user.name.charAt(0);
+
+      // Update vibration feedback indicator text initially
+      updateVibeStrength(appState.vibrationStrength);
+
+      // Enter final dashboard screen
+      nextScreen('screen-dashboard');
+
+      // Trigger canvas render and update loop
+      initChart();
+      initStatsCharts();
+      startSensorLoop();
+    }
+
+    // --- REALTIME DATA & ALERTS LOGIC ---
+    let sensorInterval = null;
+
+    function startSensorLoop() {
+      if (sensorInterval) clearInterval(sensorInterval);
+
+      sensorInterval = setInterval(() => {
+        if (!appState.isManualMode) {
+          // AUTO MODE: Heart rate fluctuates between 60 - 85
+          // Blood oxygen fluctuates between 95 - 99
+          // Force drifts gently in baseline
+          const hrBase = appState.heartRate;
+          const targetHR = Math.floor(Math.random() * (85 - 60 + 1)) + 60;
+          appState.heartRate = Math.round(hrBase + (targetHR - hrBase) * 0.4);
+
+          const spo2Base = appState.spo2;
+          const targetSpO2 = Math.floor(Math.random() * (99 - 95 + 1)) + 95;
+          appState.spo2 = Math.round(spo2Base + (targetSpO2 - spo2Base) * 0.3);
+
+          const forceBase = appState.squeezeForce;
+          const targetForce = Math.floor(Math.random() * (22000 - 6000 + 1)) + 6000;
+          appState.squeezeForce = Math.round(forceBase + (targetForce - forceBase) * 0.2);
+
+          // Update Slider controls to reflect auto monitoring values
+          document.getElementById('sliderHR').value = appState.heartRate;
+          document.getElementById('valHR').innerText = `${appState.heartRate} BPM`;
+          document.getElementById('sliderForce').value = appState.squeezeForce;
+          document.getElementById('valForce').innerText = appState.squeezeForce.toLocaleString();
+        }
+
+        // IMU normal drift simulation
+        if (!appState.imuScratchActive) {
+          appState.imu.x = parseFloat(((Math.random() - 0.5) * 0.12).toFixed(2));
+          appState.imu.y = parseFloat(((Math.random() - 0.5) * 0.12).toFixed(2));
+          appState.imu.z = parseFloat((0.98 + (Math.random() - 0.5) * 0.06).toFixed(2));
+          updateImuUI();
+        }
+
+        updateDashboardUI();
+        evalStressLogic();
+      }, 1000);
+    }
+
+    function updateImuUI() {
+      const imuXEl = document.getElementById('imuValX');
+      const imuYEl = document.getElementById('imuValY');
+      const imuZEl = document.getElementById('imuValZ');
+      if (imuXEl && imuYEl && imuZEl) {
+        imuXEl.innerText = (appState.imu.x >= 0 ? '+' : '') + appState.imu.x.toFixed(2) + ' g';
+        imuYEl.innerText = (appState.imu.y >= 0 ? '+' : '') + appState.imu.y.toFixed(2) + ' g';
+        imuZEl.innerText = (appState.imu.z >= 0 ? '+' : '') + appState.imu.z.toFixed(2) + ' g';
+      }
+    }
+
+    // Manual controls from sliders
+    function manualControl() {
+      appState.isManualMode = true;
+      appState.lastActiveManualTime = Date.now();
+
+      // Update manual indicator panel
+      const modeCard = document.getElementById('simModeCard');
+      modeCard.classList.add('manual-active');
+      document.getElementById('simModeName').innerText = '手動模擬控制中';
+      document.getElementById('simModeDesc').innerText = '您正在使用滑桿手動控制數據。';
+      document.getElementById('btnRestoreAuto').style.display = 'block';
+
+      // Read values from HTML inputs
+      const hrVal = parseInt(document.getElementById('sliderHR').value);
+      const forceVal = parseInt(document.getElementById('sliderForce').value);
+
+      appState.heartRate = hrVal;
+      appState.squeezeForce = forceVal;
+
+      // Update bubbles
+      document.getElementById('valHR').innerText = `${hrVal} BPM`;
+      document.getElementById('valForce').innerText = forceVal.toLocaleString();
+
+      updateDashboardUI();
+      evalStressLogic();
+    }
+
+    function restoreAutoMode() {
+      appState.isManualMode = false;
+
+      const modeCard = document.getElementById('simModeCard');
+      modeCard.classList.remove('manual-active');
+      document.getElementById('simModeName').innerText = '自動感應模式';
+      document.getElementById('simModeDesc').innerText = '數據由穿戴式虛擬感應器自動模擬跳動。';
+      document.getElementById('btnRestoreAuto').style.display = 'none';
+    }
+
+    // Stress threshold assessment logic
+    function evalStressLogic() {
+      const isImuTriggered = Math.abs(appState.imu.x) > 2.5 || Math.abs(appState.imu.y) > 2.5 || Math.abs(appState.imu.z) > 2.5;
+      const isStressed = appState.heartRate > 85 || appState.squeezeForce > 90000 || isImuTriggered;
+      const overlay = document.getElementById('alertOverlay');
+      const logicalStateBox = document.getElementById('logicStressState');
+
+      // Sync slider highlighting to warning states
+      if (appState.heartRate > 85) {
+        document.getElementById('hrSliderBox').classList.add('warning-state');
+      } else {
+        document.getElementById('hrSliderBox').classList.remove('warning-state');
+      }
+
+      if (appState.squeezeForce > 90000) {
+        document.getElementById('forceSliderBox').classList.add('warning-state');
+      } else {
+        document.getElementById('forceSliderBox').classList.remove('warning-state');
+      }
+
+      if (isStressed) {
+        // Increment count when transitioning from normal to stressed
+        if (!appState.wasStressed) {
+          appState.scratchCount++;
+          updateStatsUI();
+        }
+        appState.wasStressed = true;
+
+        // Red alert state triggered
+        overlay.classList.add('active');
+        logicalStateBox.innerHTML = `<span class="status-dot" style="background:var(--accent-warning)"></span>壓力過大 (高壓警報)`;
+        logicalStateBox.style.color = 'var(--accent-warning)';
+
+        // Update alert page values
+        document.getElementById('alertHRVal').innerText = `${appState.heartRate} BPM`;
+        document.getElementById('alertForceVal').innerText = appState.squeezeForce.toLocaleString();
+
+        // Set warning description based on which threshold crossed
+        if (isImuTriggered) {
+          document.getElementById('alertReasonTxt').innerText = `系統 IMU 感測到您的手部出現劇烈晃動與異常摳抓動作 (加速度 > 2.5g)，正在觸發防護制約機制。`;
+        } else if (appState.heartRate > 85 && appState.squeezeForce > 90000) {
+          document.getElementById('alertReasonTxt').innerText = `系統偵測到您的心跳速率偏高 (${appState.heartRate} BPM) 且按壓力道極高 (${appState.squeezeForce.toLocaleString()} 單位)，研判當前壓力負荷過載，請配合引導進行深呼吸放鬆。`;
+        } else if (appState.heartRate > 85) {
+          document.getElementById('alertReasonTxt').innerText = `系統偵測到您的心率突增至 ${appState.heartRate} BPM（高於安全基準 85 BPM），研判身體出現緊繃生理反應。`;
+        } else {
+          document.getElementById('alertReasonTxt').innerText = `系統偵測到您的手部緊壓收縮力道高達 ${appState.squeezeForce.toLocaleString()} 單位（高於安全閾值 90,000），研判您目前正經歷緊張焦慮的手部小動作。`;
+        }
+
+        // Change mobile mockup outer frame border-glow & trigger physical vibration shake
+        document.getElementById('phoneMockup').classList.add('phone-shake');
+        document.getElementById('phoneMockup').style.boxShadow = '0px 25px 60px -15px rgba(239, 68, 68, 0.4), inset 0 0 4px 2px rgba(239, 68, 68, 0.3), 0 0 0 12px #2b1114';
+        document.getElementById('phoneMockup').style.outlineColor = 'var(--accent-warning)';
+
+        // Update vibration feedback overlay text
+        const alertVibeSpan = document.querySelector('#alertVibeStrengthIndicator span');
+        if (alertVibeSpan) {
+          alertVibeSpan.innerText = `當前手環正以您設定的 ${appState.vibrationStrength}% 振動強度進行反饋制止`;
+        }
+      } else {
+        appState.wasStressed = false;
+
+        // Normal state
+        logicalStateBox.innerHTML = `<span class="status-dot" style="background:var(--accent-normal)"></span>正常狀態`;
+        logicalStateBox.style.color = 'var(--accent-normal)';
+      }
+    }
+
+    // Dismiss overlay handler
+    function dismissAlert() {
+      // Revert simulation slider values to normal boundaries to avoid immediate re-alerting
+      if (appState.heartRate > 85) {
+        appState.heartRate = 75;
+        document.getElementById('sliderHR').value = 75;
+        document.getElementById('valHR').innerText = `75 BPM`;
+      }
+      if (appState.squeezeForce > 90000) {
+        appState.squeezeForce = 15000;
+        document.getElementById('sliderForce').value = 15000;
+        document.getElementById('valForce').innerText = `15,000`;
+      }
+
+      appState.wasStressed = false;
+
+      // Close overlay and stop phone shake
+      const overlay = document.getElementById('alertOverlay');
+      if (overlay) {
+        overlay.classList.remove('active');
+        overlay.style.transform = ''; // reset drag transforms
+      }
+
+      const phone = document.getElementById('phoneMockup');
+      if (phone) {
+        phone.classList.remove('phone-shake');
+        phone.style.boxShadow = '0px 25px 60px -15px rgba(0, 0, 0, 0.8), inset 0 0 4px 2px rgba(255, 255, 255, 0.15), 0 0 0 12px #1c1a24';
+        phone.style.outlineColor = '#2f2a3c';
+      }
+
+      restoreAutoMode();
+      evalStressLogic();
+    }
+
+    // Rendering Dashboard Info
+    function updateDashboardUI() {
+      if (appState.currentScreen !== 'screen-dashboard') return;
+
+      // Heart Rate Card
+      document.getElementById('hrValue').innerText = appState.heartRate;
+      const hrStatusEl = document.getElementById('hrStatus');
+      if (appState.heartRate > 85) {
+        hrStatusEl.innerText = '偏高 / 緊繃';
+        hrStatusEl.style.color = 'var(--accent-warning)';
+        document.getElementById('heartIcon').style.color = 'var(--accent-warning)';
+      } else {
+        hrStatusEl.innerText = '平穩';
+        hrStatusEl.style.color = 'var(--accent-normal)';
+        document.getElementById('heartIcon').style.color = 'var(--accent-normal)';
+      }
+
+      // SpO2 Card
+      document.getElementById('spo2Value').innerText = appState.spo2;
+      const spo2StatusEl = document.getElementById('spo2Status');
+      if (appState.spo2 < 95) {
+        spo2StatusEl.innerText = '稍低';
+        spo2StatusEl.style.color = 'var(--accent-warning)';
+      } else {
+        spo2StatusEl.innerText = '極佳';
+        spo2StatusEl.style.color = 'var(--accent-normal)';
+      }
+
+      // Force Card
+      document.getElementById('forceValue').innerText = appState.squeezeForce.toLocaleString();
+      const forcePct = Math.min((appState.squeezeForce / 100000) * 100, 100);
+      document.getElementById('forceBarFill').style.width = `${forcePct}%`;
+      if (appState.squeezeForce > 90000) {
+        document.getElementById('forceBarFill').style.background = 'linear-gradient(90deg, #ef4444 0%, #ec4899 100%)';
+      } else {
+        document.getElementById('forceBarFill').style.background = 'linear-gradient(90deg, var(--primary-purple) 0%, var(--primary-cyan) 100%)';
+      }
+
+      // Compute visual Stress Index Score
+      let hrContribution = Math.max(0, (appState.heartRate - 60) / 60) * 45; // Max 45 points
+      let forceContribution = (appState.squeezeForce / 100000) * 55; // Max 55 points
+      let computedScore = Math.min(Math.round(hrContribution + forceContribution), 100);
+
+      if (computedScore < 10) computedScore = 12;
+
+      document.getElementById('stressScoreVal').innerText = computedScore;
+
+      // Update radial circle fill
+      const progressCircle = document.getElementById('gaugeProgress');
+      const circumference = 2 * Math.PI * 60; // 376.99
+      const strokeDashoffset = circumference - (computedScore / 100) * circumference;
+      progressCircle.style.strokeDashoffset = strokeDashoffset;
+
+      const dashboardStatusEl = document.getElementById('stressStatusTag');
+      if (computedScore > 75) {
+        dashboardStatusEl.innerText = '狀態：高壓警戒';
+        dashboardStatusEl.style.background = 'var(--accent-warning)';
+        dashboardStatusEl.style.boxShadow = '0 4px 10px var(--glow-warning)';
+        progressCircle.style.stroke = 'url(#gaugeGradientAlert)';
+      } else if (computedScore > 40) {
+        dashboardStatusEl.innerText = '狀態：輕度緊繃';
+        dashboardStatusEl.style.background = '#eab308'; // Orange
+        dashboardStatusEl.style.boxShadow = '0 4px 10px rgba(234, 179, 8, 0.4)';
+        progressCircle.style.stroke = 'url(#gaugeGradientNormal)';
+      } else {
+        dashboardStatusEl.innerText = '狀態：平靜放鬆';
+        dashboardStatusEl.style.background = 'var(--accent-normal)';
+        dashboardStatusEl.style.boxShadow = '0 4px 10px var(--glow-normal)';
+        progressCircle.style.stroke = 'url(#gaugeGradientNormal)';
+      }
+    }
+
+    // Breathing guidance animation sub-scheduler
+    const breathWords = ['慢慢吸氣...', '維持憋氣...', '緩慢呼氣...', '放空停留...'];
+    let breathIndex = 0;
+    setInterval(() => {
+      const activeOverlay = document.getElementById('alertOverlay').classList.contains('active');
+      if (activeOverlay) {
+        breathIndex = (breathIndex + 1) % breathWords.length;
+        document.getElementById('breatheText').innerText = breathWords[breathIndex];
+      }
+    }, 2000);
+
+
+    // --- REALTIME ECG/PULSE WAVE GRAPH (CANVAS) ---
+    let canvas, ctx;
+    let wavePoints = [];
+    let animationFrameId = null;
+    let stepCount = 0;
+
+    function initChart() {
+      canvas = document.getElementById('liveChart');
+      if (!canvas) return;
+      ctx = canvas.getContext('2d');
+
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = canvas.clientWidth * dpr;
+      canvas.height = canvas.clientHeight * dpr;
+      ctx.scale(dpr, dpr);
+
+      const pointsNeeded = Math.ceil(canvas.clientWidth);
+      for (let i = 0; i < pointsNeeded; i++) {
+        wavePoints.push(canvas.clientHeight / 2);
+      }
+
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      animateChart();
+    }
+
+    function animateChart() {
+      if (!canvas) return;
+
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+      ctx.clearRect(0, 0, width, height);
+
+      const hr = appState.heartRate;
+      const bpmCycle = Math.round(60 / hr * 60);
+
+      stepCount++;
+      let nextValue = height / 2;
+
+      const phase = stepCount % bpmCycle;
+      if (phase >= 10 && phase < 13) {
+        nextValue -= 4;
+      } else if (phase >= 15 && phase < 17) {
+        nextValue += 2;
+      } else if (phase >= 17 && phase < 21) {
+        const peakHeight = Math.max(25, 25 + (hr - 60) * 0.2);
+        nextValue -= peakHeight;
+      } else if (phase >= 21 && phase < 24) {
+        nextValue += 6;
+      } else if (phase >= 28 && phase < 35) {
+        nextValue -= 8;
+      }
+
+      nextValue += (Math.random() - 0.5) * 1.2;
+
+      wavePoints.push(nextValue);
+      if (wavePoints.length > width) {
+        wavePoints.shift();
+      }
+
+      ctx.beginPath();
+      ctx.lineWidth = 1.8;
+
+      if (appState.heartRate > 85 || appState.squeezeForce > 90000 || appState.imuScratchActive) {
+        ctx.strokeStyle = '#ef4444';
+        ctx.shadowColor = 'rgba(239, 68, 68, 0.4)';
+        ctx.shadowBlur = 4;
+      } else {
+        ctx.strokeStyle = '#06b6d4';
+        ctx.shadowColor = 'rgba(6, 182, 212, 0.2)';
+        ctx.shadowBlur = 4;
+      }
+
+      for (let i = 0; i < wavePoints.length; i++) {
+        let val = wavePoints[i];
+        if (appState.imuScratchActive) {
+          // Add Muscle Noise Animation
+          val += (Math.random() - 0.5) * 15;
+        }
+
+        if (i === 0) {
+          ctx.moveTo(i, val);
+        } else {
+          ctx.lineTo(i, val);
+        }
+      }
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      document.getElementById('liveGraphPulse').innerText = `${hr} BPM`;
+      animationFrameId = requestAnimationFrame(animateChart);
+    }
+
+    // --- STATISTICS CHARTS (CHART.JS) ---
+    function initStatsCharts() {
+      Chart.defaults.color = 'rgba(255, 255, 255, 0.4)';
+      Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+      Chart.defaults.font.size = 9;
+
+      const ctxWeekly = document.getElementById('weeklyChart').getContext('2d');
+      const ctxMonthly = document.getElementById('monthlyChart').getContext('2d');
+
+      const gradCyan = ctxWeekly.createLinearGradient(0, 0, 0, 130);
+      gradCyan.addColorStop(0, 'rgba(6, 182, 212, 0.85)');
+      gradCyan.addColorStop(1, 'rgba(6, 182, 212, 0.05)');
+
+      weeklyChartInstance = new Chart(ctxWeekly, {
+        type: 'bar',
+        data: {
+          labels: ['週一', '週二', '週三', '週四', '週五', '週六', '週日'],
+          datasets: [{
+            label: '觸發次數',
+            data: [2, 5, 1, 4, 3, 2, appState.scratchCount],
+            backgroundColor: gradCyan,
+            borderColor: '#06b6d4',
+            borderWidth: 1.2,
+            borderRadius: 5,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: { grid: { display: false } },
+            y: {
+              grid: { color: 'rgba(255, 255, 255, 0.04)' },
+              ticks: { stepSize: 2 }
+            }
+          }
+        }
+      });
+
+      const gradPurple = ctxMonthly.createLinearGradient(0, 0, 0, 130);
+      gradPurple.addColorStop(0, 'rgba(139, 92, 246, 0.35)');
+      gradPurple.addColorStop(1, 'rgba(139, 92, 246, 0.0)');
+
+      monthlyChartInstance = new Chart(ctxMonthly, {
+        type: 'line',
+        data: {
+          labels: ['第一週', '第二週', '第三週', '第四週'],
+          datasets: [{
+            label: '事件次數',
+            data: [12, 19, 15, 8 + appState.scratchCount],
+            fill: true,
+            backgroundColor: gradPurple,
+            borderColor: '#8b5cf6',
+            borderWidth: 1.8,
+            tension: 0.4,
+            pointBackgroundColor: '#8b5cf6',
+            pointBorderColor: 'rgba(255,255,255,0.8)',
+            pointBorderWidth: 1,
+            pointRadius: 3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: { grid: { display: false } },
+            y: {
+              grid: { color: 'rgba(255, 255, 255, 0.04)' },
+              ticks: { stepSize: 5 }
+            }
+          }
+        }
+      });
+    }
+
+    function updateStatsUI() {
+      const countEl = document.getElementById('statsScratchCount');
+      if (countEl) {
+        countEl.innerText = appState.scratchCount;
+      }
+
+      // Sync BFRB History log counts
+      const logCountSkin = document.getElementById('logCountSkin');
+      if (logCountSkin) logCountSkin.innerText = `累計 ${12 + Math.floor(appState.scratchCount / 3)} 次`;
+      const logCountHair = document.getElementById('logCountHair');
+      if (logCountHair) logCountHair.innerText = `累計 ${4 + Math.floor(appState.scratchCount / 4)} 次`;
+      const logCountNail = document.getElementById('logCountNail');
+      if (logCountNail) logCountNail.innerText = `累計 ${8 + Math.floor(appState.scratchCount / 2)} 次`;
+
+      if (weeklyChartInstance && monthlyChartInstance) {
+        weeklyChartInstance.data.datasets[0].data[6] = appState.scratchCount;
+        weeklyChartInstance.update();
+
+        monthlyChartInstance.data.datasets[0].data[3] = 8 + appState.scratchCount;
+        monthlyChartInstance.update();
+      }
+    }
+
+    // --- IMU ANOMALOUS TRIGGER EVENT ---
+    function triggerImuScratch() {
+      if (appState.imuScratchActive) return;
+
+      appState.imuScratchActive = true;
+
+      const modeCard = document.getElementById('simModeCard');
+      modeCard.classList.add('manual-active');
+      document.getElementById('simModeName').innerText = '手動模擬：過載中';
+      document.getElementById('simModeDesc').innerText = '正在模擬穿戴裝置回傳之肌肉高壓緊縮與劇烈生理數據。';
+      document.getElementById('btnRestoreAuto').style.display = 'block';
+
+      appState.imu.x = 3.65;
+      appState.imu.y = -2.94;
+      appState.imu.z = 4.87;
+      updateImuUI();
+
+      const imuCardEl = document.getElementById('imuCard');
+      const imuAlertEl = document.getElementById('imuShakeIndicator');
+      if (imuCardEl && imuAlertEl) {
+        imuCardEl.classList.add('active-shake');
+        imuAlertEl.style.display = 'flex';
+      }
+
+      appState.scratchCount++;
+      updateStatsUI();
+
+      appState.heartRate = 96;
+      appState.squeezeForce = 94000;
+
+      document.getElementById('sliderHR').value = appState.heartRate;
+      document.getElementById('valHR').innerText = `${appState.heartRate} BPM`;
+      document.getElementById('sliderForce').value = appState.squeezeForce;
+      document.getElementById('valForce').innerText = appState.squeezeForce.toLocaleString();
+
+      updateDashboardUI();
+      evalStressLogic();
+
+      let dampStep = 0;
+      let dampInterval = setInterval(() => {
+        dampStep++;
+        appState.imu.x = parseFloat((appState.imu.x * 0.35).toFixed(2));
+        appState.imu.y = parseFloat((appState.imu.y * 0.35).toFixed(2));
+        appState.imu.z = parseFloat((0.98 + (appState.imu.z - 0.98) * 0.35).toFixed(2));
+        updateImuUI();
+
+        if (dampStep >= 5) {
+          clearInterval(dampInterval);
+          appState.imuScratchActive = false;
+          if (imuCardEl && imuAlertEl) {
+            imuCardEl.classList.remove('active-shake');
+            imuAlertEl.style.display = 'none';
+          }
+        }
+      }, 300);
+    }
+
+    // --- DECOMPRESSION/RELAXATION ZONE ROUTINES ---
+    let relaxBreathInterval = null;
+
+    function startRelaxBreathing() {
+      if (relaxBreathInterval) clearInterval(relaxBreathInterval);
+
+      const circleEl = document.getElementById('relaxBreatheCircle');
+      const wordEl = document.getElementById('relaxBreatheWord');
+      const timeEl = document.getElementById('relaxBreatheTime');
+      const descEl = document.getElementById('relaxBreatheDesc');
+
+      const phases = [
+        { text: '吸氣中 (5s)', desc: '深深吸氣，感覺腹部緩緩隆起...', class: 'inhale', duration: 5 },
+        { text: '吐氣中 (5s)', desc: '緩緩呼氣，釋放所有的緊繃與焦慮...', class: 'exhale', duration: 5 }
+      ];
+
+      let currentPhaseIdx = 0;
+      let secondsRemaining = phases[currentPhaseIdx].duration;
+
+      function updateVisuals() {
+        const phase = phases[currentPhaseIdx];
+
+        circleEl.className = 'relax-breathing-circle-inner';
+        if (phase.class) {
+          circleEl.classList.add(phase.class);
+        }
+
+        wordEl.innerText = phase.text;
+        timeEl.innerText = `${secondsRemaining} 秒`;
+        descEl.innerText = phase.desc;
+      }
+
+      updateVisuals();
+      playBreathingBeep(phases[currentPhaseIdx].class === 'inhale');
+
+      relaxBreathInterval = setInterval(() => {
+        secondsRemaining--;
+        if (secondsRemaining <= 0) {
+          currentPhaseIdx = (currentPhaseIdx + 1) % phases.length;
+          secondsRemaining = phases[currentPhaseIdx].duration;
+        }
+        updateVisuals();
+        playBreathingBeep(phases[currentPhaseIdx].class === 'inhale');
+      }, 1000);
+    }
+
+    function stopRelaxBreathing() {
+      if (relaxBreathInterval) {
+        clearInterval(relaxBreathInterval);
+        relaxBreathInterval = null;
+      }
+    }
+
+    function playBreathingBeep(isHigh) {
+      initAudio();
+      if (!audioCtx) return;
+
+      try {
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        osc.type = 'triangle';
+        const freq = isHigh ? 520 : 360;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+        const now = audioCtx.currentTime;
+        gainNode.gain.setValueAtTime(0.06, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+        osc.start(now);
+        osc.stop(now + 0.15);
+      } catch (e) {
+        console.error("Web Audio Beep Error:", e);
+      }
+    }
+
+    // --- WEB AUDIO API & ROYALTY-FREE AUDIO PLAYER ENGINE ---
+    let audioCtx = null;
+    let activeNoiseType = null;
+    let noiseNodes = {};
+    let volumeMultiplier = 0.5;
+    let audioElements = {};
+
+    // 100% Royalty-Free Public Domain Sound Library Tracks (Google Sound Library & Pixabay Public Domain)
+    const royaltyFreeAudioSources = {
+      mind: {
+        title: '正念靜心',
+        urls: [
+          'https://actions.google.com/sounds/v1/ambiences/zen_garden.ogg',
+          'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3'
+        ]
+      },
+      ocean: {
+        title: '海浪撫慰',
+        urls: [
+          'https://actions.google.com/sounds/v1/weather/ocean_waves.ogg',
+          'https://cdn.pixabay.com/download/audio/2022/03/10/audio_c8c8a73467.mp3'
+        ]
+      },
+      rain: {
+        title: '雨聲綿綿',
+        urls: [
+          'https://actions.google.com/sounds/v1/weather/rain_heavy_loud.ogg',
+          'https://cdn.pixabay.com/download/audio/2021/09/06/audio_8c801e05d2.mp3'
+        ]
+      }
+    };
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function createNoiseBuffer() {
+      const bufferSize = audioCtx.sampleRate * 2;
+      const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const output = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        output[i] = Math.random() * 2 - 1;
+      }
+      return noiseBuffer;
+    }
+
+    function toggleNoise(type) {
+      initAudio();
+
+      const buttons = {
+        mind: document.getElementById('noiseBtnMind'),
+        ocean: document.getElementById('noiseBtnOcean'),
+        rain: document.getElementById('noiseBtnRain')
+      };
+
+      const stateEl = document.getElementById('noisePlayerState');
+
+      // 若目前正在播放同一首，點擊後停止/暫停
+      if (activeNoiseType === type) {
+        stopAllNoise();
+        if (stateEl) {
+          stateEl.innerHTML = '<i data-lucide="pause-circle" style="width:13px; height:13px; color:var(--text-muted);"></i> 已暫停播放';
+          if (window.lucide) lucide.createIcons();
+        }
+        return;
+      }
+
+      // 停止所有現有播放的音樂/白噪音
+      stopAllNoise();
+
+      activeNoiseType = type;
+
+      // 切換按鈕高亮狀態
+      Object.keys(buttons).forEach(k => {
+        if (buttons[k]) buttons[k].classList.remove('active');
+      });
+      if (buttons[type]) {
+        buttons[type].classList.add('active');
+      }
+
+      // 更新播放狀態文字
+      const trackInfo = royaltyFreeAudioSources[type];
+      if (stateEl && trackInfo) {
+        stateEl.innerHTML = `<i data-lucide="disc" style="width:13px; height:13px; color:var(--primary-cyan);"></i> 播放中：<span style="color:#fff; font-weight:700;">${trackInfo.title}</span>`;
+        if (window.lucide) lucide.createIcons();
+      }
+
+      // 1. 優先嘗試播放 HTML5 Audio 無版權音檔
+      if (!audioElements[type]) {
+        const audio = new Audio();
+        audio.crossOrigin = "anonymous";
+        audio.loop = true;
+        audio.src = trackInfo.urls[0];
+
+        // 若音檔載入失敗，自動切換備用網址或合成器
+        audio.onerror = () => {
+          console.warn(`Primary audio source failed for ${type}, using fallback synthesizer.`);
+          startWebAudioSynth(type);
+        };
+        audioElements[type] = audio;
+      }
+
+      const currentAudio = audioElements[type];
+      currentAudio.volume = volumeMultiplier;
+
+      const playPromise = currentAudio.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          console.log(`Playing audio track: ${trackInfo.title}`);
+        }).catch(err => {
+          console.log("HTML5 Audio play restricted, falling back to Web Audio Synth engine:", err);
+          startWebAudioSynth(type);
+        });
+      }
+    }
+
+    // Web Audio 本地即時音效合成器 (零網路延遲 備用引擎)
+    function startWebAudioSynth(type) {
+      if (!audioCtx) initAudio();
+      
+      const masterGain = audioCtx.createGain();
+      masterGain.gain.setValueAtTime(volumeMultiplier, audioCtx.currentTime);
+      masterGain.connect(audioCtx.destination);
+      noiseNodes.masterGain = masterGain;
+
+      if (type === 'mind') {
+        const osc1 = audioCtx.createOscillator();
+        const osc2 = audioCtx.createOscillator();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(110, audioCtx.currentTime);
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(110.5, audioCtx.currentTime);
+
+        const lpFilter = audioCtx.createBiquadFilter();
+        lpFilter.type = 'lowpass';
+        lpFilter.frequency.setValueAtTime(140, audioCtx.currentTime);
+
+        osc1.connect(lpFilter);
+        osc2.connect(lpFilter);
+        lpFilter.connect(masterGain);
+
+        osc1.start();
+        osc2.start();
+
+        noiseNodes.osc1 = osc1;
+        noiseNodes.osc2 = osc2;
+      } else if (type === 'ocean') {
+        const bufferSource = audioCtx.createBufferSource();
+        bufferSource.buffer = createNoiseBuffer();
+        bufferSource.loop = true;
+
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(350, audioCtx.currentTime);
+        filter.Q.setValueAtTime(2.5, audioCtx.currentTime);
+
+        const waveGain = audioCtx.createGain();
+        waveGain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+
+        bufferSource.connect(filter).connect(waveGain).connect(masterGain);
+        bufferSource.start();
+
+        const lfo = audioCtx.createOscillator();
+        lfo.type = 'sine';
+        lfo.frequency.setValueAtTime(0.12, audioCtx.currentTime);
+
+        const lfoFilterGain = audioCtx.createGain();
+        lfoFilterGain.gain.setValueAtTime(200, audioCtx.currentTime);
+
+        lfo.connect(lfoFilterGain).connect(filter.frequency);
+        lfo.start();
+
+        noiseNodes.bufferSource = bufferSource;
+        noiseNodes.lfo = lfo;
+      } else if (type === 'rain') {
+        const bufferSource = audioCtx.createBufferSource();
+        bufferSource.buffer = createNoiseBuffer();
+        bufferSource.loop = true;
+
+        const hpFilter = audioCtx.createBiquadFilter();
+        hpFilter.type = 'highpass';
+        hpFilter.frequency.setValueAtTime(750, audioCtx.currentTime);
+
+        const lpFilter = audioCtx.createBiquadFilter();
+        lpFilter.type = 'lowpass';
+        lpFilter.frequency.setValueAtTime(2200, audioCtx.currentTime);
+
+        const rainGain = audioCtx.createGain();
+        rainGain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+
+        bufferSource.connect(hpFilter).connect(lpFilter).connect(rainGain).connect(masterGain);
+        bufferSource.start();
+
+        noiseNodes.bufferSource = bufferSource;
+      }
+    }
+
+    // 音量拉霸即時調節邏輯 (下方拉霸)
+    function setNoiseVolume(val) {
+      volumeMultiplier = parseFloat(val);
+      const percent = Math.round(volumeMultiplier * 100);
+
+      // 更新百分比標籤
+      const pctEl = document.getElementById('noiseVolumePercent');
+      if (pctEl) {
+        pctEl.innerText = `音量: ${percent}%`;
+      }
+
+      // 更新圖示
+      const iconEl = document.getElementById('volumeIcon');
+      if (iconEl) {
+        if (percent === 0) {
+          iconEl.setAttribute('data-lucide', 'volume-x');
+          iconEl.style.color = 'var(--text-muted)';
+        } else if (percent < 50) {
+          iconEl.setAttribute('data-lucide', 'volume-1');
+          iconEl.style.color = 'var(--primary-cyan)';
+        } else {
+          iconEl.setAttribute('data-lucide', 'volume-2');
+          iconEl.style.color = 'var(--primary-cyan)';
+        }
+        if (window.lucide) lucide.createIcons();
+      }
+
+      // 套用至 HTML5 Audio
+      Object.keys(audioElements).forEach(k => {
+        if (audioElements[k]) {
+          audioElements[k].volume = volumeMultiplier;
+        }
+      });
+
+      // 套用至 Web Audio 合成器
+      if (noiseNodes.masterGain && audioCtx) {
+        noiseNodes.masterGain.gain.setValueAtTime(volumeMultiplier, audioCtx.currentTime);
+      }
+    }
+
+    // 停止所有音樂與聲響
+    function stopAllNoise() {
+      // 清除按鈕高亮
+      ['noiseBtnMind', 'noiseBtnOcean', 'noiseBtnRain'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.classList.remove('active');
+      });
+
+      // 暫停所有 HTML5 Audio 元素
+      Object.keys(audioElements).forEach(k => {
+        if (audioElements[k]) {
+          audioElements[k].pause();
+          audioElements[k].currentTime = 0;
+        }
+      });
+
+      // 停止 Web Audio 節點
+      if (noiseNodes.osc1) { try { noiseNodes.osc1.stop(); } catch (e) { } }
+      if (noiseNodes.osc2) { try { noiseNodes.osc2.stop(); } catch (e) { } }
+      if (noiseNodes.bufferSource) { try { noiseNodes.bufferSource.stop(); } catch (e) { } }
+      if (noiseNodes.lfo) { try { noiseNodes.lfo.stop(); } catch (e) { } }
+
+      noiseNodes = {};
+      activeNoiseType = null;
+    }
+
+    // --- 放鬆與解壓選單 Modal 控制 ---
+    function openRelaxMenuModal() {
+      const modal = document.getElementById('modalRelaxMenu');
+      if (modal) {
+        modal.classList.add('active');
+        if (window.lucide) lucide.createIcons();
+      }
+    }
+
+    function closeRelaxMenuModal(e) {
+      if (e && e.target && e.target.closest('.relax-menu-card') && !e.target.closest('.btn-nav-back')) {
+        return;
+      }
+      const modal = document.getElementById('modalRelaxMenu');
+      if (modal) {
+        modal.classList.remove('active');
+      }
+    }
+
+    function selectRelaxOption(option) {
+      closeRelaxMenuModal();
+      if (option === 'relax') {
+        enterRelaxScreen();
+      } else if (option === 'game') {
+        enterGameScreen();
+      }
+    }
+
+    // --- 專區入口與離開控制 ---
+    function goToCalmPortal() {
+      dismissAlert();
+      appState.previousScreen = 'screen-dashboard';
+      nextScreen('screen-relax');
+      startRelaxBreathing();
+      initAudio();
+    }
+
+    // 進入舒壓專區
+    function enterRelaxScreen() {
+      appState.previousScreen = appState.currentScreen || 'screen-dashboard';
+      nextScreen('screen-relax');
+      startRelaxBreathing();
+      initAudio();
+    }
+
+    // 離開舒壓專區 (按下「完成練習」按鈕)
+    function exitRelaxScreen() {
+      stopRelaxBreathing();
+      stopAllNoise();
+      
+      const stateEl = document.getElementById('noisePlayerState');
+      if (stateEl) {
+        stateEl.innerHTML = '<i data-lucide="disc" style="width:13px; height:13px;"></i> 已暫停播放';
+        if (window.lucide) lucide.createIcons();
+      }
+
+      // 回到原本的畫面 (儀表板)
+      const targetScreen = appState.previousScreen || 'screen-dashboard';
+      nextScreen(targetScreen);
+    }
+
+    // --- 極限進度條遊戲引擎 (HTML/JS 版) ---
+    let webGameState = {
+      score: 0,
+      combo: 0,
+      maxCombo: 0,
+      highScore: 0,
+      round: 1,
+      sound: true,
+      shape: 'circle', // 'circle' | 'square'
+      state: 'idle', // 'idle' | 'growing' | 'perfect' | 'good' | 'fail'
+      targetRadius: 100,
+      currentRadius: 10,
+      minRadius: 10,
+      speed: 115, // px / sec
+      isPressing: false,
+      lastTime: 0,
+      animId: null
+    };
+
+    let webGameParticles = [];
+    let webGameParticleAnimId = null;
+
+    function enterGameScreen() {
+      appState.previousScreen = appState.currentScreen || 'screen-dashboard';
+      nextScreen('screen-game');
+      initAudio();
+      setupWebGameListeners();
+      resetWebGameRound();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function exitGameScreen() {
+      stopWebGameLoop();
+      const targetScreen = appState.previousScreen || 'screen-dashboard';
+      nextScreen(targetScreen);
+    }
+
+    function playWebGameChime(type) {
+      if (!webGameState.sound) return;
+      initAudio();
+      if (!audioCtx) return;
+
+      const now = audioCtx.currentTime;
+      if (type === 'perfect') {
+        const notes = [1046.5, 1567.98, 2093.0];
+        notes.forEach((freq, i) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + i * 0.07);
+          gain.gain.setValueAtTime(0.28, now + i * 0.07);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.07 + 0.45);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now + i * 0.07);
+          osc.stop(now + i * 0.07 + 0.5);
+        });
+      } else if (type === 'good') {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(659.25, now);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.4);
+      } else if (type === 'fail') {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(196.0, now);
+        osc.frequency.linearRampToValueAtTime(140.0, now + 0.25);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.32);
+      }
+    }
+
+    function toggleWebGameShape() {
+      webGameState.shape = webGameState.shape === 'circle' ? 'square' : 'circle';
+      const iconEl = document.getElementById('gameShapeIcon');
+      if (iconEl) {
+        iconEl.setAttribute('data-lucide', webGameState.shape === 'circle' ? 'square' : 'circle');
+        if (window.lucide) lucide.createIcons();
+      }
+      resetWebGameRound();
+    }
+
+    function toggleWebGameSound() {
+      webGameState.sound = !webGameState.sound;
+      const iconEl = document.getElementById('gameSoundIcon');
+      if (iconEl) {
+        iconEl.setAttribute('data-lucide', webGameState.sound ? 'volume-2' : 'volume-x');
+        if (window.lucide) lucide.createIcons();
+      }
+    }
+
+    function resetWebGameRound() {
+      stopWebGameLoop();
+      webGameState.isPressing = false;
+      webGameState.state = 'idle';
+      webGameState.currentRadius = webGameState.minRadius;
+
+      // 隨機目標半徑 80px ~ 135px
+      webGameState.targetRadius = Math.floor(80 + Math.random() * 55);
+
+      updateWebGameUI();
+
+      const tipEl = document.getElementById('webGameTipText');
+      if (tipEl) {
+        tipEl.textContent = '長按任意處生長，在完全重合時鬆手';
+        tipEl.style.color = 'var(--text-muted)';
+      }
+
+      const badgeEl = document.getElementById('webGameResultBadge');
+      if (badgeEl) badgeEl.style.display = 'none';
+    }
+
+    function resetWebGameFully() {
+      webGameState.score = 0;
+      webGameState.combo = 0;
+      updateWebGameScoreboard();
+      resetWebGameRound();
+    }
+
+    function updateWebGameScoreboard() {
+      const scoreEl = document.getElementById('webGameScore');
+      const comboEl = document.getElementById('webGameCombo');
+      const highEl = document.getElementById('webGameHighScore');
+      if (scoreEl) scoreEl.textContent = webGameState.score;
+      if (comboEl) comboEl.textContent = webGameState.combo;
+      if (highEl) highEl.textContent = webGameState.highScore;
+    }
+
+    function updateWebGameUI() {
+      const targetFrame = document.getElementById('webGameTargetFrame');
+      const filledShape = document.getElementById('webGameFilledShape');
+      if (!targetFrame || !filledShape) return;
+
+      const isSq = webGameState.shape === 'square';
+      const tSize = webGameState.targetRadius * 2;
+      const cSize = webGameState.currentRadius * 2;
+
+      targetFrame.style.width = tSize + 'px';
+      targetFrame.style.height = tSize + 'px';
+      targetFrame.style.borderRadius = isSq ? '16px' : '50%';
+
+      filledShape.style.width = cSize + 'px';
+      filledShape.style.height = cSize + 'px';
+      filledShape.style.borderRadius = isSq ? '10px' : '50%';
+
+      if (webGameState.state === 'perfect') {
+        filledShape.style.background = '#fbbf24';
+        filledShape.style.boxShadow = '0 0 30px #fbbf24, 0 0 10px #f59e0b';
+      } else if (webGameState.state === 'good') {
+        filledShape.style.background = '#10b981';
+        filledShape.style.boxShadow = '0 0 25px #10b981';
+      } else if (webGameState.state === 'fail') {
+        filledShape.style.background = '#ef4444';
+        filledShape.style.boxShadow = '0 0 15px rgba(239,68,68,0.7)';
+      } else if (webGameState.state === 'growing') {
+        filledShape.style.background = '#8b5cf6';
+        filledShape.style.boxShadow = '0 0 20px #a855f7';
+      } else {
+        filledShape.style.background = '#a855f7';
+        filledShape.style.boxShadow = '0 0 15px rgba(168,85,247,0.5)';
+      }
+    }
+
+    function handleWebGamePressIn(e) {
+      if (e) e.preventDefault();
+      if (webGameState.state === 'growing') return;
+      if (webGameState.state === 'perfect' || webGameState.state === 'good' || webGameState.state === 'fail') {
+        resetWebGameRound();
+      }
+
+      webGameState.isPressing = true;
+      webGameState.state = 'growing';
+      webGameState.lastTime = performance.now();
+
+      const tipEl = document.getElementById('webGameTipText');
+      if (tipEl) {
+        tipEl.textContent = '蓄力生長中... 剛好填滿時鬆手！';
+        tipEl.style.color = '#c084fc';
+      }
+
+      const badgeEl = document.getElementById('webGameResultBadge');
+      if (badgeEl) badgeEl.style.display = 'none';
+
+      startWebGameLoop();
+    }
+
+    function handleWebGameRelease(e) {
+      if (e) e.preventDefault();
+      if (!webGameState.isPressing) return;
+
+      webGameState.isPressing = false;
+      stopWebGameLoop();
+
+      const ratio = webGameState.currentRadius / webGameState.targetRadius;
+      const percent = ratio * 100;
+
+      const badgeEl = document.getElementById('webGameResultBadge');
+      const tipEl = document.getElementById('webGameTipText');
+      const playArea = document.getElementById('webGamePlayArea');
+
+      if (ratio > 1.0) {
+        // 超出界線破殼
+        webGameState.state = 'fail';
+        webGameState.combo = 0;
+        playWebGameChime('fail');
+        triggerWebGameShake();
+        triggerWebGameFlash();
+
+        if (badgeEl) {
+          badgeEl.style.display = 'block';
+          badgeEl.style.background = 'linear-gradient(135deg, #ef4444, #b91c1c)';
+          badgeEl.innerHTML = `<div>FAIL! 破殼超出</div><div style="font-size:11px; opacity:0.9; margin-top:2px;">重合度 ${percent.toFixed(1)}% (連擊中斷)</div>`;
+        }
+      } else if (ratio >= 0.99 && ratio <= 1.0) {
+        // Perfect (99% - 100%)
+        webGameState.state = 'perfect';
+        webGameState.combo += 1;
+        const gain = 100 + webGameState.combo * 20;
+        webGameState.score += gain;
+        webGameState.highScore = Math.max(webGameState.highScore, webGameState.score);
+        webGameState.maxCombo = Math.max(webGameState.maxCombo, webGameState.combo);
+
+        playWebGameChime('perfect');
+        triggerWebGameShake();
+        spawnWebGameConfetti();
+
+        if (badgeEl) {
+          badgeEl.style.display = 'block';
+          badgeEl.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+          badgeEl.innerHTML = `<div>✨ PERFECT!! ✨</div><div style="font-size:11px; opacity:0.95; margin-top:2px;">重合度 ${percent.toFixed(1)}% (+${gain})</div>`;
+        }
+      } else if (ratio >= 0.90 && ratio < 0.99) {
+        // Good (90% - 98.9%)
+        webGameState.state = 'good';
+        webGameState.combo += 1;
+        const gain = 50 + webGameState.combo * 10;
+        webGameState.score += gain;
+        webGameState.highScore = Math.max(webGameState.highScore, webGameState.score);
+        webGameState.maxCombo = Math.max(webGameState.maxCombo, webGameState.combo);
+
+        playWebGameChime('good');
+
+        if (badgeEl) {
+          badgeEl.style.display = 'block';
+          badgeEl.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+          badgeEl.innerHTML = `<div>⚡ GOOD! ⚡</div><div style="font-size:11px; opacity:0.95; margin-top:2px;">重合度 ${percent.toFixed(1)}% (+${gain})</div>`;
+        }
+      } else {
+        // 小於 90% (萎縮不足)
+        webGameState.state = 'fail';
+        webGameState.combo = 0;
+        playWebGameChime('fail');
+        triggerWebGameFlash();
+
+        if (badgeEl) {
+          badgeEl.style.display = 'block';
+          badgeEl.style.background = 'linear-gradient(135deg, #ef4444, #b91c1c)';
+          badgeEl.innerHTML = `<div>FAIL! 尺寸不足</div><div style="font-size:11px; opacity:0.9; margin-top:2px;">重合度 ${percent.toFixed(1)}% (連擊中斷)</div>`;
+        }
+      }
+
+      if (tipEl) {
+        tipEl.textContent = '長按或點擊下方按鈕開始下一局';
+        tipEl.style.color = 'var(--text-muted)';
+      }
+
+      updateWebGameScoreboard();
+      updateWebGameUI();
+    }
+
+    function startWebGameLoop() {
+      function step(now) {
+        if (!webGameState.isPressing) return;
+        const dt = Math.min((now - webGameState.lastTime) / 1000, 0.05);
+        webGameState.lastTime = now;
+
+        webGameState.currentRadius += webGameState.speed * dt;
+
+        if (webGameState.currentRadius > webGameState.targetRadius * 1.3) {
+          handleWebGameRelease();
+          return;
+        }
+
+        updateWebGameUI();
+        webGameState.animId = requestAnimationFrame(step);
+      }
+      webGameState.animId = requestAnimationFrame(step);
+    }
+
+    function stopWebGameLoop() {
+      if (webGameState.animId) {
+        cancelAnimationFrame(webGameState.animId);
+        webGameState.animId = null;
+      }
+    }
+
+    function triggerWebGameShake() {
+      const area = document.getElementById('webGamePlayArea');
+      if (area) {
+        area.classList.remove('screen-shake');
+        void area.offsetWidth; // trigger reflow
+        area.classList.add('screen-shake');
+      }
+    }
+
+    function triggerWebGameFlash() {
+      const area = document.getElementById('webGamePlayArea');
+      if (area) {
+        area.classList.remove('screen-flash-red');
+        void area.offsetWidth;
+        area.classList.add('screen-flash-red');
+      }
+    }
+
+    // 粒子系統 Canvas
+    function spawnWebGameConfetti() {
+      const canvas = document.getElementById('webGameConfettiCanvas');
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const colors = ['#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4', '#10b981', '#fbbf24', '#ffffff'];
+      const shapes = ['circle', 'square', 'diamond'];
+      webGameParticles = [];
+
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+
+      for (let i = 0; i < 40; i++) {
+        const angle = (Math.PI * 2 * i) / 40 + (Math.random() - 0.5) * 0.5;
+        const speed = 4 + Math.random() * 8;
+        webGameParticles.push({
+          x: centerX,
+          y: centerY,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 2,
+          size: 6 + Math.random() * 8,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          shape: shapes[Math.floor(Math.random() * shapes.length)],
+          rotation: Math.random() * 360,
+          rotSpeed: (Math.random() - 0.5) * 15,
+          opacity: 1
+        });
+      }
+
+      if (webGameParticleAnimId) cancelAnimationFrame(webGameParticleAnimId);
+
+      function renderParticles() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let alive = false;
+
+        webGameParticles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.2; // gravity
+          p.vx *= 0.98;
+          p.rotation += p.rotSpeed;
+          p.opacity -= 0.024;
+
+          if (p.opacity > 0) {
+            alive = true;
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, p.opacity);
+            ctx.fillStyle = p.color;
+            ctx.translate(p.x, p.y);
+            ctx.rotate((p.rotation * Math.PI) / 180);
+
+            if (p.shape === 'circle') {
+              ctx.beginPath();
+              ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+              ctx.fill();
+            } else if (p.shape === 'square') {
+              ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+            } else {
+              ctx.beginPath();
+              ctx.moveTo(0, -p.size / 2);
+              ctx.lineTo(p.size / 2, 0);
+              ctx.lineTo(0, p.size / 2);
+              ctx.lineTo(-p.size / 2, 0);
+              ctx.closePath();
+              ctx.fill();
+            }
+            ctx.restore();
+          }
+        });
+
+        if (alive) {
+          webGameParticleAnimId = requestAnimationFrame(renderParticles);
+        } else {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+
+      webGameParticleAnimId = requestAnimationFrame(renderParticles);
+    }
+
+    let webGameListenersSet = false;
+    function setupWebGameListeners() {
+      if (webGameListenersSet) return;
+      webGameListenersSet = true;
+      const playArea = document.getElementById('webGamePlayArea');
+      if (!playArea) return;
+
+      playArea.addEventListener('pointerdown', handleWebGamePressIn);
+      window.addEventListener('pointerup', handleWebGameRelease);
+      playArea.addEventListener('touchstart', handleWebGamePressIn, { passive: false });
+      window.addEventListener('touchend', handleWebGameRelease);
+    }
+
+    // --- DRAG DISMISS ALERT GESTURE ---
+    let dragStartY = 0;
+    let isDraggingAlert = false;
+    let dragDeltaY = 0;
+
+    function setupAlertDragDismiss() {
+      const overlay = document.getElementById('alertOverlay');
+      if (!overlay) return;
+
+      const handleStart = (clientY) => {
+        isDraggingAlert = true;
+        dragStartY = clientY;
+        dragDeltaY = 0;
+        overlay.style.transition = 'none';
+      };
+
+      const handleMove = (clientY) => {
+        if (!isDraggingAlert) return;
+        dragDeltaY = clientY - dragStartY;
+        overlay.style.transform = `translateY(${dragDeltaY}px)`;
+      };
+
+      const handleEnd = () => {
+        if (!isDraggingAlert) return;
+        isDraggingAlert = false;
+
+        overlay.style.transition = 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease';
+
+        if (dragDeltaY < -150) {
+          overlay.style.transform = 'translateY(-100%)';
+          setTimeout(() => {
+            dismissAlert();
+            overlay.style.transform = '';
+          }, 400);
+        } else if (dragDeltaY > 150) {
+          overlay.style.transform = 'translateY(100%)';
+          setTimeout(() => {
+            dismissAlert();
+            overlay.style.transform = '';
+          }, 400);
+        } else {
+          overlay.style.transform = 'translateY(0)';
+        }
+      };
+
+      overlay.addEventListener('mousedown', (e) => { handleStart(e.clientY); });
+      window.addEventListener('mousemove', (e) => { if (isDraggingAlert) handleMove(e.clientY); });
+      window.addEventListener('mouseup', () => { if (isDraggingAlert) handleEnd(); });
+
+      overlay.addEventListener('touchstart', (e) => { handleStart(e.touches[0].clientY); }, { passive: true });
+      overlay.addEventListener('touchmove', (e) => { if (isDraggingAlert) handleMove(e.touches[0].clientY); }, { passive: true });
+      overlay.addEventListener('touchend', () => { if (isDraggingAlert) handleEnd(); }, { passive: true });
+    }
+
+    setupAlertDragDismiss();
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,9 @@
+npx expo start    // aura-mobile (開發測試)
+node server.js    // aura-server (後端伺服器)
+
+// [打包 Android APK 指令]
+// 方法一 (最推薦，EAS 雲端打包生成 .apk 檔直接供手機下載安裝):
+npx eas build -p android --profile preview
+
+// 方法二 (本機打包，需本機已配置 Android SDK / Java JDK):
+npx expo run:android --variant release

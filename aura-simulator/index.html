@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hold your hand 裝置模擬器</title>
+
+  <style>
+    :root {
+      --background: #07050f;
+      --panel: #120e24;
+      --card: rgba(255, 255, 255, 0.05);
+      --border: rgba(255, 255, 255, 0.1);
+
+      --purple: #8b5cf6;
+      --cyan: #06b6d4;
+      --green: #14b8a6;
+      --yellow: #eab308;
+      --red: #ef4444;
+      --amber: #f59e0b;
+
+      --text: #f8fafc;
+      --muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      padding: 32px 20px;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(139, 92, 246, 0.18), transparent 35%),
+        radial-gradient(circle at 80% 70%, rgba(6, 182, 212, 0.14), transparent 35%),
+        var(--background);
+      color: var(--text);
+      font-family: Arial, "Microsoft JhengHei", sans-serif;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .page {
+      width: min(1100px, 100%);
+      margin: 0 auto;
+    }
+
+    .page-header {
+      margin-bottom: 24px;
+    }
+
+    .page-title {
+      font-size: 28px;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #ffffff, #a5f3fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .page-description {
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .panel {
+      padding: 22px;
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      background: rgba(18, 14, 36, 0.82);
+      backdrop-filter: blur(16px);
+    }
+
+    .panel-title {
+      font-size: 18px;
+      margin-bottom: 6px;
+    }
+
+    .panel-description {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+      margin-bottom: 22px;
+    }
+
+    .connection-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      background: var(--card);
+    }
+
+    .connection-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 12px rgba(20, 184, 166, 0.6);
+    }
+
+    .status-dot.disconnected {
+      background: var(--red);
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
+    }
+
+    .connection-title {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .connection-subtitle {
+      color: var(--muted);
+      font-size: 11px;
+      margin-top: 3px;
+    }
+
+    .toggle {
+      position: relative;
+      width: 52px;
+      height: 30px;
+      display: inline-block;
+    }
+
+    .toggle input {
+      width: 0;
+      height: 0;
+      opacity: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      cursor: pointer;
+      border-radius: 30px;
+      background: #374151;
+      transition: 0.25s;
+    }
+
+    .toggle-slider::before {
+      content: "";
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      top: 4px;
+      left: 4px;
+      border-radius: 50%;
+      background: white;
+      transition: 0.25s;
+    }
+
+    .toggle input:checked+.toggle-slider {
+      background: var(--green);
+    }
+
+    .toggle input:checked+.toggle-slider::before {
+      transform: translateX(22px);
+    }
+
+    .toggle.amber input:checked+.toggle-slider {
+      background: var(--amber);
+    }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .control-card {
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: var(--card);
+    }
+
+    .control-card.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .control-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .control-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .control-value {
+      padding: 4px 9px;
+      border-radius: 9px;
+      background: rgba(6, 182, 212, 0.12);
+      color: var(--cyan);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .control-value.warning {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--red);
+    }
+
+    .control-value.amber {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--amber);
+    }
+
+    .control-value.purple {
+      background: rgba(139, 92, 246, 0.15);
+      color: #c084fc;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--cyan);
+      cursor: pointer;
+    }
+
+    .range-hints {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #64748b;
+      margin-top: 6px;
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .checkbox-row input[type="checkbox"] {
+      cursor: pointer;
+      accent-color: var(--cyan);
+    }
+
+    .scenario-section {
+      margin-top: 20px;
+    }
+
+    .section-title {
+      margin-bottom: 12px;
+      font-size: 13px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .scenario-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .scenario-button {
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--card);
+      color: var(--text);
+      cursor: pointer;
+      transition: 0.2s;
+      text-align: left;
+    }
+
+    .scenario-button-title {
+      font-weight: 700;
+      font-size: 13px;
+      margin-bottom: 3px;
+    }
+
+    .scenario-button-desc {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .scenario-button:hover {
+      border-color: var(--cyan);
+      background: rgba(6, 182, 212, 0.1);
+    }
+
+    .scenario-button.warning:hover {
+      border-color: var(--red);
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    .send-button {
+      width: 100%;
+      padding: 15px;
+      margin-top: 18px;
+      border: none;
+      border-radius: 14px;
+      color: white;
+      font-weight: 800;
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--purple), var(--cyan));
+      transition: opacity 0.2s;
+    }
+
+    .send-button:disabled {
+      cursor: not-allowed;
+      opacity: 0.4;
+    }
+
+    .preview-card {
+      position: sticky;
+      top: 20px;
+    }
+
+    .preview-status {
+      padding: 12px;
+      margin-bottom: 14px;
+      border-radius: 12px;
+      color: var(--yellow);
+      background: rgba(234, 179, 8, 0.09);
+      border: 1px solid rgba(234, 179, 8, 0.2);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .preview-status.success {
+      color: var(--green);
+      background: rgba(20, 184, 166, 0.09);
+      border-color: rgba(20, 184, 166, 0.2);
+    }
+
+    .json-preview {
+      min-height: 380px;
+      padding: 16px;
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: #05030b;
+      color: #a5f3fc;
+      font-family: Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+    }
+
+    @media (max-width: 850px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .preview-card {
+        position: static;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .control-grid,
+      .scenario-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="page">
+    <div
+      style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border);">
+      <div style="font-weight: 800; font-size: 18px; letter-spacing: 0.5px;">Hold your hand · 5 大核心數據模擬器</div>
+      <div>
+        <a href="dev-tools.html"
+          style="color: var(--cyan); text-decoration: none; font-size: 13px; font-weight: 700; padding: 6px 14px; border: 1px solid rgba(6, 182, 212, 0.3); border-radius: 10px; background: rgba(6, 182, 212, 0.08);">⚡
+          前往歷史統計與換日控制台 (DevTools) →</a>
+      </div>
+    </div>
+
+    <header class="page-header">
+      <h1 class="page-title">Hold your hand 裝置模擬器</h1>
+      <p class="page-description">
+        精簡同步 5 大核心感測數據：距離 (ToF)、角速度 (MPU6050)、心律 (Heart Rate)、血氧 (SpO2)、馬達狀態 (Vibration)。
+      </p>
+    </header>
+
+    <div class="layout">
+      <section class="panel">
+        <h2 class="panel-title">5 大核心感測器控制面板</h2>
+        <p class="panel-description">
+          拖曳下方 5 組核心滑桿與開關，可即時推播給手機 App 進行連動測試。
+        </p>
+
+        <div class="connection-card">
+          <div class="connection-info">
+            <div class="status-dot" id="deviceStatusDot"></div>
+            <div>
+              <div class="connection-title" id="deviceStatusTitle">
+                模擬裝置已連線
+              </div>
+              <div class="connection-subtitle">
+                裝置 ID：hold-your-hand-simulator-01
+              </div>
+            </div>
+          </div>
+
+          <label class="toggle">
+            <input type="checkbox" id="connectedInput" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="control-grid">
+          <!-- 1. 距離 (Distance) -->
+          <div class="control-card full-width">
+            <div class="control-header">
+              <span class="control-label">📏 手部距離 (VL53L0X)</span>
+              <span class="control-value" id="distanceText">180 mm</span>
+            </div>
+            <input type="range" id="distanceInput" min="10" max="300" step="1" value="180" />
+            <div class="range-hints">
+              <span>10 mm (危險區 &lt;50mm)</span>
+              <span>150 mm</span>
+              <span>300 mm (安全)</span>
+            </div>
+            <label class="checkbox-row">
+              <input type="checkbox" id="outOfRangeInput" />
+              <span>超出量測範圍 / 未偵測到障礙物 (距離設為 9999 mm)</span>
+            </label>
+          </div>
+
+          <!-- 2. 角速度 (Angular Velocity) -->
+          <div class="control-card full-width">
+            <div class="control-header">
+              <span class="control-label">🧭 空間角速度 (MPU6050)</span>
+              <span class="control-value purple" id="angularVelocityText">8.0 deg/s</span>
+            </div>
+            <input type="range" id="angularVelocityInput" min="0" max="200" step="0.5" value="8.0" />
+            <div class="range-hints">
+              <span>0 deg/s (靜止放鬆)</span>
+              <span>20~150 deg/s (微動摳抓區)</span>
+              <span>200 deg/s (劇烈)</span>
+            </div>
+          </div>
+
+          <!-- 3. 心律 (Heart Rate) -->
+          <div class="control-card">
+            <div class="control-header">
+              <span class="control-label">❤️ 心律 (BPM)</span>
+              <span class="control-value" id="heartRateText">72 BPM</span>
+            </div>
+            <input type="range" id="heartRateInput" min="40" max="150" value="72" />
+            <div class="range-hints">
+              <span>40</span>
+              <span>80 (警示門檻)</span>
+              <span>150</span>
+            </div>
+          </div>
+
+          <!-- 4. 血氧 (SpO2) -->
+          <div class="control-card">
+            <div class="control-header">
+              <span class="control-label">💧 血氧濃度 (%)</span>
+              <span class="control-value" id="spo2Text">98%</span>
+            </div>
+            <input type="range" id="spo2Input" min="80" max="100" value="98" />
+            <div class="range-hints">
+              <span>80% (偏低)</span>
+              <span>95%</span>
+              <span>100% (極佳)</span>
+            </div>
+          </div>
+
+          <!-- 5. 馬達狀態 (Motor Status) -->
+          <div class="control-card full-width">
+            <div class="control-header">
+              <span class="control-label">📳 震動馬達狀態 (觸覺反饋)</span>
+              <span class="control-value amber" id="motorStatusText">待機監控中 (0)</span>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px;">
+              <span style="font-size: 12px; color: var(--muted);">切換馬達震動驅動狀態</span>
+              <label class="toggle amber">
+                <input type="checkbox" id="motorStatusInput" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <section class="scenario-section">
+          <h3 class="section-title">快速測試情境</h3>
+          <div class="scenario-grid">
+            <button type="button" class="scenario-button" data-scenario="normal">
+              <div class="scenario-button-title">🟢 正常放鬆狀態</div>
+              <div class="scenario-button-desc">距離 180mm · 角速度 8deg/s · 心率 72 · 血氧 98% · 馬達 待機</div>
+            </button>
+
+            <button type="button" class="scenario-button warning" data-scenario="scratch">
+              <div class="scenario-button-title">🚨 疑似摳抓微動 (觸發區)</div>
+              <div class="scenario-button-desc">距離 35mm · 角速度 42deg/s · 心率 86 · 血氧 97% · 馬達 震動中</div>
+            </button>
+
+            <button type="button" class="scenario-button warning" data-scenario="high-heart-rate">
+              <div class="scenario-button-title">⚠️ 心率偏高緊張</div>
+              <div class="scenario-button-desc">距離 120mm · 角速度 12deg/s · 心率 105 · 血氧 96% · 馬達 待機</div>
+            </button>
+
+            <button type="button" class="scenario-button" data-scenario="out-of-range">
+              <div class="scenario-button-title">⚪ 手部遠離 (超出範圍)</div>
+              <div class="scenario-button-desc">距離 9999mm · 角速度 2deg/s · 心率 68 · 血氧 99% · 馬達 待機</div>
+            </button>
+          </div>
+        </section>
+
+        <button type="button" class="send-button" id="sendButton">
+          送出目前測試資料
+        </button>
+      </section>
+
+      <aside class="panel preview-card">
+        <h2 class="panel-title">資料預覽 (JSON)</h2>
+        <p class="panel-description">
+          電腦網頁與 ESP32 傳送給手機 App 的 5 大核心數據格式。
+        </p>
+
+        <div class="preview-status" id="previewStatus">
+          尚未連接手機，目前只在瀏覽器內預覽資料。
+        </div>
+
+        <pre class="json-preview" id="jsonPreview"></pre>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    const elements = {
+      connectedInput: document.getElementById("connectedInput"),
+
+      distanceInput: document.getElementById("distanceInput"),
+      outOfRangeInput: document.getElementById("outOfRangeInput"),
+      angularVelocityInput: document.getElementById("angularVelocityInput"),
+      heartRateInput: document.getElementById("heartRateInput"),
+      spo2Input: document.getElementById("spo2Input"),
+      motorStatusInput: document.getElementById("motorStatusInput"),
+
+      distanceText: document.getElementById("distanceText"),
+      angularVelocityText: document.getElementById("angularVelocityText"),
+      heartRateText: document.getElementById("heartRateText"),
+      spo2Text: document.getElementById("spo2Text"),
+      motorStatusText: document.getElementById("motorStatusText"),
+
+      deviceStatusDot: document.getElementById("deviceStatusDot"),
+      deviceStatusTitle: document.getElementById("deviceStatusTitle"),
+
+      jsonPreview: document.getElementById("jsonPreview"),
+      previewStatus: document.getElementById("previewStatus"),
+      sendButton: document.getElementById("sendButton")
+    };
+
+    // 電腦瀏覽器使用 localhost:8080，若從其他裝置開啟則使用該主機 IP
+    const SOCKET_URL = window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+      ? `ws://${window.location.hostname}:8080`
+      : 'ws://localhost:8080';
+
+    let socket = null;
+    let reconnectTimer = null;
+    let autoSendTimer = null;
+    let lastAbnormalState = false;
+
+    const AUTO_SEND_INTERVAL_MS = 5000;
+
+    function updateServerStatus(message, isSuccess = false) {
+      elements.previewStatus.textContent = message;
+      elements.previewStatus.classList.toggle('success', isSuccess);
+    }
+
+    function connectWebSocket() {
+      if (
+        socket &&
+        (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)
+      ) {
+        return;
+      }
+
+      updateServerStatus('正在連接 Hold your hand WebSocket 伺服器...', false);
+
+      socket = new WebSocket(SOCKET_URL);
+
+      socket.addEventListener('open', () => {
+        console.log('WebSocket 已連線');
+        updateServerStatus('WebSocket 伺服器已連線，可即時推播 5 大數據至手機。', true);
+      });
+
+      socket.addEventListener('message', (event) => {
+        let message;
+        try {
+          message = JSON.parse(event.data);
+        } catch (error) {
+          console.error('收到無法解析的伺服器資料');
+          return;
+        }
+
+        if (message.type === 'server-status') {
+          updateServerStatus(message.message, true);
+        }
+
+        if (message.type === 'server-ack') {
+          updateServerStatus(`伺服器已收到資料，目前已轉傳給 ${message.deliveredCount} 個接收端。`, true);
+        }
+
+        if (message.type === 'server-error') {
+          updateServerStatus(`伺服器錯誤：${message.message}`, false);
+        }
+      });
+
+      socket.addEventListener('close', () => {
+        console.log('WebSocket 連線中斷');
+        updateServerStatus('WebSocket 已中斷，兩秒後重新連線...', false);
+        clearTimeout(reconnectTimer);
+        reconnectTimer = setTimeout(() => {
+          connectWebSocket();
+        }, 2000);
+      });
+
+      socket.addEventListener('error', () => {
+        updateServerStatus('無法連接 WebSocket，請確認 server.js 正在執行。', false);
+      });
+    }
+
+    function getSensorData() {
+      const isOutOfRange = elements.outOfRangeInput.checked;
+      const rawDistance = Number(elements.distanceInput.value);
+      const distance = isOutOfRange ? 9999 : rawDistance;
+
+      return {
+        type: "sensor-data",
+        deviceId: "hold-your-hand-simulator-01",
+        timestamp: new Date().toISOString(),
+
+        connected: elements.connectedInput.checked,
+
+        // 5 大核心指標
+        distance: distance,
+        angularVelocity: Number(elements.angularVelocityInput.value),
+        heartRate: Number(elements.heartRateInput.value),
+        spo2: Number(elements.spo2Input.value),
+        motorStatus: elements.motorStatusInput.checked,
+        isOutOfRange: distance >= 9999
+      };
+    }
+
+    function isPickingAbnormal(data) {
+      return (
+        data.motorStatus ||
+        (!data.isOutOfRange && data.distance < 50 && data.angularVelocity >= 20 && data.angularVelocity <= 150)
+      );
+    }
+
+    function sendCurrentSensorData(reason = 'manual') {
+      const data = getSensorData();
+
+      if (!data.connected) {
+        return false;
+      }
+
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        return false;
+      }
+
+      socket.send(JSON.stringify(data));
+      console.log(`已送出感測資料（${reason}）：`, data);
+      return true;
+    }
+
+    function checkAndSendImmediateAbnormal() {
+      const data = getSensorData();
+      const abnormal = isPickingAbnormal(data);
+
+      if (abnormal && !lastAbnormalState) {
+        const sent = sendCurrentSensorData('異常立即送出');
+        if (sent) {
+          updateServerStatus('偵測到疑似摳抓異常或馬達震動，已立即傳送到手機。', true);
+        }
+      }
+
+      lastAbnormalState = abnormal;
+    }
+
+    function startAutoSend() {
+      if (autoSendTimer) {
+        clearInterval(autoSendTimer);
+      }
+
+      autoSendTimer = setInterval(() => {
+        const sent = sendCurrentSensorData('5 秒定期更新');
+        if (sent) {
+          updateServerStatus('自動監測中：每 5 秒更新一次；異常會立即傳送。', true);
+        }
+      }, AUTO_SEND_INTERVAL_MS);
+    }
+
+    function updateDisplay() {
+      const data = getSensorData();
+
+      // 1. 距離
+      if (data.isOutOfRange) {
+        elements.distanceText.textContent = '無障礙物 (>1.2m)';
+        elements.distanceText.className = 'control-value';
+        elements.distanceInput.disabled = true;
+      } else {
+        elements.distanceText.textContent = `${data.distance} mm`;
+        elements.distanceText.className = data.distance < 50 ? 'control-value warning' : 'control-value';
+        elements.distanceInput.disabled = false;
+      }
+
+      // 2. 角速度
+      elements.angularVelocityText.textContent = `${data.angularVelocity.toFixed(1)} deg/s`;
+      elements.angularVelocityText.className =
+        data.angularVelocity >= 20 && data.angularVelocity <= 150
+          ? 'control-value warning'
+          : 'control-value purple';
+
+      // 3. 心律
+      elements.heartRateText.textContent = `${data.heartRate} BPM`;
+      elements.heartRateText.className = data.heartRate >= 80 ? 'control-value warning' : 'control-value';
+
+      // 4. 血氧
+      elements.spo2Text.textContent = `${data.spo2}%`;
+      elements.spo2Text.className = data.spo2 < 95 ? 'control-value warning' : 'control-value';
+
+      // 5. 馬達狀態
+      if (data.motorStatus) {
+        elements.motorStatusText.textContent = '📳 震動中 (1)';
+        elements.motorStatusText.className = 'control-value amber';
+      } else {
+        elements.motorStatusText.textContent = '待機監控中 (0)';
+        elements.motorStatusText.className = 'control-value';
+      }
+
+      // 連線狀態
+      if (data.connected) {
+        elements.deviceStatusDot.classList.remove("disconnected");
+        elements.deviceStatusTitle.textContent = "模擬裝置已連線";
+        elements.sendButton.disabled = false;
+      } else {
+        elements.deviceStatusDot.classList.add("disconnected");
+        elements.deviceStatusTitle.textContent = "模擬裝置已斷線";
+        elements.sendButton.disabled = true;
+      }
+
+      elements.jsonPreview.textContent = JSON.stringify(data, null, 2);
+    }
+
+    function setValues(values) {
+      if (values.outOfRange !== undefined) {
+        elements.outOfRangeInput.checked = values.outOfRange;
+      }
+      if (values.distance !== undefined) {
+        elements.distanceInput.value = values.distance;
+      }
+      if (values.angularVelocity !== undefined) {
+        elements.angularVelocityInput.value = values.angularVelocity;
+      }
+      if (values.heartRate !== undefined) {
+        elements.heartRateInput.value = values.heartRate;
+      }
+      if (values.spo2 !== undefined) {
+        elements.spo2Input.value = values.spo2;
+      }
+      if (values.motorStatus !== undefined) {
+        elements.motorStatusInput.checked = values.motorStatus;
+      }
+
+      updateDisplay();
+      checkAndSendImmediateAbnormal();
+    }
+
+    function applyScenario(scenario) {
+      switch (scenario) {
+        case "normal":
+          setValues({
+            outOfRange: false,
+            distance: 180,
+            angularVelocity: 8.0,
+            heartRate: 72,
+            spo2: 98,
+            motorStatus: false
+          });
+          break;
+
+        case "scratch":
+          setValues({
+            outOfRange: false,
+            distance: 35,
+            angularVelocity: 42.5,
+            heartRate: 86,
+            spo2: 97,
+            motorStatus: true
+          });
+          break;
+
+        case "high-heart-rate":
+          setValues({
+            outOfRange: false,
+            distance: 120,
+            angularVelocity: 12.0,
+            heartRate: 105,
+            spo2: 96,
+            motorStatus: false
+          });
+          break;
+
+        case "out-of-range":
+          setValues({
+            outOfRange: true,
+            distance: 300,
+            angularVelocity: 2.0,
+            heartRate: 68,
+            spo2: 99,
+            motorStatus: false
+          });
+          break;
+      }
+    }
+
+    const watchedInputs = [
+      elements.connectedInput,
+      elements.distanceInput,
+      elements.outOfRangeInput,
+      elements.angularVelocityInput,
+      elements.heartRateInput,
+      elements.spo2Input,
+      elements.motorStatusInput
+    ];
+
+    watchedInputs.forEach((input) => {
+      const handleSensorInput = () => {
+        updateDisplay();
+        checkAndSendImmediateAbnormal();
+      };
+
+      input.addEventListener("input", handleSensorInput);
+      input.addEventListener("change", handleSensorInput);
+    });
+
+    document.querySelectorAll("[data-scenario]").forEach((button) => {
+      button.addEventListener("click", () => {
+        applyScenario(button.dataset.scenario);
+      });
+    });
+
+    elements.sendButton.addEventListener('click', () => {
+      const data = getSensorData();
+
+      if (!data.connected) {
+        updateServerStatus('模擬裝置目前為斷線狀態，無法送出資料。', false);
+        return;
+      }
+
+      const sent = sendCurrentSensorData('手動送出');
+      if (!sent) {
+        updateServerStatus('WebSocket 尚未連線，請確認伺服器是否正在執行。', false);
+        return;
+      }
+
+      updateServerStatus('資料已送出，等待伺服器確認...', true);
+      updateDisplay();
+    });
+
+    connectWebSocket();
+    startAutoSend();
+    updateDisplay();
+  </script>
+</body>
+
+</html>
