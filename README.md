@@ -1,4 +1,4 @@
-# 🖐️ Hold Your Hand (Aura) - 智慧穿戴與 BFRB 習慣逆轉系統
+# Hold Your Hand (Aura) - 智慧穿戴與 BFRB 習慣逆轉系統
 
 <div align="center">
 
@@ -16,15 +16,15 @@
 
 ---
 
-## 📁 專案全貌與模組結構
+## 專案全貌與模組結構
 
 本專案包含三大主要模組：
 
 ```text
 c:/project/
-├── aura-mobile/       # 📱 React Native (Expo) 行動端 App
-├── aura-server/       # 🌐 Node.js WebSocket 開發中繼與除錯伺服器
-└── aura-simulator/    # 💻 網頁端感測器控制面板與模擬器
+├── aura-mobile/       # React Native (Expo) 行動端 App
+├── aura-server/       # Node.js WebSocket 開發中繼與除錯伺服器
+└── aura-simulator/    # 網頁端感測器控制面板與模擬器
 ```
 
 ### 各模組說明
@@ -38,7 +38,7 @@ c:/project/
 
 ---
 
-## 🚀 快速啟動指南
+## 快速啟動指南
 
 ### 1. 啟動行動端 App (aura-mobile)
 ```bash
@@ -59,7 +59,7 @@ node server.js
 
 ---
 
-## 📦 Android APK 打包指令
+## Android APK 打包指令
 
 ```bash
 cd aura-mobile
