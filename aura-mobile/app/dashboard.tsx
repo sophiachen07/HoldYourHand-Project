@@ -44,6 +44,7 @@ import {
   Flower2,
   Heart,
   Info,
+  MessageCircle,
   Ruler,
   Settings,
   ShieldCheck,
@@ -749,6 +750,39 @@ export default function DashboardScreen() {
                     </View>
                     <Text style={styles.optionDesc}>
                       長按蓄力挑戰幾何尺寸 100% 完美重合，享受粒子震動回饋
+                    </Text>
+                  </View>
+                  <ChevronRight size={18} color={AuraColors.muted} />
+                </LinearGradient>
+              </Pressable>
+
+              {/* 選項三：守把手小樹洞 (AI 陪伴助理) */}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.optionCard,
+                  pressed && styles.optionCardPressed,
+                ]}
+                onPress={() => {
+                  setShowRelaxMenu(false);
+                  router.push('/treehole' as any);
+                }}
+              >
+                <LinearGradient
+                  colors={['rgba(236, 72, 153, 0.15)', 'rgba(139, 92, 246, 0.15)']}
+                  style={styles.optionGradient}
+                >
+                  <View style={[styles.optionIconContainer, { backgroundColor: 'rgba(236, 72, 153, 0.2)' }]}>
+                    <MessageCircle size={22} color="#ec4899" />
+                  </View>
+                  <View style={styles.optionContent}>
+                    <View style={styles.optionTitleRow}>
+                      <Text style={styles.optionTitle}>守把手小樹洞</Text>
+                      <View style={styles.badgeTreehole}>
+                        <Text style={styles.badgeTreeholeText}>AI 暖心陪伴</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.optionDesc}>
+                      溫柔傾聽你的焦慮與緊繃，AI 陪伴小助手隨時守護你
                     </Text>
                   </View>
                   <ChevronRight size={18} color={AuraColors.muted} />
@@ -3118,6 +3152,19 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '700',
     color: '#06b6d4',
+  },
+
+  badgeTreehole: {
+    backgroundColor: 'rgba(236, 72, 153, 0.2)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+
+  badgeTreeholeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#ec4899',
   },
 
   optionDesc: {

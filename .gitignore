@@ -1,0 +1,21 @@
+# 依賴套件
+node_modules/
+*/node_modules/
+
+# 環境變數與機敏金鑰 (防止 API Key 外洩)
+.env
+.env.*
+*.env
+*/.env
+
+# Expo / 暫存與建置產物
+.expo/
+*/.expo/
+dist/
+web-build/
+
+# 日誌與系統檔
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db

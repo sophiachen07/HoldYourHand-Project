@@ -19,8 +19,7 @@ import type {
 import { bleService, BLE_CONFIG } from '../services/bleService';
 import { useUser } from './UserContext';
 
-// 模擬器 WebSocket 連線位置
-const SOCKET_URL = 'ws://192.168.0.14:8080';
+import { getWebSocketUrl } from '../constants/apiConfig';
 
 type SensorContextValue = {
   status: ConnectionStatus;
@@ -200,7 +199,7 @@ export function SensorProvider({ children }: PropsWithChildren) {
       }
 
       setStatus('connecting');
-      const socket = new WebSocket(SOCKET_URL);
+      const socket = new WebSocket(getWebSocketUrl());
       socketRef.current = socket;
 
       socket.onopen = () => {
