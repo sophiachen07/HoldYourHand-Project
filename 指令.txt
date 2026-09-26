@@ -1,7 +1,38 @@
-npx expo start    // aura-mobile (開發測試)
-node server.js    // aura-server (後端伺服器)
+========================================
+  HoldYourHand 專案指令手冊
+========================================
 
-// [打包 Android APK 指令]
+【 一、 日常開發與手機測試流程 】
+※ 請打開「兩個」終端機視窗分別啟動後端與前端：
+
+[ 視窗 1：啟動後端伺服器 (HTTP & WebSocket) ]
+cd c:\project\aura-server
+node server.js
+
+[ 視窗 2：啟動手機端前端 (Expo) ]
+cd c:\project\aura-mobile
+npx expo start
+
+----------------------------------------
+【 📱 iPhone / 手機測試連線指引 】
+1. 確保手機與電腦連接在「同一個 Wi-Fi 網路」。
+2. 啟動 `npx expo start` 後：
+   - 若畫面上提示 `Using development build (Press s to switch to Expo Go)`，請在終端機按下鍵盤字母「s」切換成 Expo Go 模式。
+3. iPhone 使用內建「相機」App 掃描終端機顯示的 QR Code，即可在 Expo Go 中開啟測試！
+----------------------------------------
+
+
+【 二、 Git 存檔與上傳 GitHub 】
+※ 在專案根目錄 c:\project 執行：
+
+git add .
+git commit -m "feat: 填寫本次更新內容說明"
+git push origin main
+
+
+【 三、 打包 Android APK 安裝檔 】
+※ 在 c:\project\aura-mobile 目錄執行：
+
 // 方法一 (最推薦，EAS 雲端打包生成 .apk 檔直接供手機下載安裝):
 npx eas build -p android --profile preview
 
