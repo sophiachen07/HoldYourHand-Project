@@ -308,11 +308,13 @@ export default function RelaxScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* 背景光暈裝飾 */}
-      <View style={styles.background}>
-        <View style={styles.cyanGlow} />
-        <View style={styles.purpleGlow} />
-      </View>
+      {/* 柔和粉紫到鼠尾草薄荷綠的無壓力背景 */}
+      <LinearGradient
+        colors={['#EDE5F8', '#DEEEF8', '#E5F4EE']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
 
       <ScrollView
         contentContainerStyle={styles.container}
@@ -325,7 +327,7 @@ export default function RelaxScreen() {
             onPress={handleCompletePractice}
             hitSlop={10}
           >
-            <ChevronLeft size={18} color={AuraColors.white} />
+            <ChevronLeft size={18} color="#333333" />
           </Pressable>
           <Text style={styles.navigationTitle}>舒壓引導專區</Text>
         </View>
@@ -337,9 +339,9 @@ export default function RelaxScreen() {
         {/* 呼吸引導區塊 */}
         <View style={styles.breathSection}>
           <View style={styles.breathOuterCircle}>
-            <Ripple value={rippleOne} borderColor="rgba(6,182,212,0.36)" />
-            <Ripple value={rippleTwo} borderColor="rgba(139,92,246,0.32)" />
-            <Ripple value={rippleThree} borderColor="rgba(236,72,153,0.25)" />
+            <Ripple value={rippleOne} borderColor="rgba(202,231,224,0.7)" />
+            <Ripple value={rippleTwo} borderColor="rgba(155,138,193,0.5)" />
+            <Ripple value={rippleThree} borderColor="rgba(245,192,192,0.5)" />
 
             <Animated.View
               style={[
@@ -385,12 +387,12 @@ export default function RelaxScreen() {
         {/* 1. 音樂與情境切換專區 */}
         <View style={styles.noiseSection}>
           <View style={styles.noiseTitleRow}>
-            <Music size={16} color={AuraColors.cyan} />
+            <Music size={16} color="#9B8AC1" />
             <Text style={styles.noiseTitle}>正念放鬆白噪音</Text>
             {isLoadingAudio && (
               <ActivityIndicator
                 size="small"
-                color={AuraColors.cyan}
+                color="#9B8AC1"
                 style={{ marginLeft: 6 }}
               />
             )}
@@ -408,8 +410,8 @@ export default function RelaxScreen() {
                   size={20}
                   color={
                     selectedNoise === 'mind'
-                      ? AuraColors.cyan
-                      : AuraColors.muted
+                      ? '#2E7D6E'
+                      : '#7E7889'
                   }
                 />
               }
@@ -427,8 +429,8 @@ export default function RelaxScreen() {
                   size={20}
                   color={
                     selectedNoise === 'ocean'
-                      ? AuraColors.cyan
-                      : AuraColors.muted
+                      ? '#2E7D6E'
+                      : '#7E7889'
                   }
                 />
               }
@@ -446,8 +448,8 @@ export default function RelaxScreen() {
                   size={20}
                   color={
                     selectedNoise === 'rain'
-                      ? AuraColors.cyan
-                      : AuraColors.muted
+                      ? '#2E7D6E'
+                      : '#7E7889'
                   }
                 />
               }
@@ -466,9 +468,9 @@ export default function RelaxScreen() {
                 step={0.01}
                 value={volume}
                 onValueChange={handleVolumeChange}
-                minimumTrackTintColor={AuraColors.cyan}
-                maximumTrackTintColor="rgba(255,255,255,0.12)"
-                thumbTintColor={AuraColors.cyan}
+                minimumTrackTintColor="#9B8AC1"
+                maximumTrackTintColor="rgba(226, 232, 240, 0.8)"
+                thumbTintColor="#9B8AC1"
               />
               <Text style={styles.volumePercentText}>
                 {Math.round(volume * 100)}%
@@ -485,12 +487,11 @@ export default function RelaxScreen() {
               <Text
                 style={[
                   styles.playerState,
-                  selectedNoise && { color: AuraColors.cyan },
+                  selectedNoise && { color: '#2E7D6E' },
                 ]}
               >
                 {selectedNoise
-                  ? `${NOISE_TRACKS[selectedNoise].name} ${isPlaying ? '播放中' : '載入中'
-                  }`
+                  ? `${NOISE_TRACKS[selectedNoise].name} ${isPlaying ? '播放中' : '載入中'}`
                   : '已暫停'}
               </Text>
             </View>
@@ -506,12 +507,12 @@ export default function RelaxScreen() {
           onPress={handleCompletePractice}
         >
           <LinearGradient
-            colors={[AuraColors.purple, AuraColors.cyan]}
+            colors={['#9B8AC1', '#CAE7E0']}
             start={{ x: 0, y: 0.5 }}
             end={{ x: 1, y: 0.5 }}
             style={styles.completeButton}
           >
-            <Text style={styles.completeButtonText}>完成練習</Text>
+            <Text style={styles.completeButtonText}>完成練習並返回儀表板</Text>
             <CheckCircle size={18} color="#ffffff" />
           </LinearGradient>
         </Pressable>
@@ -621,36 +622,7 @@ function NoiseButton({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: AuraColors.backgroundDeep,
-  },
-
-  background: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    overflow: 'hidden',
-  },
-
-  cyanGlow: {
-    position: 'absolute',
-    top: 100,
-    right: -140,
-    width: 330,
-    height: 330,
-    borderRadius: 165,
-    backgroundColor: 'rgba(6,182,212,0.09)',
-  },
-
-  purpleGlow: {
-    position: 'absolute',
-    bottom: 20,
-    left: -150,
-    width: 350,
-    height: 350,
-    borderRadius: 175,
-    backgroundColor: 'rgba(139,92,246,0.08)',
+    backgroundColor: '#EDE5F8',
   },
 
   container: {
@@ -665,39 +637,44 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: 'rgba(155, 138, 193, 0.12)',
   },
 
   backButton: {
-    width: 34,
-    height: 34,
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: AuraColors.border,
-    borderRadius: 17,
-    backgroundColor: AuraColors.card,
+    borderColor: 'rgba(155,138,193,0.3)',
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
 
   navigationTitle: {
-    color: AuraColors.white,
-    fontSize: 15,
+    color: '#1A2151',
+    fontSize: 16,
     fontWeight: '800',
     marginLeft: 12,
   },
 
   subtitle: {
-    color: AuraColors.muted,
-    fontSize: 12,
-    lineHeight: 18,
+    color: '#64748B',
+    fontSize: 13,
+    lineHeight: 19,
     marginTop: 14,
   },
 
   breathSection: {
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 310,
-    paddingTop: 20,
+    minHeight: 300,
+    paddingTop: 16,
   },
 
   breathOuterCircle: {
@@ -705,19 +682,19 @@ const styles = StyleSheet.create({
     height: 170,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
     borderWidth: 1,
     borderStyle: 'dashed',
-    borderColor: 'rgba(6,182,212,0.22)',
+    borderColor: 'rgba(202,231,224,0.8)',
     borderRadius: 85,
-    backgroundColor: 'rgba(6,182,212,0.025)',
+    backgroundColor: 'rgba(202,231,224,0.18)',
   },
 
   ripple: {
     position: 'absolute',
     width: 160,
     height: 160,
-    borderWidth: 1.4,
+    borderWidth: 1.5,
     borderRadius: 80,
   },
 
@@ -726,7 +703,11 @@ const styles = StyleSheet.create({
     height: 108,
     overflow: 'hidden',
     borderRadius: 54,
-    elevation: 12,
+    elevation: 8,
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
   },
 
   breathCircleGradient: {
@@ -743,7 +724,7 @@ const styles = StyleSheet.create({
   },
 
   breathTime: {
-    color: 'rgba(255,255,255,0.78)',
+    color: 'rgba(255,255,255,0.85)',
     fontSize: 11,
     fontWeight: '600',
     marginTop: 3,
@@ -751,7 +732,7 @@ const styles = StyleSheet.create({
 
   breathDescription: {
     height: 22,
-    color: AuraColors.cyan,
+    color: '#9B8AC1',
     textAlign: 'center',
     fontSize: 13,
     fontWeight: '700',
@@ -764,30 +745,36 @@ const styles = StyleSheet.create({
   },
 
   phaseDot: {
-    width: 6,
-    height: 6,
+    width: 7,
+    height: 7,
     marginRight: 5,
-    borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderRadius: 3.5,
+    backgroundColor: 'rgba(226, 232, 240, 0.9)',
   },
 
   phaseDotActive: {
-    backgroundColor: AuraColors.cyan,
+    backgroundColor: '#2E7D6E',
   },
 
   phaseLabel: {
-    color: AuraColors.muted,
-    fontSize: 10,
+    color: '#5A5A5A',
+    fontSize: 11,
     marginRight: 14,
+    fontWeight: '600',
   },
 
   noiseSection: {
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: AuraColors.border,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.025)',
+    backgroundColor: 'rgba(255, 255, 255, 0.82)',
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
 
   noiseTitleRow: {
@@ -798,8 +785,8 @@ const styles = StyleSheet.create({
   },
 
   noiseTitle: {
-    color: AuraColors.white,
-    fontSize: 13,
+    color: '#1A2151',
+    fontSize: 14,
     fontWeight: '800',
   },
 
@@ -816,14 +803,15 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 4,
     borderWidth: 1,
-    borderColor: AuraColors.border,
+    borderColor: 'rgba(226, 232, 240, 0.8)',
     borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.02)',
+    backgroundColor: '#FFFFFF',
   },
 
   noiseButtonActive: {
-    borderColor: AuraColors.cyan,
-    backgroundColor: 'rgba(6,182,212,0.12)',
+    borderColor: 'rgba(202,231,224,0.9)',
+    backgroundColor: 'rgba(202,231,224,0.3)',
+    borderWidth: 1.5,
   },
 
   noiseIconWrapper: {
@@ -831,7 +819,7 @@ const styles = StyleSheet.create({
   },
 
   noiseButtonText: {
-    color: AuraColors.muted,
+    color: '#7E7889',
     textAlign: 'center',
     fontSize: 11,
     fontWeight: '700',
@@ -839,11 +827,12 @@ const styles = StyleSheet.create({
   },
 
   noiseButtonTextActive: {
-    color: AuraColors.white,
+    color: '#2E7D6E',
+    fontWeight: '800',
   },
 
   noiseSubText: {
-    color: AuraColors.mutedDark,
+    color: '#9C96A6',
     fontSize: 9,
     marginTop: 2,
   },
@@ -869,9 +858,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     marginTop: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(226, 232, 240, 0.8)',
     borderRadius: 14,
-    backgroundColor: 'rgba(0,0,0,0.28)',
+    backgroundColor: '#FFFFFF',
   },
 
   volumeArea: {
@@ -887,7 +876,7 @@ const styles = StyleSheet.create({
   },
 
   volumePercentText: {
-    color: AuraColors.muted,
+    color: '#5A5A5A',
     fontSize: 10,
     fontWeight: '600',
     width: 32,
@@ -900,31 +889,36 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     paddingLeft: 10,
     borderLeftWidth: 1,
-    borderLeftColor: 'rgba(255,255,255,0.08)',
+    borderLeftColor: 'rgba(226, 232, 240, 0.8)',
   },
 
   statusDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: AuraColors.mutedDark,
+    backgroundColor: '#9C96A6',
     marginRight: 6,
   },
 
   statusDotActive: {
-    backgroundColor: AuraColors.cyan,
+    backgroundColor: '#2E7D6E',
   },
 
   playerState: {
-    color: AuraColors.muted,
+    color: '#5A5A5A',
     fontSize: 10,
     fontWeight: '700',
   },
 
   completeButtonWrapper: {
-    marginTop: 4,
+    marginTop: 6,
     borderRadius: 14,
     overflow: 'hidden',
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
   },
 
   completeButton: {

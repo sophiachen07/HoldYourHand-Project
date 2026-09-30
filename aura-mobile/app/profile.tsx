@@ -121,10 +121,13 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.background}>
-        <View style={styles.purpleGlow} />
-        <View style={styles.cyanGlow} />
-      </View>
+      {/* 柔和粉紫到鼠尾草薄荷綠的無壓力背景 */}
+      <LinearGradient
+        colors={['#EDE5F8', '#DEEEF8', '#E5F4EE']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
 
       <KeyboardAvoidingView
         style={styles.keyboardView}
@@ -141,7 +144,7 @@ export default function ProfileScreen() {
               style={styles.backButton}
               onPress={() => router.back()}
             >
-              <ChevronLeft size={20} color={AuraColors.white} />
+              <ChevronLeft size={20} color="#333333" />
             </Pressable>
 
             <Text style={styles.navigationTitle}>
@@ -152,17 +155,12 @@ export default function ProfileScreen() {
           {/* 標題區域 */}
           <View style={styles.headerArea}>
             <View style={styles.badgeRow}>
-              <LinearGradient
-                colors={[AuraColors.purple, AuraColors.cyan]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.stepBadge}
-              >
-                <Sparkles size={12} color="#ffffff" />
+              <View style={styles.stepBadge}>
+                <Sparkles size={12} color="#2E7D6E" />
                 <Text style={styles.stepBadgeText}>
                   {hasCompletedOnboarding ? '個人設定' : '第 1 / 2 步 · 建立檔案'}
                 </Text>
-              </LinearGradient>
+              </View>
             </View>
 
             <Text style={styles.title}>個人基本資料</Text>
@@ -176,7 +174,7 @@ export default function ProfileScreen() {
           {/* 基本資料卡片 */}
           <View style={styles.card}>
             <View style={styles.cardTitleRow}>
-              <User size={16} color={AuraColors.cyan} />
+              <User size={16} color="#9B8AC1" />
               <Text style={styles.cardTitle}>基本生理資料</Text>
             </View>
 
@@ -186,7 +184,7 @@ export default function ProfileScreen() {
               value={name}
               onChangeText={setName}
               placeholder="請輸入姓名或暱稱"
-              placeholderTextColor={AuraColors.mutedDark}
+              placeholderTextColor="#9C96A6"
             />
 
             <Text style={styles.label}>年齡</Text>
@@ -195,7 +193,7 @@ export default function ProfileScreen() {
               value={age}
               onChangeText={setAge}
               placeholder="請輸入年齡 (例如：21)"
-              placeholderTextColor={AuraColors.mutedDark}
+              placeholderTextColor="#9C96A6"
               keyboardType="number-pad"
             />
 
@@ -229,7 +227,7 @@ export default function ProfileScreen() {
           {/* 區塊 1：BFRB 內在驅動篩查 (支援複選) */}
           <View style={styles.card}>
             <View style={styles.cardTitleRow}>
-              <Brain size={16} color="#c084fc" />
+              <Brain size={16} color="#9B8AC1" />
               <Text style={styles.cardTitle}>BFRB 內在驅動篩查</Text>
               <View style={styles.multiBadge}>
                 <Text style={styles.multiBadgeText}>可複選</Text>
@@ -278,9 +276,9 @@ export default function ProfileScreen() {
                         </Text>
                       </View>
                       {isSelected ? (
-                        <CheckCircle2 size={18} color="#c084fc" />
+                        <CheckCircle2 size={18} color="#9B8AC1" />
                       ) : (
-                        <Circle size={18} color={AuraColors.mutedDark} />
+                        <Circle size={18} color="#9C96A6" />
                       )}
                     </Pressable>
                   );
@@ -327,9 +325,9 @@ export default function ProfileScreen() {
                         </Text>
                       </View>
                       {isSelected ? (
-                        <CheckCircle2 size={18} color="#c084fc" />
+                        <CheckCircle2 size={18} color="#2E7D6E" />
                       ) : (
-                        <Circle size={18} color={AuraColors.mutedDark} />
+                        <Circle size={18} color="#9C96A6" />
                       )}
                     </Pressable>
                   );
@@ -341,10 +339,10 @@ export default function ProfileScreen() {
           {/* 區塊 2：身體集中重複行為類型 (支援複選) */}
           <View style={styles.card}>
             <View style={styles.cardTitleRow}>
-              <Fingerprint size={16} color={AuraColors.cyan} />
+              <Fingerprint size={16} color="#2E7D6E" />
               <Text style={styles.cardTitle}>身體集中重複行為類型</Text>
-              <View style={[styles.multiBadge, { backgroundColor: 'rgba(6,182,212,0.15)', borderColor: 'rgba(6,182,212,0.35)' }]}>
-                <Text style={[styles.multiBadgeText, { color: AuraColors.cyan }]}>可複選</Text>
+              <View style={[styles.multiBadge, { backgroundColor: 'rgba(202,231,224,0.4)', borderColor: 'rgba(202,231,224,0.8)' }]}>
+                <Text style={[styles.multiBadgeText, { color: '#2E7D6E' }]}>可複選</Text>
               </View>
             </View>
             <Text style={styles.cardSubtitle}>
@@ -374,7 +372,7 @@ export default function ProfileScreen() {
                           : '✨'}
                       </Text>
                       {isSelected && (
-                        <Check size={14} color={AuraColors.cyan} />
+                        <Check size={14} color="#2E7D6E" />
                       )}
                     </View>
                     <Text
@@ -399,23 +397,18 @@ export default function ProfileScreen() {
             ]}
             onPress={handleSaveOrContinue}
           >
-            <LinearGradient
-              colors={[AuraColors.purple, AuraColors.cyan]}
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
-              style={styles.continueButton}
-            >
+            <View style={styles.continueButton}>
               <Text style={styles.continueButtonText}>
                 {hasCompletedOnboarding
                   ? '儲存修改並返回'
                   : '完成設定並連接裝置'}
               </Text>
               {hasCompletedOnboarding ? (
-                <Check size={18} color="#ffffff" />
+                <Check size={18} color="#2E7D6E" />
               ) : (
-                <ArrowRight size={18} color="#ffffff" />
+                <ArrowRight size={18} color="#2E7D6E" />
               )}
-            </LinearGradient>
+            </View>
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -426,37 +419,11 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: AuraColors.backgroundDeep,
+    backgroundColor: '#EDE5F8',
   },
 
   keyboardView: {
     flex: 1,
-  },
-
-  background: {
-    ...StyleSheet.absoluteFill,
-    overflow: 'hidden',
-    backgroundColor: AuraColors.backgroundDeep,
-  },
-
-  purpleGlow: {
-    position: 'absolute',
-    top: 60,
-    left: -120,
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-    backgroundColor: 'rgba(139,92,246,0.10)',
-  },
-
-  cyanGlow: {
-    position: 'absolute',
-    right: -130,
-    top: '40%',
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-    backgroundColor: 'rgba(6,182,212,0.08)',
   },
 
   container: {
@@ -472,23 +439,28 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     marginBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: 'rgba(155, 138, 193, 0.12)',
   },
 
   backButton: {
-    width: 34,
-    height: 34,
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 17,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: AuraColors.border,
-    backgroundColor: AuraColors.card,
+    borderColor: 'rgba(155,138,193,0.3)',
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
 
   navigationTitle: {
-    color: AuraColors.white,
-    fontSize: 14,
+    color: '#333333',
+    fontSize: 15,
     fontWeight: '700',
     marginLeft: 12,
   },
@@ -509,26 +481,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
+    backgroundColor: '#c0ede2',
   },
 
   stepBadgeText: {
-    color: '#ffffff',
-    fontSize: 10,
+    color: '#2E7D6E',
+    fontSize: 11,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
 
   title: {
-    color: AuraColors.white,
+    color: '#1A2151',
     fontSize: 26,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
 
   description: {
-    color: AuraColors.muted,
-    fontSize: 12,
-    lineHeight: 18,
+    color: '#64748B',
+    fontSize: 13,
+    lineHeight: 19,
     marginTop: 6,
   },
 
@@ -536,9 +509,14 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: AuraColors.border,
-    borderRadius: 18,
-    backgroundColor: AuraColors.card,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.82)',
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
 
   cardTitleRow: {
@@ -549,8 +527,8 @@ const styles = StyleSheet.create({
   },
 
   cardTitle: {
-    color: AuraColors.white,
-    fontSize: 14,
+    color: '#1A2151',
+    fontSize: 15,
     fontWeight: '800',
   },
 
@@ -558,27 +536,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 8,
-    backgroundColor: 'rgba(192, 132, 252, 0.15)',
+    backgroundColor: 'rgba(245, 192, 192, 0.4)',
     borderWidth: 1,
-    borderColor: 'rgba(192, 132, 252, 0.35)',
+    borderColor: '#F5C0C0',
     marginLeft: 4,
   },
 
   multiBadgeText: {
-    color: '#c084fc',
+    color: '#D9534F',
     fontSize: 10,
     fontWeight: '700',
   },
 
   cardSubtitle: {
-    color: AuraColors.muted,
+    color: '#64748B',
     fontSize: 11,
     lineHeight: 16,
     marginBottom: 14,
   },
 
   label: {
-    color: AuraColors.muted,
+    color: '#5A5A5A',
     fontSize: 11,
     fontWeight: '700',
     marginTop: 12,
@@ -589,10 +567,10 @@ const styles = StyleSheet.create({
     height: 48,
     paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.10)',
+    borderColor: 'rgba(226, 232, 240, 0.8)',
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    color: AuraColors.white,
+    backgroundColor: '#FFFFFF',
+    color: '#1A2151',
     fontSize: 13,
   },
 
@@ -608,24 +586,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.10)',
+    borderColor: 'rgba(226, 232, 240, 0.8)',
     borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    backgroundColor: '#FFFFFF',
   },
 
   genderButtonSelected: {
-    borderColor: AuraColors.cyan,
-    backgroundColor: 'rgba(6,182,212,0.12)',
+    borderColor: 'rgba(202,231,224,0.9)',
+    backgroundColor: 'rgba(202,231,224,0.35)',
+    borderWidth: 1.5,
   },
 
   genderButtonText: {
-    color: AuraColors.muted,
+    color: '#7E7889',
     fontSize: 12,
     fontWeight: '600',
   },
 
   genderButtonTextSelected: {
-    color: AuraColors.white,
+    color: '#2E7D6E',
     fontWeight: '700',
   },
 
@@ -642,37 +621,37 @@ const styles = StyleSheet.create({
   },
 
   categoryTagUnconscious: {
-    backgroundColor: 'rgba(192, 132, 252, 0.15)',
+    backgroundColor: 'rgba(245, 192, 192, 0.35)',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: 'rgba(192, 132, 252, 0.3)',
+    borderColor: '#F5C0C0',
   },
 
   categoryTagTextUnconscious: {
-    color: '#c084fc',
+    color: '#D9534F',
     fontSize: 11,
     fontWeight: '700',
   },
 
   categoryTagConscious: {
-    backgroundColor: 'rgba(6, 182, 212, 0.15)',
+    backgroundColor: 'rgba(202, 231, 224, 0.45)',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.3)',
+    borderColor: 'rgba(202, 231, 224, 0.9)',
   },
 
   categoryTagTextConscious: {
-    color: '#06b6d4',
+    color: '#2E7D6E',
     fontSize: 11,
     fontWeight: '700',
   },
 
   categoryHint: {
-    color: AuraColors.mutedDark,
+    color: '#9C96A6',
     fontSize: 10,
   },
 
@@ -687,14 +666,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.07)',
+    borderColor: 'rgba(226, 232, 240, 0.8)',
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.02)',
+    backgroundColor: '#FFFFFF',
   },
 
   optionCardSelected: {
-    borderColor: 'rgba(192, 132, 252, 0.5)',
-    backgroundColor: 'rgba(139, 92, 246, 0.10)',
+    borderColor: 'rgba(155, 138, 193, 0.8)',
+    backgroundColor: 'rgba(155, 138, 193, 0.12)',
   },
 
   optionContentRow: {
@@ -708,26 +687,26 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: 'rgba(226, 232, 240, 0.6)',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   optionIndexText: {
-    color: AuraColors.muted,
+    color: '#7E7889',
     fontSize: 10,
     fontWeight: '700',
   },
 
   optionText: {
-    color: AuraColors.muted,
+    color: '#5A5A5A',
     fontSize: 13,
     fontWeight: '600',
     flex: 1,
   },
 
   optionTextSelected: {
-    color: AuraColors.white,
+    color: '#1A2151',
     fontWeight: '700',
   },
 
@@ -741,14 +720,15 @@ const styles = StyleSheet.create({
     width: '48.5%',
     padding: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(226, 232, 240, 0.8)',
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.025)',
+    backgroundColor: '#FFFFFF',
   },
 
   typeButtonSelected: {
-    borderColor: AuraColors.cyan,
-    backgroundColor: 'rgba(6,182,212,0.12)',
+    borderColor: 'rgba(202,231,224,0.9)',
+    backgroundColor: 'rgba(202,231,224,0.35)',
+    borderWidth: 1.5,
   },
 
   typeIconRow: {
@@ -763,24 +743,24 @@ const styles = StyleSheet.create({
   },
 
   typeText: {
-    color: AuraColors.muted,
+    color: '#5A5A5A',
     fontSize: 13,
     fontWeight: '600',
   },
 
   typeTextSelected: {
-    color: AuraColors.white,
+    color: '#2E7D6E',
     fontWeight: '700',
   },
 
   continueButtonWrapper: {
     marginTop: 10,
     borderRadius: 15,
-    shadowColor: AuraColors.purple,
-    shadowOffset: { width: 0, height: 8 },
+    shadowColor: '#c0ede2',
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowRadius: 8,
+    elevation: 4,
   },
 
   continueButton: {
@@ -790,10 +770,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     borderRadius: 15,
+    backgroundColor: '#c0ede2',
   },
 
   continueButtonText: {
-    color: '#ffffff',
+    color: '#2E7D6E',
     fontSize: 14,
     fontWeight: '800',
   },

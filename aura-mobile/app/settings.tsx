@@ -127,10 +127,13 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.background}>
-        <View style={styles.purpleGlow} />
-        <View style={styles.cyanGlow} />
-      </View>
+      {/* 柔和粉紫到鼠尾草薄荷綠的無壓力背景 */}
+      <LinearGradient
+        colors={['#EDE5F8', '#DEEEF8', '#E5F4EE']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
 
       <ScrollView
         contentContainerStyle={styles.container}
@@ -144,7 +147,7 @@ export default function SettingsScreen() {
           >
             <ChevronLeft
               size={18}
-              color={AuraColors.white}
+              color="#333333"
             />
           </Pressable>
 
@@ -162,7 +165,7 @@ export default function SettingsScreen() {
           onPress={() => router.push('/profile')}
         >
           <LinearGradient
-            colors={['rgba(139, 92, 246, 0.18)', 'rgba(6, 182, 212, 0.12)']}
+            colors={['rgba(255, 255, 255, 0.95)', 'rgba(255, 255, 255, 0.85)']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.profileNavGradient}
@@ -189,7 +192,7 @@ export default function SettingsScreen() {
               </Text>
             </View>
 
-            <ChevronRight size={18} color={AuraColors.muted} />
+            <ChevronRight size={18} color="#9B8AC1" />
           </LinearGradient>
         </Pressable>
 
@@ -202,11 +205,7 @@ export default function SettingsScreen() {
           onPress={() => router.push('/device')}
         >
           <LinearGradient
-            colors={
-              isDeviceConnected
-                ? ['rgba(16, 185, 129, 0.16)', 'rgba(6, 182, 212, 0.10)']
-                : ['rgba(6, 182, 212, 0.14)', 'rgba(139, 92, 246, 0.08)']
-            }
+            colors={['rgba(255, 255, 255, 0.95)', 'rgba(255, 255, 255, 0.85)']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.deviceNavGradient}
@@ -219,7 +218,7 @@ export default function SettingsScreen() {
             >
               <Bluetooth
                 size={20}
-                color={isDeviceConnected ? '#10b981' : AuraColors.cyan}
+                color={isDeviceConnected ? '#2E7D6E' : '#9B8AC1'}
               />
             </View>
 
@@ -259,16 +258,16 @@ export default function SettingsScreen() {
               </Text>
             </View>
 
-            <ChevronRight size={18} color={AuraColors.muted} />
+            <ChevronRight size={18} color="#9B8AC1" />
           </LinearGradient>
         </Pressable>
 
-        {/* 區塊 1：您的 BFRB 內在驅動設定（連動複選展示） */}
+        {/* 區塊 1：您的 BFRB 內在驅動設定 */}
         <View style={styles.bfrbCard}>
           <View style={styles.bfrbTitleRow}>
             <Brain
               size={17}
-              color={AuraColors.cyan}
+              color="#9B8AC1"
             />
 
             <Text style={styles.bfrbTitle}>
@@ -296,15 +295,15 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* 區塊 2：您的 BFRB 行為類型（連動複選展示） */}
+        {/* 區塊 2：您的 BFRB 行為類型 */}
         <View style={styles.bfrbCard}>
           <View style={styles.bfrbTitleRow}>
             <Fingerprint
               size={17}
-              color="#c084fc"
+              color="#2E7D6E"
             />
 
-            <Text style={[styles.bfrbTitle, { color: '#c084fc' }]}>
+            <Text style={[styles.bfrbTitle, { color: '#2E7D6E' }]}>
               您的 BFRB 行為類型
             </Text>
 
@@ -351,7 +350,7 @@ export default function SettingsScreen() {
             <View style={styles.settingTitleRow}>
               <Radio
                 size={17}
-                color={AuraColors.purple}
+                color="#1F4A75"
               />
 
               <Text style={styles.settingTitle}>
@@ -432,11 +431,9 @@ export default function SettingsScreen() {
             onValueChange={(value) =>
               handleUpdateVibration(value)
             }
-            minimumTrackTintColor={
-              AuraColors.cyan
-            }
-            maximumTrackTintColor="rgba(255,255,255,0.10)"
-            thumbTintColor="#ffffff"
+            minimumTrackTintColor="#bfdff5"
+            maximumTrackTintColor="rgba(226, 232, 240, 0.8)"
+            thumbTintColor="#bfdff5"
           />
 
           <View style={styles.sliderLabels}>
@@ -456,22 +453,22 @@ export default function SettingsScreen() {
               styles.previewCircle,
               {
                 opacity:
-                  0.35 +
-                  vibrationStrength / 160,
+                  0.4 +
+                  vibrationStrength / 180,
                 transform: [
                   {
                     scale:
-                      0.8 +
+                      0.85 +
                       vibrationStrength /
-                        250,
+                        240,
                   },
                 ],
               },
             ]}
           >
             <Radio
-              size={25}
-              color={AuraColors.cyan}
+              size={24}
+              color="#1F4A75"
             />
           </View>
 
@@ -506,7 +503,7 @@ export default function SettingsScreen() {
             ]}
             onPress={handleClearData}
           >
-            <Trash2 size={16} color={AuraColors.warning} />
+            <Trash2 size={16} color="#D9534F" />
             <Text style={styles.clearDataButtonText}>
               清除目前數據資料
             </Text>
@@ -521,7 +518,7 @@ export default function SettingsScreen() {
             ]}
             onPress={handleLogout}
           >
-            <LogOut size={16} color={AuraColors.muted} />
+            <LogOut size={16} color="#7E7889" />
             <Text style={styles.logoutButtonText}>
               登出帳號
             </Text>
@@ -535,35 +532,7 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor:
-      AuraColors.backgroundDeep,
-  },
-
-  background: {
-    ...StyleSheet.absoluteFill,
-    overflow: 'hidden',
-  },
-
-  purpleGlow: {
-    position: 'absolute',
-    top: 80,
-    left: -130,
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-    backgroundColor:
-      'rgba(139,92,246,0.09)',
-  },
-
-  cyanGlow: {
-    position: 'absolute',
-    right: -140,
-    bottom: 40,
-    width: 330,
-    height: 330,
-    borderRadius: 165,
-    backgroundColor:
-      'rgba(6,182,212,0.07)',
+    backgroundColor: '#EDE5F8',
   },
 
   container: {
@@ -579,40 +548,50 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     marginBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor:
-      'rgba(255,255,255,0.05)',
+    borderBottomColor: 'rgba(155, 138, 193, 0.12)',
   },
 
   backButton: {
-    width: 34,
-    height: 34,
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: AuraColors.border,
-    borderRadius: 17,
-    backgroundColor: AuraColors.card,
+    borderColor: 'rgba(155,138,193,0.3)',
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
 
   navigationTitle: {
-    color: AuraColors.white,
-    fontSize: 14,
+    color: '#1A2151',
+    fontSize: 16,
     fontWeight: '800',
     marginLeft: 12,
   },
 
   profileNavCard: {
-    borderRadius: 16,
+    borderRadius: 18,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(168, 85, 247, 0.28)',
+    borderColor: 'rgba(255, 255, 255, 0.95)',
     marginBottom: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.82)',
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
 
   profileNavGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
+    padding: 16,
     gap: 12,
   },
 
@@ -620,11 +599,13 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: AuraColors.purple,
+    backgroundColor: '#9B8AC1',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
   },
 
   avatarText: {
@@ -645,45 +626,51 @@ const styles = StyleSheet.create({
   },
 
   profileNavName: {
-    color: AuraColors.white,
-    fontSize: 15,
+    color: '#1A2151',
+    fontSize: 16,
     fontWeight: '800',
   },
 
   profileTag: {
-    backgroundColor: 'rgba(6, 182, 212, 0.15)',
+    backgroundColor: 'rgba(202, 231, 224, 0.45)',
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.3)',
+    borderColor: 'rgba(202, 231, 224, 0.8)',
   },
 
   profileTagText: {
-    color: AuraColors.cyan,
-    fontSize: 10,
+    color: '#2E7D6E',
+    fontSize: 11,
     fontWeight: '700',
   },
 
   profileNavSub: {
-    color: AuraColors.muted,
-    fontSize: 11,
-    lineHeight: 15,
+    color: '#64748B',
+    fontSize: 12,
+    lineHeight: 16,
   },
 
   // 裝置連線按鈕樣式
   deviceNavCard: {
-    borderRadius: 16,
+    borderRadius: 18,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.28)',
+    borderColor: 'rgba(255, 255, 255, 0.95)',
     marginBottom: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.82)',
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
 
   deviceNavGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
+    padding: 16,
     gap: 12,
   },
 
@@ -691,16 +678,16 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(6, 182, 212, 0.12)',
+    backgroundColor: 'rgba(155, 138, 193, 0.15)',
     borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.3)',
+    borderColor: 'rgba(155, 138, 193, 0.3)',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   deviceIconCircleConnected: {
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-    borderColor: 'rgba(16, 185, 129, 0.4)',
+    backgroundColor: 'rgba(202, 231, 224, 0.45)',
+    borderColor: 'rgba(202, 231, 224, 0.9)',
   },
 
   deviceNavInfo: {
@@ -715,8 +702,8 @@ const styles = StyleSheet.create({
   },
 
   deviceNavTitle: {
-    color: AuraColors.white,
-    fontSize: 15,
+    color: '#1A2151',
+    fontSize: 16,
     fontWeight: '800',
   },
 
@@ -731,39 +718,39 @@ const styles = StyleSheet.create({
   },
 
   deviceStatusBadgeConnected: {
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-    borderColor: 'rgba(16, 185, 129, 0.35)',
+    backgroundColor: 'rgba(202, 231, 224, 0.45)',
+    borderColor: 'rgba(202, 231, 224, 0.8)',
   },
 
   deviceStatusBadgeDisconnected: {
-    backgroundColor: 'rgba(148, 163, 184, 0.10)',
-    borderColor: 'rgba(148, 163, 184, 0.25)',
+    backgroundColor: 'rgba(226, 232, 240, 0.5)',
+    borderColor: 'rgba(226, 232, 240, 0.8)',
   },
 
   deviceStatusDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#94a3b8',
+    backgroundColor: '#9C96A6',
   },
 
   deviceStatusDotConnected: {
-    backgroundColor: '#10b981',
+    backgroundColor: '#2E7D6E',
   },
 
   deviceStatusText: {
-    color: '#94a3b8',
-    fontSize: 10,
+    color: '#7E7889',
+    fontSize: 11,
     fontWeight: '700',
   },
 
   deviceStatusTextConnected: {
-    color: '#10b981',
+    color: '#2E7D6E',
   },
 
   deviceNavSub: {
-    color: AuraColors.muted,
-    fontSize: 11,
+    color: '#64748B',
+    fontSize: 12,
     marginTop: 3,
   },
 
@@ -776,10 +763,14 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: AuraColors.border,
-    borderRadius: 16,
-    backgroundColor:
-      'rgba(255,255,255,0.025)',
+    borderColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.82)',
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
 
   bfrbTitleRow: {
@@ -789,70 +780,39 @@ const styles = StyleSheet.create({
   },
 
   bfrbTitle: {
-    color: AuraColors.cyan,
-    fontSize: 13,
+    color: '#1A2151',
+    fontSize: 14,
     fontWeight: '800',
   },
 
   bfrbDescription: {
-    color: AuraColors.muted,
-    fontSize: 11,
+    color: '#5A5A5A',
+    fontSize: 12,
     lineHeight: 17,
     marginTop: 8,
     marginBottom: 10,
-  },
-
-  bfrbValue: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor:
-      'rgba(6,182,212,0.25)',
-    borderRadius: 10,
-    backgroundColor:
-      'rgba(6,182,212,0.09)',
-  },
-
-  bfrbValuePurple: {
-    borderColor:
-      'rgba(192,132,252,0.25)',
-    backgroundColor:
-      'rgba(192,132,252,0.09)',
   },
 
   bfrbDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: AuraColors.cyan,
-  },
-
-  behaviorEmoji: {
-    fontSize: 14,
-  },
-
-  bfrbValueText: {
-    color: AuraColors.white,
-    fontSize: 13,
-    fontWeight: '700',
+    backgroundColor: '#9B8AC1',
   },
 
   countBadgeCyan: {
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 8,
-    backgroundColor: 'rgba(6, 182, 212, 0.15)',
+    backgroundColor: 'rgba(245, 192, 192, 0.4)',
     borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.35)',
+    borderColor: '#F5C0C0',
     marginLeft: 'auto',
   },
 
   countBadgeTextCyan: {
-    color: AuraColors.cyan,
-    fontSize: 10,
+    color: '#D9534F',
+    fontSize: 11,
     fontWeight: '700',
   },
 
@@ -860,15 +820,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 8,
-    backgroundColor: 'rgba(192, 132, 252, 0.15)',
+    backgroundColor: 'rgba(202, 231, 224, 0.4)',
     borderWidth: 1,
-    borderColor: 'rgba(192, 132, 252, 0.35)',
+    borderColor: 'rgba(202, 231, 224, 0.8)',
     marginLeft: 'auto',
   },
 
   countBadgeTextPurple: {
-    color: '#c084fc',
-    fontSize: 10,
+    color: '#2E7D6E',
+    fontSize: 11,
     fontWeight: '700',
   },
 
@@ -886,13 +846,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 12,
-    backgroundColor: 'rgba(6, 182, 212, 0.08)',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.25)',
+    borderColor: 'rgba(226, 232, 240, 0.8)',
   },
 
   driverTagText: {
-    color: AuraColors.white,
+    color: '#1A2151',
     fontSize: 12,
     fontWeight: '600',
   },
@@ -904,9 +864,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 12,
-    backgroundColor: 'rgba(192, 132, 252, 0.08)',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: 'rgba(192, 132, 252, 0.25)',
+    borderColor: 'rgba(226, 232, 240, 0.8)',
   },
 
   typeTagEmoji: {
@@ -914,32 +874,37 @@ const styles = StyleSheet.create({
   },
 
   typeTagText: {
-    color: AuraColors.white,
+    color: '#1A2151',
     fontSize: 12,
     fontWeight: '700',
   },
 
   pageTitle: {
-    color: AuraColors.white,
-    fontSize: 22,
+    color: '#1A2151',
+    fontSize: 20,
     fontWeight: '800',
     marginTop: 8,
   },
 
   pageSubtitle: {
-    color: AuraColors.muted,
-    fontSize: 12,
+    color: '#64748B',
+    fontSize: 13,
     lineHeight: 19,
     marginTop: 6,
-    marginBottom: 18,
+    marginBottom: 16,
   },
 
   settingCard: {
     padding: 16,
     borderWidth: 1,
-    borderColor: AuraColors.border,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 18,
-    backgroundColor: AuraColors.card,
+    backgroundColor: 'rgba(255, 255, 255, 0.82)',
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
 
   settingHeader: {
@@ -955,8 +920,8 @@ const styles = StyleSheet.create({
   },
 
   settingTitle: {
-    color: AuraColors.white,
-    fontSize: 13,
+    color: '#1A2151',
+    fontSize: 14,
     fontWeight: '800',
   },
 
@@ -964,27 +929,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     paddingVertical: 4,
     borderRadius: 8,
-    backgroundColor:
-      'rgba(6,182,212,0.10)',
+    backgroundColor: 'rgba(191, 223, 245, 0.45)',
+    borderWidth: 1,
+    borderColor: '#bfdff5',
   },
 
   percentageText: {
-    color: AuraColors.cyan,
-    fontSize: 12,
+    color: '#1F4A75',
+    fontSize: 13,
     fontWeight: '800',
   },
 
   settingDescription: {
-    color: AuraColors.muted,
-    fontSize: 10,
-    lineHeight: 15,
+    color: '#5A5A5A',
+    fontSize: 11,
+    lineHeight: 16,
     marginTop: 8,
   },
 
   presetRow: {
     flexDirection: 'row',
     gap: 8,
-    marginTop: 18,
+    marginTop: 16,
   },
 
   presetButton: {
@@ -992,52 +958,52 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: AuraColors.border,
+    borderColor: 'rgba(226, 232, 240, 0.8)',
     borderRadius: 12,
-    backgroundColor:
-      'rgba(255,255,255,0.025)',
+    backgroundColor: '#FFFFFF',
   },
 
   presetButtonSelected: {
-    borderColor: AuraColors.cyan,
-    backgroundColor:
-      'rgba(6,182,212,0.10)',
+    borderColor: '#bfdff5',
+    backgroundColor: 'rgba(191, 223, 245, 0.45)',
+    borderWidth: 1.5,
   },
 
   presetLabel: {
-    color: AuraColors.muted,
+    color: '#7E7889',
     fontSize: 11,
     fontWeight: '700',
   },
 
   presetLabelSelected: {
-    color: AuraColors.white,
+    color: '#1F4A75',
   },
 
   presetValue: {
-    color: AuraColors.mutedDark,
-    fontSize: 9,
+    color: '#9C96A6',
+    fontSize: 10,
     marginTop: 3,
   },
 
   presetValueSelected: {
-    color: AuraColors.cyan,
+    color: '#1F4A75',
+    fontWeight: '700',
   },
 
   customHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 20,
+    marginTop: 18,
   },
 
   customLabel: {
-    color: AuraColors.muted,
-    fontSize: 10,
+    color: '#5A5A5A',
+    fontSize: 11,
     fontWeight: '700',
   },
 
   customValue: {
-    color: AuraColors.cyan,
+    color: '#1F4A75',
     fontSize: 13,
     fontWeight: '800',
   },
@@ -1054,8 +1020,8 @@ const styles = StyleSheet.create({
   },
 
   sliderLabel: {
-    color: AuraColors.mutedDark,
-    fontSize: 9,
+    color: '#9C96A6',
+    fontSize: 10,
   },
 
   previewCard: {
@@ -1064,24 +1030,20 @@ const styles = StyleSheet.create({
     padding: 15,
     marginTop: 14,
     borderWidth: 1,
-    borderColor:
-      'rgba(139,92,246,0.20)',
+    borderColor: 'rgba(226, 232, 240, 0.8)',
     borderRadius: 16,
-    backgroundColor:
-      'rgba(139,92,246,0.045)',
+    backgroundColor: '#FFFFFF',
   },
 
   previewCircle: {
-    width: 54,
-    height: 54,
+    width: 50,
+    height: 50,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor:
-      'rgba(6,182,212,0.32)',
-    borderRadius: 27,
-    backgroundColor:
-      'rgba(6,182,212,0.10)',
+    borderColor: 'rgba(191, 223, 245, 0.6)',
+    borderRadius: 25,
+    backgroundColor: 'rgba(191, 223, 245, 0.35)',
   },
 
   previewTextArea: {
@@ -1090,63 +1052,43 @@ const styles = StyleSheet.create({
   },
 
   previewTitle: {
-    color: AuraColors.white,
-    fontSize: 12,
+    color: '#1A2151',
+    fontSize: 13,
     fontWeight: '800',
   },
 
   previewDescription: {
-    color: AuraColors.muted,
-    fontSize: 10,
-    lineHeight: 15,
+    color: '#5A5A5A',
+    fontSize: 11,
+    lineHeight: 16,
     marginTop: 4,
   },
 
-  saveButtonWrapper: {
-    marginTop: 24,
-    borderRadius: 14,
-  },
-
-  saveButton: {
-    height: 52,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderRadius: 14,
-  },
-
-  saveButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '800',
-  },
-
-  buttonPressed: {
-    opacity: 0.75,
-    transform: [{ scale: 0.99 }],
-  },
-
   dangerZoneCard: {
-    marginTop: 24,
+    marginTop: 22,
     padding: 16,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    backgroundColor: 'rgba(255, 255, 255, 0.025)',
+    borderColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: 'rgba(255, 255, 255, 0.82)',
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
 
   dangerZoneTitle: {
-    color: AuraColors.white,
-    fontSize: 13,
+    color: '#1A2151',
+    fontSize: 14,
     fontWeight: '800',
     marginBottom: 4,
   },
 
   dangerZoneDesc: {
-    color: AuraColors.mutedDark,
-    fontSize: 10,
-    lineHeight: 15,
+    color: '#7E7889',
+    fontSize: 11,
+    lineHeight: 16,
     marginBottom: 14,
   },
 
@@ -1162,25 +1104,31 @@ const styles = StyleSheet.create({
   },
 
   clearDataButton: {
-    borderColor: 'rgba(239, 68, 68, 0.35)',
-    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    borderColor: '#F5C0C0',
+    backgroundColor: 'rgba(245, 192, 192, 0.35)',
   },
 
   clearDataButtonText: {
-    color: AuraColors.warning,
+    color: '#D9534F',
     fontSize: 13,
     fontWeight: '700',
   },
 
   logoutButton: {
-    borderColor: AuraColors.border,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderColor: 'rgba(226, 232, 240, 0.8)',
+    backgroundColor: '#FFFFFF',
     marginBottom: 0,
   },
 
   logoutButtonText: {
-    color: AuraColors.muted,
+    color: '#5A5A5A',
     fontSize: 13,
     fontWeight: '700',
   },
+
+  buttonPressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.99 }],
+  },
 });
+

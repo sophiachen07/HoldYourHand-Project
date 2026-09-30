@@ -39,9 +39,6 @@ export default function LoginScreen() {
   }, [isReady, hasCompletedOnboarding]);
 
   function handleLogin() {
-    // 依據初次使用狀態決定導航目標：
-    // 初次使用 -> 強制進入個人基本資料設定 (Profile)
-    // 已完成過設定 -> 直接進入主儀表板 (Dashboard)
     if (!hasCompletedOnboarding) {
       router.push('/profile');
     } else {
@@ -51,13 +48,15 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
-      <View style={styles.background}>
-        <View style={styles.purpleGlow} />
-        <View style={styles.cyanGlow} />
-        <View style={styles.pinkGlow} />
-      </View>
+      {/* 柔和粉紫到鼠尾草薄荷綠的無壓力背景 */}
+      <LinearGradient
+        colors={['#EDE5F8', '#DEEEF8', '#E5F4EE']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
 
       <KeyboardAvoidingView
         style={styles.keyboardView}
@@ -70,17 +69,14 @@ export default function LoginScreen() {
         >
           <View style={styles.brandContainer}>
             <LinearGradient
-              colors={[
-                AuraColors.purple,
-                AuraColors.cyan,
-              ]}
+              colors={['#9B8AC1', '#CAE7E0']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.logo}
             >
               <Activity
                 size={38}
-                strokeWidth={2.2}
+                strokeWidth={2.4}
                 color="#ffffff"
               />
             </LinearGradient>
@@ -95,7 +91,7 @@ export default function LoginScreen() {
 
             {!hasCompletedOnboarding && isReady && (
               <View style={styles.onboardingBadge}>
-                <Sparkles size={12} color="#06b6d4" />
+                <Sparkles size={12} color="#2E7D6E" />
                 <Text style={styles.onboardingBadgeText}>
                   歡迎使用 · 初次快速設定引導
                 </Text>
@@ -118,7 +114,7 @@ export default function LoginScreen() {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
-                selectionColor={AuraColors.cyan}
+                selectionColor={AuraColors.purple}
               />
             </View>
 
@@ -134,7 +130,7 @@ export default function LoginScreen() {
                 placeholder="輸入您的密碼"
                 placeholderTextColor={AuraColors.mutedDark}
                 secureTextEntry
-                selectionColor={AuraColors.cyan}
+                selectionColor={AuraColors.purple}
               />
             </View>
 
@@ -165,7 +161,7 @@ export default function LoginScreen() {
                 <FontAwesome
                   name="apple"
                   size={18}
-                  color="#ffffff"
+                  color="#333333"
                 />
 
                 <Text style={styles.socialButtonText}>
@@ -181,15 +177,7 @@ export default function LoginScreen() {
                 pressed && styles.loginButtonPressed,
               ]}
             >
-              <LinearGradient
-                colors={[
-                  AuraColors.purple,
-                  AuraColors.cyan,
-                ]}
-                start={{ x: 0, y: 0.5 }}
-                end={{ x: 1, y: 0.5 }}
-                style={styles.loginButton}
-              >
+              <View style={styles.loginButton}>
                 <Text style={styles.loginButtonText}>
                   {hasCompletedOnboarding ? '登入帳號' : '登入並開始初次設定'}
                 </Text>
@@ -197,9 +185,9 @@ export default function LoginScreen() {
                 <ArrowRight
                   size={17}
                   strokeWidth={2.3}
-                  color="#ffffff"
+                  color="#2E7D6E"
                 />
-              </LinearGradient>
+              </View>
             </Pressable>
           </View>
         </ScrollView>
@@ -211,53 +199,11 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: AuraColors.backgroundDeep,
+    backgroundColor: '#EDE5F8',
   },
 
   keyboardView: {
     flex: 1,
-  },
-
-  background: {
-    ...StyleSheet.absoluteFill,
-    overflow: 'hidden',
-    backgroundColor: AuraColors.backgroundDeep,
-  },
-
-  purpleGlow: {
-    position: 'absolute',
-    top: 80,
-    left: -100,
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    backgroundColor: 'rgba(139,92,246,0.12)',
-    shadowColor: AuraColors.purple,
-    shadowOpacity: 0.35,
-    shadowRadius: 80,
-  },
-
-  cyanGlow: {
-    position: 'absolute',
-    right: -120,
-    bottom: 80,
-    width: 320,
-    height: 320,
-    borderRadius: 160,
-    backgroundColor: 'rgba(6,182,212,0.10)',
-    shadowColor: AuraColors.cyan,
-    shadowOpacity: 0.3,
-    shadowRadius: 90,
-  },
-
-  pinkGlow: {
-    position: 'absolute',
-    top: '48%',
-    left: '35%',
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: 'rgba(236,72,153,0.05)',
   },
 
   container: {
@@ -281,29 +227,29 @@ const styles = StyleSheet.create({
     marginBottom: 17,
     borderRadius: 21,
 
-    shadowColor: AuraColors.purple,
+    shadowColor: '#9B8AC1',
     shadowOffset: {
       width: 0,
-      height: 10,
+      height: 8,
     },
-    shadowOpacity: 0.35,
-    shadowRadius: 20,
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
 
-    elevation: 10,
+    elevation: 8,
   },
 
   brandName: {
-    color: AuraColors.white,
+    color: '#333333',
     fontSize: 28,
     fontWeight: '800',
-    letterSpacing: 1.4,
+    letterSpacing: 1.2,
   },
 
   slogan: {
-    color: AuraColors.cyan,
-    fontSize: 10,
+    color: '#9B8AC1',
+    fontSize: 11,
     fontWeight: '700',
-    letterSpacing: 2.2,
+    letterSpacing: 2,
     marginTop: 5,
   },
 
@@ -316,48 +262,58 @@ const styles = StyleSheet.create({
     marginTop: 14,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(6,182,212,0.3)',
-    backgroundColor: 'rgba(6,182,212,0.08)',
+    borderColor: 'rgba(192, 237, 226, 0.95)',
+    backgroundColor: 'rgba(192, 237, 226, 0.45)',
   },
 
   onboardingBadgeText: {
-    color: '#06b6d4',
+    color: '#2E7D6E',
     fontSize: 11,
     fontWeight: '700',
   },
 
   form: {
     width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    padding: 22,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
   },
 
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: 18,
   },
 
   label: {
-    color: AuraColors.muted,
-    fontSize: 10,
+    color: '#5A5A5A',
+    fontSize: 11,
     fontWeight: '700',
-    letterSpacing: 0.7,
+    letterSpacing: 0.5,
     marginBottom: 8,
   },
 
   input: {
-    height: 52,
+    height: 50,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: AuraColors.border,
-    borderRadius: 13,
-    backgroundColor: AuraColors.card,
-    color: AuraColors.white,
+    borderColor: 'rgba(226, 232, 240, 0.8)',
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    color: '#1A2151',
     fontSize: 14,
   },
 
   socialRow: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 1,
-    marginBottom: 20,
+    marginTop: 2,
+    marginBottom: 18,
   },
 
   socialButton: {
@@ -368,53 +324,52 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     borderWidth: 1,
-    borderColor: AuraColors.border,
+    borderColor: 'rgba(226, 232, 240, 0.8)',
     borderRadius: 12,
-    backgroundColor: AuraColors.card,
+    backgroundColor: '#FFFFFF',
   },
 
   socialButtonText: {
-    color: AuraColors.white,
+    color: '#1A2151',
     fontSize: 12,
     fontWeight: '600',
   },
 
   buttonPressed: {
-    opacity: 0.65,
-    backgroundColor: AuraColors.cardStrong,
+    opacity: 0.7,
+    backgroundColor: 'rgba(241, 245, 249, 0.7)',
   },
 
   loginButtonWrapper: {
     width: '100%',
     borderRadius: 14,
-
-    shadowColor: AuraColors.purple,
+    shadowColor: '#c0ede2',
     shadowOffset: {
       width: 0,
-      height: 8,
+      height: 4,
     },
-    shadowOpacity: 0.32,
-    shadowRadius: 16,
-
-    elevation: 8,
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 4,
   },
 
   loginButtonPressed: {
-    opacity: 0.78,
+    opacity: 0.8,
     transform: [{ scale: 0.99 }],
   },
 
   loginButton: {
-    height: 54,
+    height: 52,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 9,
     borderRadius: 14,
+    backgroundColor: '#c0ede2',
   },
 
   loginButtonText: {
-    color: '#ffffff',
+    color: '#2E7D6E',
     fontSize: 14,
     fontWeight: '700',
   },

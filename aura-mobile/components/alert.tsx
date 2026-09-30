@@ -113,7 +113,7 @@ export function PickingAlertModal({
             <View style={styles.iconCircle}>
               <AlertTriangle
                 size={22}
-                color={AuraColors.white}
+                color="#D9534F"
               />
             </View>
 
@@ -129,7 +129,7 @@ export function PickingAlertModal({
             >
               <X
                 size={20}
-                color={AuraColors.muted}
+                color="#7E7889"
               />
             </Pressable>
           </View>
@@ -180,9 +180,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
-
-    // 背景遮罩再深一點，讓視線集中到提醒視窗。
-    backgroundColor: 'rgba(3, 2, 10, 0.86)',
+    backgroundColor: 'rgba(30, 20, 40, 0.45)',
   },
 
   modalCard: {
@@ -190,18 +188,15 @@ const styles = StyleSheet.create({
     maxWidth: 360,
     padding: 22,
     borderWidth: 1.5,
-    borderColor: 'rgba(239, 68, 68, 0.70)',
+    borderColor: 'rgba(245, 192, 192, 0.85)',
     borderRadius: 22,
-
-    // 改成接近實色，不再沿用較透明的 cardStrong。
-    backgroundColor: '#120e24',
-
-    shadowColor: '#000',
+    backgroundColor: 'rgba(255, 255, 255, 0.96)',
+    shadowColor: '#9B8AC1',
     shadowOffset: {
       width: 0,
       height: 8,
     },
-    shadowOpacity: 0.32,
+    shadowOpacity: 0.18,
     shadowRadius: 16,
     elevation: 12,
   },
@@ -218,30 +213,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 22,
-    backgroundColor: AuraColors.warning,
+    backgroundColor: '#F5C0C0',
   },
 
   closeButton: {
-    width: 42,
-    height: 42,
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(226, 232, 240, 0.8)',
+    backgroundColor: '#FFFFFF',
   },
 
   title: {
     marginTop: 18,
-    color: AuraColors.white,
+    color: '#1A2151',
     fontSize: 22,
     fontWeight: '900',
   },
 
   description: {
     marginTop: 8,
-    color: '#cbd5e1',
+    color: '#5A5A5A',
     fontSize: 15,
     lineHeight: 22,
     fontWeight: '600',
@@ -253,11 +248,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 22,
     borderRadius: 14,
-    backgroundColor: AuraColors.warning,
+    backgroundColor: '#9B8AC1',
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
   },
 
   primaryButtonText: {
-    color: AuraColors.white,
+    color: '#ffffff',
     fontSize: 15,
     fontWeight: '900',
   },
@@ -270,8 +270,8 @@ const styles = StyleSheet.create({
   },
 
   falseDetectionText: {
-    color: '#aeb8c6',
-    fontSize: 11,
+    color: '#7E7889',
+    fontSize: 12,
     fontWeight: '600',
     textDecorationLine: 'underline',
   },

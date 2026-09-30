@@ -1,21 +1,32 @@
 export const AuraColors = {
-  background: '#0c0915',
-  backgroundDeep: '#07050f',
+  background: '#EDE5F8',
+  backgroundDeep: '#DEEEF8',
 
-  card: 'rgba(255,255,255,0.035)',
-  cardStrong: 'rgba(255,255,255,0.055)',
-  border: 'rgba(255,255,255,0.08)',
-  borderFocus: 'rgba(255,255,255,0.18)',
+  card: 'rgba(255, 255, 255, 0.82)',
+  cardPure: '#FFFFFF',
+  cardStrong: 'rgba(255, 255, 255, 0.95)',
+  border: 'rgba(255, 255, 255, 0.95)',
+  borderFocus: '#9B8AC1',
 
-  white: '#f8fafc',
-  muted: '#94a3b8',
-  mutedDark: '#64748b',
+  textPrimary: '#1A2151',
+  textSecondary: '#64748B',
+  white: '#333333', // 保持相容舊版 white 指標為主要深色文字
+  textWhite: '#FFFFFF', // 真正用於深色按鈕上的白字
+  muted: '#7E7889',
+  mutedDark: '#9C96A6',
 
-  cyan: '#06b6d4',
-  purple: '#8b5cf6',
-  pink: '#ec4899',
+  // 核心主題配色
+  purple: '#9B8AC1',
+  cyan: '#CDE1F8',
+  softBlue: '#CDE1F8',
+  pink: '#F5C0C0',
+  mint: '#CAE7E0',
 
-  normal: '#14b8a6',
-  warning: '#ef4444',
-  caution: '#eab308',
-} as const;
+  // 狀態與生理指標色
+  normal: '#CAE7E0',
+  normalDark: '#2E7D6E',
+  warning: '#F5C0C0',
+  warningDark: '#D9534F',
+  caution: '#F9D99A',
+  cautionDark: '#B8860B',
+} as const;

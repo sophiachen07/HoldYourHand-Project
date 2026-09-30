@@ -54,39 +54,39 @@ export default function DeviceScreen() {
       return {
         text: `${connectedDeviceName || 'Hold your hand'} 已連線`,
         color: '#10b981',
-        bg: 'rgba(16,185,129,0.15)',
-        border: 'rgba(16,185,129,0.3)',
+        bg: 'rgba(16,185,129,0.12)',
+        border: 'rgba(16,185,129,0.25)',
       };
     }
     if (isScanning) {
       return {
         text: '正在搜尋 BLE 穿戴手環...',
-        color: '#06b6d4',
-        bg: 'rgba(6,182,212,0.15)',
-        border: 'rgba(6,182,212,0.3)',
+        color: '#0284c7',
+        bg: 'rgba(14,165,233,0.12)',
+        border: 'rgba(14,165,233,0.25)',
       };
     }
     if (isConnecting) {
       return {
         text: '正在建立藍牙連線與訂閱...',
-        color: '#f59e0b',
-        bg: 'rgba(245,158,11,0.15)',
-        border: 'rgba(245,158,11,0.3)',
+        color: '#d97706',
+        bg: 'rgba(217,119,6,0.12)',
+        border: 'rgba(217,119,6,0.25)',
       };
     }
     if (status === 'error') {
       return {
         text: '連線發生錯誤，請重試',
-        color: '#ef4444',
-        bg: 'rgba(239,68,68,0.15)',
-        border: 'rgba(239,68,68,0.3)',
+        color: '#dc2626',
+        bg: 'rgba(220,38,38,0.12)',
+        border: 'rgba(220,38,38,0.25)',
       };
     }
     return {
       text: mode === 'ble' ? '手環未連線' : '模擬器未連線',
-      color: '#94a3b8',
-      bg: 'rgba(148,163,184,0.1)',
-      border: 'rgba(148,163,184,0.2)',
+      color: '#64748b',
+      bg: 'rgba(100,116,139,0.1)',
+      border: 'rgba(100,116,139,0.2)',
     };
   }
 
@@ -94,6 +94,14 @@ export default function DeviceScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      {/* 整體背景：微調加深的柔和粉紫到淺藍綠色漸層 */}
+      <LinearGradient
+        colors={['#EDE5F8', '#DEEEF8', '#E5F4EE']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
@@ -124,7 +132,10 @@ export default function DeviceScreen() {
               }
             }}
           >
-            <Bluetooth size={14} color={mode === 'ble' ? '#06b6d4' : '#94a3b8'} />
+            <Bluetooth
+              size={15}
+              color={mode === 'ble' ? '#1A2151' : '#64748B'}
+            />
             <Text
               style={[
                 styles.modeTabText,
@@ -147,7 +158,10 @@ export default function DeviceScreen() {
               }
             }}
           >
-            <Server size={14} color={mode === 'simulator' ? '#c084fc' : '#94a3b8'} />
+            <Server
+              size={15}
+              color={mode === 'simulator' ? '#1A2151' : '#64748B'}
+            />
             <Text
               style={[
                 styles.modeTabText,
@@ -180,15 +194,25 @@ export default function DeviceScreen() {
                   isConnected
                     ? ['#06b6d4', '#10b981']
                     : isScanning
-                    ? ['#8b5cf6', '#06b6d4']
-                    : ['#334155', '#1e293b']
+                    ? ['#9B8AC1', '#38bdf8']
+                    : ['#2A476E', '#1B3252']
                 }
                 style={styles.deviceCircle}
               >
                 {mode === 'ble' ? (
-                  <Bluetooth size={36} color="#ffffff" />
+                  <Bluetooth
+                    size={36}
+                    color={
+                      isConnected || isScanning ? '#ffffff' : '#67b2f5'
+                    }
+                  />
                 ) : (
-                  <Radio size={36} color="#ffffff" />
+                  <Radio
+                    size={36}
+                    color={
+                      isConnected || isScanning ? '#ffffff' : '#67b2f5'
+                    }
+                  />
                 )}
               </LinearGradient>
             </View>
@@ -216,7 +240,7 @@ export default function DeviceScreen() {
           </View>
         </View>
 
-        {/* BLE 掃描與裝置清單區 */}
+        {/* BLE 掃描與裝置清單區（下方卡片：柔和米白/奶油黃色底色） */}
         {mode === 'ble' && !isConnected && (
           <View style={styles.scanSection}>
             <View style={styles.sectionHeader}>
@@ -226,7 +250,7 @@ export default function DeviceScreen() {
                   style={styles.scanButtonSmall}
                   onPress={stopScan}
                 >
-                  <ActivityIndicator size="small" color="#06b6d4" />
+                  <ActivityIndicator size="small" color="#9B8AC1" />
                   <Text style={styles.scanButtonSmallText}>停止搜尋</Text>
                 </Pressable>
               ) : (
@@ -234,7 +258,7 @@ export default function DeviceScreen() {
                   style={styles.scanButtonSmall}
                   onPress={startScan}
                 >
-                  <RefreshCw size={13} color="#06b6d4" />
+                  <RefreshCw size={13} color="#9B8AC1" />
                   <Text style={styles.scanButtonSmallText}>重新搜尋</Text>
                 </Pressable>
               )}
@@ -245,7 +269,7 @@ export default function DeviceScreen() {
                 <Text style={styles.emptyText}>
                   {isScanning
                     ? '正在搜尋周圍的 HoldYourHand_Device...\n請確保手環已開機並處於廣播模式'
-                    : '尚未發現裝置，請點擊「搜尋裝置」開始配對'}
+                    : '尚未發現裝置，請點擊「搜尋 HoldYourHand 手環」開始配對'}
                 </Text>
 
                 {!isScanning && (
@@ -253,7 +277,7 @@ export default function DeviceScreen() {
                     style={styles.primaryScanButton}
                     onPress={startScan}
                   >
-                    <Bluetooth size={16} color="#ffffff" />
+                    <Bluetooth size={16} color="#1A2151" />
                     <Text style={styles.primaryScanButtonText}>
                       搜尋 HoldYourHand 手環
                     </Text>
@@ -277,7 +301,7 @@ export default function DeviceScreen() {
                         <View style={styles.deviceIconBox}>
                           <Bluetooth
                             size={18}
-                            color={isTarget ? '#06b6d4' : '#94a3b8'}
+                            color={isTarget ? '#0284c7' : '#9B8AC1'}
                           />
                         </View>
                         <View>
@@ -287,7 +311,7 @@ export default function DeviceScreen() {
                             </Text>
                             {isTarget && (
                               <View style={styles.vipTag}>
-                                <Sparkles size={10} color="#06b6d4" />
+                                <Sparkles size={10} color="#0284c7" />
                                 <Text style={styles.vipTagText}>目標手環</Text>
                               </View>
                             )}
@@ -301,7 +325,7 @@ export default function DeviceScreen() {
 
                       <View style={styles.connectButtonBox}>
                         <Text style={styles.connectButtonText}>一鍵配對</Text>
-                        <ChevronRight size={14} color="#06b6d4" />
+                        <ChevronRight size={14} color="#0284c7" />
                       </View>
                     </Pressable>
                   );
@@ -327,7 +351,7 @@ export default function DeviceScreen() {
               {/* 距離 */}
               <View style={styles.metricMiniCard}>
                 <View style={styles.metricMiniHeader}>
-                  <Ruler size={13} color="#06b6d4" />
+                  <Ruler size={13} color="#0284c7" />
                   <Text style={styles.metricMiniLabel}>手部距離</Text>
                 </View>
                 <Text style={styles.metricMiniValue}>
@@ -354,7 +378,7 @@ export default function DeviceScreen() {
               {/* 角速度 */}
               <View style={styles.metricMiniCard}>
                 <View style={styles.metricMiniHeader}>
-                  <Compass size={13} color="#c084fc" />
+                  <Compass size={13} color="#9B8AC1" />
                   <Text style={styles.metricMiniLabel}>角速度</Text>
                 </View>
                 <Text style={styles.metricMiniValue}>
@@ -402,7 +426,7 @@ export default function DeviceScreen() {
               {/* 血氧 */}
               <View style={styles.metricMiniCard}>
                 <View style={styles.metricMiniHeader}>
-                  <Droplet size={13} color="#06b6d4" />
+                  <Droplet size={13} color="#0284c7" />
                   <Text style={styles.metricMiniLabel}>血氧</Text>
                 </View>
                 <Text style={styles.metricMiniValue}>
@@ -423,7 +447,7 @@ export default function DeviceScreen() {
             >
               <Zap
                 size={15}
-                color={sensorData.motorStatus ? '#f59e0b' : '#94a3b8'}
+                color={sensorData.motorStatus ? '#d97706' : '#64748b'}
               />
               <Text
                 style={[
@@ -454,7 +478,7 @@ export default function DeviceScreen() {
                 onPress={() => router.push('/dashboard')}
               >
                 <LinearGradient
-                  colors={['#8b5cf6', '#06b6d4']}
+                  colors={['#9B8AC1', '#38bdf8']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.gradientButton}
@@ -482,7 +506,7 @@ export default function DeviceScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#07050f',
+    backgroundColor: '#EDE5F8',
   },
   container: {
     paddingHorizontal: 20,
@@ -501,28 +525,38 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(155,138,193,0.3)',
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   backButtonText: {
-    color: '#ffffff',
+    color: '#333333',
     fontSize: 26,
     lineHeight: 28,
   },
   navigationTitle: {
-    color: '#f8fafc',
+    color: '#333333',
     fontSize: 16,
     fontWeight: '700',
     marginLeft: 12,
   },
   modeToggleContainer: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
     padding: 4,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(155,138,193,0.2)',
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
   },
   modeTab: {
     flex: 1,
@@ -530,34 +564,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 9,
-    borderRadius: 9,
+    paddingVertical: 10,
+    borderRadius: 10,
   },
   modeTabActive: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: '#bfdff5',
+    shadowColor: '#bfdff5',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   modeTabText: {
-    color: '#94a3b8',
-    fontSize: 12,
+    color: '#6B6675',
+    fontSize: 13,
     fontWeight: '600',
   },
   modeTabTextActive: {
-    color: '#f8fafc',
+    color: '#1A2151',
     fontWeight: '700',
   },
   header: {
     marginBottom: 16,
   },
   title: {
-    color: '#f8fafc',
-    fontSize: 24,
+    color: '#333333',
+    fontSize: 22,
     fontWeight: '800',
     letterSpacing: 0.3,
   },
   description: {
-    color: '#94a3b8',
-    fontSize: 12,
-    lineHeight: 18,
+    color: '#5A5A5A',
+    fontSize: 13,
+    lineHeight: 19,
     marginTop: 6,
   },
   radarContainer: {
@@ -570,8 +609,8 @@ const styles = StyleSheet.create({
     height: 170,
     borderRadius: 85,
     borderWidth: 1,
-    borderColor: 'rgba(6,182,212,0.18)',
-    backgroundColor: 'rgba(6,182,212,0.02)',
+    borderColor: 'rgba(205,225,248,0.7)',
+    backgroundColor: 'rgba(205,225,248,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -580,8 +619,8 @@ const styles = StyleSheet.create({
     height: 130,
     borderRadius: 65,
     borderWidth: 1,
-    borderColor: 'rgba(139,92,246,0.22)',
-    backgroundColor: 'rgba(139,92,246,0.04)',
+    borderColor: 'rgba(155,138,193,0.3)',
+    backgroundColor: 'rgba(205,225,248,0.25)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -591,10 +630,11 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#8b5cf6',
-    shadowOpacity: 0.4,
-    shadowRadius: 15,
-    elevation: 8,
+    shadowColor: '#A8C9EF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 6,
   },
   statusBadge: {
     flexDirection: 'row',
@@ -604,6 +644,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     marginTop: 18,
+    backgroundColor: '#FFFFFF',
   },
   statusDot: {
     width: 8,
@@ -616,7 +657,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   scanSection: {
-    marginTop: 16,
+    marginTop: 18,
+    padding: 16,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.82)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -625,8 +676,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    color: '#f8fafc',
-    fontSize: 14,
+    color: '#1A2151',
+    fontSize: 15,
     fontWeight: '700',
   },
   scanButtonSmall: {
@@ -636,39 +687,44 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 14,
-    backgroundColor: 'rgba(6,182,212,0.1)',
+    backgroundColor: 'rgba(155,138,193,0.15)',
   },
   scanButtonSmallText: {
-    color: '#06b6d4',
+    color: '#9B8AC1',
     fontSize: 11,
     fontWeight: '600',
   },
   emptyBox: {
-    padding: 24,
-    borderRadius: 16,
+    padding: 22,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
-    backgroundColor: 'rgba(255,255,255,0.02)',
+    borderColor: 'rgba(226, 232, 240, 0.8)',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
   },
   emptyText: {
-    color: '#64748b',
-    fontSize: 12,
+    color: '#4A4A4A',
+    fontSize: 13,
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: 20,
     marginBottom: 16,
   },
   primaryScanButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingHorizontal: 20,
+    paddingHorizontal: 22,
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: '#7c3aed',
+    backgroundColor: '#bfdff5',
+    shadowColor: '#bfdff5',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    elevation: 4,
   },
   primaryScanButtonText: {
-    color: '#ffffff',
+    color: '#1A2151',
     fontSize: 13,
     fontWeight: '700',
   },
@@ -682,12 +738,12 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderColor: 'rgba(226, 232, 240, 0.8)',
+    backgroundColor: '#FFFFFF',
   },
   deviceItemTarget: {
-    borderColor: 'rgba(6,182,212,0.4)',
-    backgroundColor: 'rgba(6,182,212,0.06)',
+    borderColor: 'rgba(14,165,233,0.5)',
+    backgroundColor: '#F0F9FF',
   },
   deviceInfo: {
     flexDirection: 'row',
@@ -699,7 +755,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(155,138,193,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -709,7 +765,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   deviceName: {
-    color: '#f8fafc',
+    color: '#1A2151',
     fontSize: 13,
     fontWeight: '700',
   },
@@ -720,16 +776,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
-    backgroundColor: 'rgba(6,182,212,0.15)',
+    backgroundColor: 'rgba(14,165,233,0.15)',
   },
   vipTagText: {
-    color: '#06b6d4',
+    color: '#0284c7',
     fontSize: 9,
     fontWeight: '700',
   },
   deviceMac: {
-    color: '#64748b',
-    fontSize: 10,
+    color: '#64748B',
+    fontSize: 11,
     marginTop: 2,
   },
   connectButtonBox: {
@@ -739,20 +795,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 10,
-    backgroundColor: 'rgba(6,182,212,0.12)',
+    backgroundColor: 'rgba(14,165,233,0.12)',
   },
   connectButtonText: {
-    color: '#06b6d4',
+    color: '#0284c7',
     fontSize: 11,
     fontWeight: '700',
   },
   liveCard: {
     marginTop: 18,
     padding: 16,
-    borderRadius: 18,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(6,182,212,0.2)',
-    backgroundColor: 'rgba(6,182,212,0.04)',
+    borderColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: 'rgba(255, 255, 255, 0.82)',
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   liveHeader: {
     flexDirection: 'row',
@@ -766,12 +827,12 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   liveTitle: {
-    color: '#f8fafc',
-    fontSize: 13,
+    color: '#1A2151',
+    fontSize: 14,
     fontWeight: '700',
   },
   liveFrequency: {
-    color: '#06b6d4',
+    color: '#0284c7',
     fontSize: 10,
     fontWeight: '600',
   },
@@ -784,9 +845,9 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 11,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(226, 232, 240, 0.8)',
   },
   metricMiniHeader: {
     flexDirection: 'row',
@@ -795,19 +856,19 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   metricMiniLabel: {
-    color: '#94a3b8',
+    color: '#64748b',
     fontSize: 10,
     fontWeight: '600',
   },
   metricMiniValue: {
-    color: '#f8fafc',
+    color: '#1A2151',
     fontSize: 15,
     fontWeight: '800',
   },
   metricUnit: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#94a3b8',
+    color: '#64748b',
   },
   metricMiniSub: {
     color: '#64748b',
@@ -816,7 +877,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   alertText: {
-    color: '#ef4444',
+    color: '#dc2626',
   },
   motorStatusBar: {
     flexDirection: 'row',
@@ -824,21 +885,22 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 10,
     borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(226, 232, 240, 0.8)',
     marginTop: 4,
   },
   motorStatusBarActive: {
-    backgroundColor: 'rgba(245,158,11,0.12)',
-    borderColor: 'rgba(245,158,11,0.3)',
-    borderWidth: 1,
+    backgroundColor: '#FEF3C7',
+    borderColor: '#FDE68A',
   },
   motorStatusText: {
-    color: '#94a3b8',
+    color: '#64748b',
     fontSize: 11,
     fontWeight: '600',
   },
   motorStatusTextActive: {
-    color: '#f59e0b',
+    color: '#b45309',
     fontWeight: '700',
   },
   lastTimeText: {
@@ -871,11 +933,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(239,68,68,0.3)',
-    backgroundColor: 'rgba(239,68,68,0.06)',
+    borderColor: 'rgba(220,38,38,0.3)',
+    backgroundColor: 'rgba(220,38,38,0.06)',
   },
   disconnectButtonText: {
-    color: '#ef4444',
+    color: '#dc2626',
     fontSize: 13,
     fontWeight: '600',
   },

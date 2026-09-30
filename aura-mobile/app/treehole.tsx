@@ -245,11 +245,13 @@ export default function TreeholeChatScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* 沉浸式背景與光暈 */}
-      <View style={styles.background}>
-        <View style={styles.pinkGlow} />
-        <View style={styles.purpleGlow} />
-      </View>
+      {/* 柔和粉紫到鼠尾草薄荷綠的無壓力背景 */}
+      <LinearGradient
+        colors={['#EDE5F8', '#DEEEF8', '#E5F4EE']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
 
       {/* 頂部導航列 */}
       <View style={styles.header}>
@@ -264,7 +266,7 @@ export default function TreeholeChatScreen() {
           }}
           hitSlop={10}
         >
-          <ChevronLeft size={20} color={AuraColors.white} />
+          <ChevronLeft size={20} color="#333333" />
         </Pressable>
 
         <View style={styles.headerTitleContainer}>
@@ -283,7 +285,7 @@ export default function TreeholeChatScreen() {
           onPress={handleResetChat}
           hitSlop={8}
         >
-          <RefreshCw size={16} color={AuraColors.muted} />
+          <RefreshCw size={16} color="#9B8AC1" />
         </Pressable>
       </View>
 
@@ -350,7 +352,7 @@ export default function TreeholeChatScreen() {
             <TextInput
               style={styles.textInput}
               placeholder="傾訴你的感受與想法..."
-              placeholderTextColor="rgba(255,255,255,0.35)"
+              placeholderTextColor="#9C96A6"
               value={inputMessage}
               onChangeText={setInputMessage}
               multiline
@@ -369,8 +371,8 @@ export default function TreeholeChatScreen() {
               <LinearGradient
                 colors={
                   inputMessage.trim() && !isTyping
-                    ? [AuraColors.pink, AuraColors.purple]
-                    : ['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']
+                    ? ['#9B8AC1', '#F5C0C0']
+                    : ['#DCEAFB', '#CDE1F8']
                 }
                 style={styles.sendButtonGradient}
               >
@@ -415,7 +417,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
       <View style={styles.bubbleContent}>
         {isUser ? (
           <LinearGradient
-            colors={['#ec4899', '#8b5cf6']}
+            colors={['#9B8AC1', '#F5C0C0']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.userBubbleGradient}
@@ -461,36 +463,7 @@ function formatTime(date: Date): string {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: AuraColors.backgroundDeep,
-  },
-
-  background: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    overflow: 'hidden',
-  },
-
-  pinkGlow: {
-    position: 'absolute',
-    top: 80,
-    right: -120,
-    width: 320,
-    height: 320,
-    borderRadius: 160,
-    backgroundColor: 'rgba(236,72,153,0.08)',
-  },
-
-  purpleGlow: {
-    position: 'absolute',
-    bottom: 120,
-    left: -120,
-    width: 340,
-    height: 340,
-    borderRadius: 170,
-    backgroundColor: 'rgba(139,92,246,0.08)',
+    backgroundColor: '#EDE5F8',
   },
 
   header: {
@@ -500,7 +473,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
+    borderBottomColor: 'rgba(155, 138, 193, 0.12)',
   },
 
   backButton: {
@@ -509,9 +482,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(155,138,193,0.3)',
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
 
   headerTitleContainer: {
@@ -527,13 +505,15 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: AuraColors.white,
+    color: '#1A2151',
   },
 
   onlineBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(20, 184, 166, 0.15)',
+    backgroundColor: 'rgba(202, 231, 224, 0.45)',
+    borderWidth: 1,
+    borderColor: 'rgba(202, 231, 224, 0.8)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 8,
@@ -544,18 +524,18 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#14b8a6',
+    backgroundColor: '#2E7D6E',
   },
 
   onlineText: {
     fontSize: 10,
-    color: '#14b8a6',
+    color: '#2E7D6E',
     fontWeight: '700',
   },
 
   headerSubtitle: {
     fontSize: 11,
-    color: AuraColors.muted,
+    color: '#64748B',
     marginTop: 2,
   },
 
@@ -565,7 +545,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(155,138,193,0.25)',
   },
 
   chatContainer: {
@@ -597,9 +579,9 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: 'rgba(236,72,153,0.18)',
+    backgroundColor: 'rgba(202, 231, 224, 0.5)',
     borderWidth: 1,
-    borderColor: 'rgba(236,72,153,0.3)',
+    borderColor: 'rgba(202, 231, 224, 0.8)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
@@ -613,16 +595,18 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: 'rgba(139,92,246,0.25)',
-    borderWidth: 1,
-    borderColor: 'rgba(139,92,246,0.4)',
+    backgroundColor: '#9B8AC1',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
 
   bubbleContent: {
-    maxWidth: '74%',
+    maxWidth: '76%',
   },
 
   userBubbleGradient: {
@@ -630,6 +614,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 18,
     borderBottomRightRadius: 4,
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 2,
   },
 
   userMessageText: {
@@ -644,13 +633,18 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 18,
     borderBottomLeftRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(255, 255, 255, 0.88)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(255, 255, 255, 0.95)',
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 1,
   },
 
   assistantMessageText: {
-    color: AuraColors.white,
+    color: '#1A2151',
     fontSize: 14,
     lineHeight: 21,
     fontWeight: '400',
@@ -658,7 +652,7 @@ const styles = StyleSheet.create({
 
   timestampText: {
     fontSize: 10,
-    color: AuraColors.mutedDark,
+    color: '#9C96A6',
     marginTop: 4,
   },
 
@@ -685,9 +679,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.07)',
+    borderColor: 'rgba(226, 232, 240, 0.8)',
     gap: 8,
   },
 
@@ -695,18 +689,18 @@ const styles = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 3.5,
-    backgroundColor: '#ec4899',
+    backgroundColor: '#F5C0C0',
   },
 
   typingText: {
     fontSize: 12,
-    color: AuraColors.muted,
+    color: '#5A5A5A',
   },
 
   quickPromptsSection: {
     paddingVertical: 8,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.04)',
+    borderTopColor: 'rgba(155, 138, 193, 0.12)',
   },
 
   quickPromptsList: {
@@ -715,22 +709,26 @@ const styles = StyleSheet.create({
   },
 
   quickPromptChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingHorizontal: 13,
+    paddingVertical: 8,
     borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(226, 232, 240, 0.8)',
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
   },
 
   quickPromptChipPressed: {
-    backgroundColor: 'rgba(236,72,153,0.15)',
-    borderColor: 'rgba(236,72,153,0.3)',
+    backgroundColor: 'rgba(245,192,192,0.3)',
+    borderColor: '#F5C0C0',
   },
 
   quickPromptText: {
     fontSize: 12,
-    color: AuraColors.muted,
+    color: '#5A5A5A',
     fontWeight: '500',
   },
 
@@ -738,28 +736,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: Platform.OS === 'ios' ? 12 : 16,
-    backgroundColor: AuraColors.backgroundDeep,
+    backgroundColor: '#EDE5F8',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.06)',
+    borderTopColor: 'rgba(155, 138, 193, 0.12)',
   },
 
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(226, 232, 240, 0.8)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     gap: 8,
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
 
   textInput: {
     flex: 1,
     minHeight: 36,
     maxHeight: 90,
-    color: AuraColors.white,
+    color: '#1A2151',
     fontSize: 14,
     lineHeight: 18,
     paddingVertical: 6,
@@ -775,7 +778,7 @@ const styles = StyleSheet.create({
   },
 
   sendButtonDisabled: {
-    opacity: 0.4,
+    opacity: 0.45,
   },
 
   sendButtonGradient: {
@@ -788,7 +791,8 @@ const styles = StyleSheet.create({
   disclaimerText: {
     textAlign: 'center',
     fontSize: 10,
-    color: AuraColors.mutedDark,
+    color: '#9C96A6',
     marginTop: 8,
   },
 });
+

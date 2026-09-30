@@ -140,10 +140,10 @@ export default function DashboardScreen() {
   const connectionColor =
     status === 'connected' &&
     sensorData?.connected
-      ? AuraColors.normal
+      ? '#2E7D6E'
       : status === 'connecting'
-        ? AuraColors.caution
-        : AuraColors.warning;
+        ? '#C59B27'
+        : '#D9534F';
 
   const connectionText = getConnectionText(
     status,
@@ -160,10 +160,18 @@ export default function DashboardScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <LinearGradient
+        colors={['#EDE5F8', '#DEEEF8', '#E5F4EE']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
       >
+        {/* 頂部導航列 */}
         <View style={styles.topNavigation}>
           <View>
             <Text style={styles.navigationTitle}>
@@ -180,8 +188,8 @@ export default function DashboardScreen() {
               onPress={() => setShowRelaxMenu(true)}
             >
               <Flower2
-                size={16}
-                color="#c084fc"
+                size={18}
+                color="#ffffff"
               />
             </RoundIconButton>
 
@@ -189,19 +197,62 @@ export default function DashboardScreen() {
               onPress={() => router.push('/settings')}
             >
               <Settings
-                size={16}
-                color={AuraColors.white}
+                size={18}
+                color="#ffffff"
               />
             </RoundIconButton>
           </View>
         </View>
 
+        {/* 模式切換器 (即時數據 / 統計分析) - 對齊膠囊風格 */}
+        <View style={styles.tabs}>
+          <Pressable
+            style={[
+              styles.tabButton,
+              activeTab === 'realtime' && styles.tabButtonActive,
+            ]}
+            onPress={() => setActiveTab('realtime')}
+          >
+            <Activity
+              size={15}
+              color={activeTab === 'realtime' ? '#ffffff' : '#c9adf0'}
+            />
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === 'realtime' && styles.tabTextActive,
+              ]}
+            >
+              即時數據
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={[
+              styles.tabButton,
+              activeTab === 'statistics' && styles.tabButtonActive,
+            ]}
+            onPress={() => setActiveTab('statistics')}
+          >
+            <BarChart2
+              size={15}
+              color={activeTab === 'statistics' ? '#ffffff' : '#c9adf0'}
+            />
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === 'statistics' && styles.tabTextActive,
+              ]}
+            >
+              統計分析
+            </Text>
+          </Pressable>
+        </View>
+
+        {/* 個人資料與手環狀態膠囊 */}
         <View style={styles.profileHeader}>
           <LinearGradient
-            colors={[
-              AuraColors.purple,
-              AuraColors.pink,
-            ]}
+            colors={['#9B8AC1', '#CAE7E0']}
             style={styles.avatar}
           >
             <Text style={styles.avatarText}>
@@ -224,9 +275,13 @@ export default function DashboardScreen() {
               styles.connectionBadge,
               {
                 backgroundColor:
-                  `${connectionColor}18`,
+                  status === 'connected' && sensorData?.connected
+                    ? '#CAE7E0'
+                    : '#F5C0C0',
                 borderColor:
-                  `${connectionColor}45`,
+                  status === 'connected' && sensorData?.connected
+                    ? 'rgba(46, 125, 110, 0.3)'
+                    : 'rgba(217, 83, 79, 0.3)',
               },
             ]}
           >
@@ -235,7 +290,9 @@ export default function DashboardScreen() {
                 styles.connectionDot,
                 {
                   backgroundColor:
-                    connectionColor,
+                    status === 'connected' && sensorData?.connected
+                      ? '#10B981'
+                      : '#EF4444',
                 },
               ]}
             />
@@ -244,7 +301,10 @@ export default function DashboardScreen() {
               style={[
                 styles.connectionBadgeText,
                 {
-                  color: connectionColor,
+                  color:
+                    status === 'connected' && sensorData?.connected
+                      ? '#2E7D6E'
+                      : '#9C4146',
                 },
               ]}
             >
@@ -253,36 +313,9 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        <View style={styles.tabs}>
-          <DashboardTabButton
-            active={
-              activeTab === 'realtime'
-            }
-            icon={
-              <Activity size={14} />
-            }
-            label="即時數據"
-            onPress={() =>
-              setActiveTab('realtime')
-            }
-          />
-
-          <DashboardTabButton
-            active={
-              activeTab === 'statistics'
-            }
-            icon={
-              <BarChart2 size={14} />
-            }
-            label="統計分析"
-            onPress={() =>
-              setActiveTab('statistics')
-            }
-          />
-        </View>
-
         {activeTab === 'realtime' ? (
           <View>
+            {/* 指標提示橫幅 */}
             <View style={styles.thresholdBanner}>
               <Text style={styles.thresholdIcon}>
                 💡
@@ -293,6 +326,7 @@ export default function DashboardScreen() {
               </Text>
             </View>
 
+            {/* 即時壓力指數卡片 */}
             <View style={styles.stressCard}>
               <Text style={styles.sectionLabel}>
                 即時壓力指數
@@ -300,8 +334,8 @@ export default function DashboardScreen() {
 
               <View style={styles.gaugeContainer}>
                 <Svg
-                  width={150}
-                  height={150}
+                  width={160}
+                  height={160}
                   viewBox="0 0 140 140"
                 >
                   <Defs>
@@ -314,16 +348,12 @@ export default function DashboardScreen() {
                     >
                       <Stop
                         offset="0%"
-                        stopColor={
-                          AuraColors.cyan
-                        }
+                        stopColor="#CAE7E0"
                       />
 
                       <Stop
                         offset="100%"
-                        stopColor={
-                          AuraColors.purple
-                        }
+                        stopColor="#9B8AC1"
                       />
                     </SvgLinearGradient>
 
@@ -336,26 +366,23 @@ export default function DashboardScreen() {
                     >
                       <Stop
                         offset="0%"
-                        stopColor={
-                          AuraColors.warning
-                        }
+                        stopColor="#F5C0C0"
                       />
 
                       <Stop
                         offset="100%"
-                        stopColor={
-                          AuraColors.pink
-                        }
+                        stopColor="#E57373"
                       />
                     </SvgLinearGradient>
                   </Defs>
 
+                  {/* 外圈雷達圓環底色 */}
                   <Circle
                     cx="70"
                     cy="70"
                     r={GAUGE_RADIUS}
                     fill="none"
-                    stroke="rgba(255,255,255,0.04)"
+                    stroke="rgba(205, 225, 248, 0.35)"
                     strokeWidth={8}
                   />
 
@@ -406,7 +433,23 @@ export default function DashboardScreen() {
                   },
                 ]}
               >
-                <Text style={styles.stressStatusText}>
+                <View
+                  style={[
+                    styles.statusDot,
+                    {
+                      backgroundColor:
+                        isStressed || stressScore > 75
+                          ? '#EF4444'
+                          : '#10B981',
+                    },
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.stressStatusText,
+                    { color: stressPresentation.textColor },
+                  ]}
+                >
                   {stressPresentation.label}
                 </Text>
               </View>
@@ -438,8 +481,8 @@ export default function DashboardScreen() {
                     size={16}
                     color={
                       heartRate >= 80
-                        ? AuraColors.warning
-                        : AuraColors.cyan
+                        ? '#D9534F'
+                        : '#9B8AC1'
                     }
                   />
                 }
@@ -467,7 +510,7 @@ export default function DashboardScreen() {
                 icon={
                   <Droplet
                     size={16}
-                    color={AuraColors.cyan}
+                    color="#2E7D6E"
                   />
                 }
               />
@@ -500,8 +543,8 @@ export default function DashboardScreen() {
                   size={16}
                   color={
                     !isOutOfRange && distance < 50
-                      ? AuraColors.warning
-                      : AuraColors.cyan
+                      ? '#D9534F'
+                      : '#9B8AC1'
                   }
                 />
               </View>
@@ -526,8 +569,8 @@ export default function DashboardScreen() {
                 <LinearGradient
                   colors={
                     !isOutOfRange && distance < 50
-                      ? [AuraColors.warning, AuraColors.pink]
-                      : [AuraColors.cyan, AuraColors.purple]
+                      ? ['#F5C0C0', '#E57373']
+                      : ['#CAE7E0', '#9B8AC1']
                   }
                   style={[
                     styles.forceFill,
@@ -564,8 +607,8 @@ export default function DashboardScreen() {
                   size={16}
                   color={
                     angularVelocity >= 20 && angularVelocity <= 150
-                      ? AuraColors.warning
-                      : AuraColors.purple
+                      ? '#D9534F'
+                      : '#9B8AC1'
                   }
                 />
               </View>
@@ -584,8 +627,8 @@ export default function DashboardScreen() {
                 <LinearGradient
                   colors={
                     angularVelocity >= 20 && angularVelocity <= 150
-                      ? [AuraColors.warning, AuraColors.pink]
-                      : [AuraColors.purple, AuraColors.cyan]
+                      ? ['#F5C0C0', '#E57373']
+                      : ['#9B8AC1', '#CAE7E0']
                   }
                   style={[
                     styles.forceFill,
@@ -607,7 +650,7 @@ export default function DashboardScreen() {
               <View style={styles.motorCardHeader}>
                 <Zap
                   size={18}
-                  color={motorStatus ? '#f59e0b' : '#94a3b8'}
+                  color={motorStatus ? '#D9534F' : '#64748B'}
                 />
                 <Text
                   style={[
@@ -627,6 +670,7 @@ export default function DashboardScreen() {
               </Text>
             </View>
 
+            {/* 4. 連線裝置資訊卡 */}
             <View style={styles.deviceInformation}>
               <InformationRow
                 label="連線裝置"
@@ -673,7 +717,7 @@ export default function DashboardScreen() {
             <View style={styles.modalHeader}>
               <View style={styles.modalTitleRow}>
                 <View style={styles.modalIconBadge}>
-                  <Flower2 size={16} color="#c084fc" />
+                  <Flower2 size={16} color="#ffffff" />
                 </View>
                 <Text style={styles.modalTitle}>放鬆與解壓中心</Text>
               </View>
@@ -681,7 +725,7 @@ export default function DashboardScreen() {
                 style={styles.modalCloseBtn}
                 onPress={() => setShowRelaxMenu(false)}
               >
-                <X size={16} color={AuraColors.muted} />
+                <X size={16} color="#64748B" />
               </Pressable>
             </View>
 
@@ -701,12 +745,9 @@ export default function DashboardScreen() {
                   router.push('/relax');
                 }}
               >
-                <LinearGradient
-                  colors={['rgba(139, 92, 246, 0.15)', 'rgba(236, 72, 153, 0.1)']}
-                  style={styles.optionGradient}
-                >
-                  <View style={[styles.optionIconContainer, { backgroundColor: 'rgba(139, 92, 246, 0.2)' }]}>
-                    <Wind size={22} color="#c084fc" />
+                <View style={styles.optionPureCard}>
+                  <View style={styles.optionIconContainer}>
+                    <Wind size={22} color="#2E7D6E" />
                   </View>
                   <View style={styles.optionContent}>
                     <View style={styles.optionTitleRow}>
@@ -719,8 +760,8 @@ export default function DashboardScreen() {
                       科學節律呼吸引導與高沉浸白噪音音效，舒緩身心壓力
                     </Text>
                   </View>
-                  <ChevronRight size={18} color={AuraColors.muted} />
-                </LinearGradient>
+                  <ChevronRight size={18} color="#2E7D6E" />
+                </View>
               </Pressable>
 
               {/* 選項二：好玩互動遊戲 */}
@@ -734,12 +775,9 @@ export default function DashboardScreen() {
                   router.push('/game');
                 }}
               >
-                <LinearGradient
-                  colors={['rgba(6, 182, 212, 0.15)', 'rgba(139, 92, 246, 0.15)']}
-                  style={styles.optionGradient}
-                >
-                  <View style={[styles.optionIconContainer, { backgroundColor: 'rgba(6, 182, 212, 0.2)' }]}>
-                    <Sparkles size={22} color="#06b6d4" />
+                <View style={styles.optionPureCard}>
+                  <View style={styles.optionIconContainer}>
+                    <Sparkles size={22} color="#2E7D6E" />
                   </View>
                   <View style={styles.optionContent}>
                     <View style={styles.optionTitleRow}>
@@ -752,8 +790,8 @@ export default function DashboardScreen() {
                       長按蓄力挑戰幾何尺寸 100% 完美重合，享受粒子震動回饋
                     </Text>
                   </View>
-                  <ChevronRight size={18} color={AuraColors.muted} />
-                </LinearGradient>
+                  <ChevronRight size={18} color="#2E7D6E" />
+                </View>
               </Pressable>
 
               {/* 選項三：守把手小樹洞 (AI 陪伴助理) */}
@@ -767,12 +805,9 @@ export default function DashboardScreen() {
                   router.push('/treehole' as any);
                 }}
               >
-                <LinearGradient
-                  colors={['rgba(236, 72, 153, 0.15)', 'rgba(139, 92, 246, 0.15)']}
-                  style={styles.optionGradient}
-                >
-                  <View style={[styles.optionIconContainer, { backgroundColor: 'rgba(236, 72, 153, 0.2)' }]}>
-                    <MessageCircle size={22} color="#ec4899" />
+                <View style={styles.optionPureCard}>
+                  <View style={styles.optionIconContainer}>
+                    <MessageCircle size={22} color="#2E7D6E" />
                   </View>
                   <View style={styles.optionContent}>
                     <View style={styles.optionTitleRow}>
@@ -785,8 +820,8 @@ export default function DashboardScreen() {
                       溫柔傾聽你的焦慮與緊繃，AI 陪伴小助手隨時守護你
                     </Text>
                   </View>
-                  <ChevronRight size={18} color={AuraColors.muted} />
-                </LinearGradient>
+                  <ChevronRight size={18} color="#2E7D6E" />
+                </View>
               </Pressable>
             </View>
           </Pressable>
@@ -905,8 +940,8 @@ function MetricCard({
           styles.metricStatus,
           {
             color: warning
-              ? AuraColors.warning
-              : AuraColors.normal,
+              ? '#D9534F'
+              : '#2E7D6E',
           },
         ]}
       >
@@ -945,7 +980,7 @@ function ImuAxis({
         style={[
           styles.imuAxisValue,
           warning && {
-            color: AuraColors.warning,
+            color: '#D9534F',
           },
         ]}
       >
@@ -1193,7 +1228,7 @@ function computeWeeklyTrendPoints(
 
   return weekPeriods.map((wp, index) => {
     const isLast = index === totalWeeks - 1;
-    // 需求 3：最右邊、最新的一週強制顯示為「本週」，歷史週顯示為「第1週」、「第2週」...
+    // 最右邊、最新的一週強制顯示為「本週」，歷史週顯示為「第1週」、「第2週」...
     const label = isLast ? '本週' : `第${index + 1}週`;
 
     // 本週依據至今實際經過天數計算平均；歷史週以 7 天計算
@@ -1289,7 +1324,7 @@ function WeekLineChartItem({
     <View style={[styles.weekChartCard, !isLast && { marginRight: 12 }]}>
       <View style={styles.weekChartHeader}>
         <View style={styles.weekRangeRow}>
-          <Calendar size={12} color={AuraColors.cyan} />
+          <Calendar size={12} color="#9B8AC1" />
           <Text style={styles.weekRangeText}>{period.rangeLabel}</Text>
         </View>
         <Text style={styles.weekTotalText}>週累計 {period.total} 次</Text>
@@ -1304,9 +1339,9 @@ function WeekLineChartItem({
             x2="1"
             y2="0"
           >
-            <Stop offset="0%" stopColor="#06b6d4" />
-            <Stop offset="50%" stopColor="#8b5cf6" />
-            <Stop offset="100%" stopColor="#ec4899" />
+            <Stop offset="0%" stopColor="#9B8AC1" />
+            <Stop offset="50%" stopColor="#CAE7E0" />
+            <Stop offset="100%" stopColor="#F5C0C0" />
           </SvgLinearGradient>
 
           <SvgLinearGradient
@@ -1316,9 +1351,9 @@ function WeekLineChartItem({
             x2="0"
             y2="1"
           >
-            <Stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.35" />
-            <Stop offset="70%" stopColor="#06b6d4" stopOpacity="0.08" />
-            <Stop offset="100%" stopColor="#06b6d4" stopOpacity="0.00" />
+            <Stop offset="0%" stopColor="#CAE7E0" stopOpacity="0.45" />
+            <Stop offset="70%" stopColor="#CAE7E0" stopOpacity="0.12" />
+            <Stop offset="100%" stopColor="#CAE7E0" stopOpacity="0.00" />
           </SvgLinearGradient>
         </Defs>
 
@@ -1331,7 +1366,7 @@ function WeekLineChartItem({
               y1={y}
               x2={chartWidth - paddingRight + 4}
               y2={y}
-              stroke="rgba(255, 255, 255, 0.07)"
+              stroke="rgba(200, 190, 180, 0.35)"
               strokeDasharray="4 4"
               strokeWidth="1"
             />
@@ -1360,8 +1395,8 @@ function WeekLineChartItem({
               y2={bottomY}
               stroke={
                 p.isToday
-                  ? 'rgba(6, 182, 212, 0.35)'
-                  : 'rgba(255, 255, 255, 0.05)'
+                  ? 'rgba(155, 138, 193, 0.45)'
+                  : 'rgba(200, 190, 180, 0.25)'
               }
               strokeDasharray="2 3"
               strokeWidth="1"
@@ -1373,8 +1408,8 @@ function WeekLineChartItem({
               r={p.isToday ? 7 : 5}
               fill={
                 p.isToday
-                  ? 'rgba(6, 182, 212, 0.4)'
-                  : 'rgba(139, 92, 246, 0.25)'
+                  ? 'rgba(155, 138, 193, 0.35)'
+                  : 'rgba(202, 231, 224, 0.4)'
               }
             />
 
@@ -1382,8 +1417,8 @@ function WeekLineChartItem({
               cx={p.x}
               cy={p.y}
               r={p.isToday ? 4 : 3}
-              fill={p.isToday ? '#06b6d4' : '#f8fafc'}
-              stroke={p.isToday ? '#ffffff' : '#8b5cf6'}
+              fill={p.isToday ? '#9B8AC1' : '#FFFFFF'}
+              stroke={p.isToday ? '#ffffff' : '#9B8AC1'}
               strokeWidth={p.isToday ? 2 : 1.5}
             />
 
@@ -1391,7 +1426,7 @@ function WeekLineChartItem({
               <SvgText
                 x={p.x}
                 y={p.y - 8}
-                fill={p.isToday ? '#06b6d4' : '#f8fafc'}
+                fill={p.isToday ? '#9B8AC1' : '#333333'}
                 fontSize="10"
                 fontWeight="bold"
                 textAnchor="middle"
@@ -1403,7 +1438,7 @@ function WeekLineChartItem({
             <SvgText
               x={p.x}
               y={chartHeight - 19}
-              fill={p.isToday ? '#06b6d4' : '#94a3b8'}
+              fill={p.isToday ? '#9B8AC1' : '#5A5A5A'}
               fontSize="10.5"
               fontWeight={p.isToday ? '800' : '600'}
               textAnchor="middle"
@@ -1414,7 +1449,7 @@ function WeekLineChartItem({
             <SvgText
               x={p.x}
               y={chartHeight - 7}
-              fill={p.isToday ? '#06b6d4' : '#64748b'}
+              fill={p.isToday ? '#9B8AC1' : '#7E7889'}
               fontSize="9"
               fontWeight={p.isToday ? '700' : '500'}
               textAnchor="middle"
@@ -1489,7 +1524,7 @@ function TrendLineChart({
     <View style={[styles.trendChartWrapper, { width: chartWidth }]}>
       <View style={styles.weekChartHeader}>
         <View style={styles.weekRangeRow}>
-          <Calendar size={12} color={AuraColors.cyan} />
+          <Calendar size={12} color="#9B8AC1" />
           <Text style={styles.weekRangeText}>{title}</Text>
         </View>
         <Text style={styles.weekTotalText}>{unitLabel}</Text>
@@ -1504,9 +1539,9 @@ function TrendLineChart({
             x2="1"
             y2="0"
           >
-            <Stop offset="0%" stopColor="#06b6d4" />
-            <Stop offset="50%" stopColor="#8b5cf6" />
-            <Stop offset="100%" stopColor="#ec4899" />
+            <Stop offset="0%" stopColor="#9B8AC1" />
+            <Stop offset="50%" stopColor="#CAE7E0" />
+            <Stop offset="100%" stopColor="#F5C0C0" />
           </SvgLinearGradient>
 
           <SvgLinearGradient
@@ -1516,9 +1551,9 @@ function TrendLineChart({
             x2="0"
             y2="1"
           >
-            <Stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.35" />
-            <Stop offset="70%" stopColor="#06b6d4" stopOpacity="0.08" />
-            <Stop offset="100%" stopColor="#06b6d4" stopOpacity="0.00" />
+            <Stop offset="0%" stopColor="#CAE7E0" stopOpacity="0.45" />
+            <Stop offset="70%" stopColor="#CAE7E0" stopOpacity="0.12" />
+            <Stop offset="100%" stopColor="#CAE7E0" stopOpacity="0.00" />
           </SvgLinearGradient>
         </Defs>
 
@@ -1531,7 +1566,7 @@ function TrendLineChart({
               y1={y}
               x2={chartWidth - paddingRight + 4}
               y2={y}
-              stroke="rgba(255, 255, 255, 0.07)"
+              stroke="rgba(200, 190, 180, 0.35)"
               strokeDasharray="4 4"
               strokeWidth="1"
             />
@@ -1561,8 +1596,8 @@ function TrendLineChart({
               y2={bottomY}
               stroke={
                 p.isCurrent
-                  ? 'rgba(6, 182, 212, 0.35)'
-                  : 'rgba(255, 255, 255, 0.05)'
+                  ? 'rgba(155, 138, 193, 0.45)'
+                  : 'rgba(200, 190, 180, 0.25)'
               }
               strokeDasharray="2 3"
               strokeWidth="1"
@@ -1574,8 +1609,8 @@ function TrendLineChart({
               r={p.isCurrent ? 7 : 5}
               fill={
                 p.isCurrent
-                  ? 'rgba(6, 182, 212, 0.4)'
-                  : 'rgba(139, 92, 246, 0.25)'
+                  ? 'rgba(155, 138, 193, 0.35)'
+                  : 'rgba(202, 231, 224, 0.4)'
               }
             />
 
@@ -1583,8 +1618,8 @@ function TrendLineChart({
               cx={p.x}
               cy={p.y}
               r={p.isCurrent ? 4 : 3}
-              fill={p.isCurrent ? '#06b6d4' : '#f8fafc'}
-              stroke={p.isCurrent ? '#ffffff' : '#8b5cf6'}
+              fill={p.isCurrent ? '#9B8AC1' : '#FFFFFF'}
+              stroke={p.isCurrent ? '#ffffff' : '#9B8AC1'}
               strokeWidth={p.isCurrent ? 2 : 1.5}
             />
 
@@ -1592,7 +1627,7 @@ function TrendLineChart({
             <SvgText
               x={p.x}
               y={p.y - 8}
-              fill={p.isCurrent ? '#06b6d4' : '#f8fafc'}
+              fill={p.isCurrent ? '#9B8AC1' : '#333333'}
               fontSize="10.5"
               fontWeight="bold"
               textAnchor="middle"
@@ -1604,7 +1639,7 @@ function TrendLineChart({
             <SvgText
               x={p.x}
               y={chartHeight - 19}
-              fill={p.isCurrent ? '#06b6d4' : '#94a3b8'}
+              fill={p.isCurrent ? '#9B8AC1' : '#5A5A5A'}
               fontSize="11"
               fontWeight={p.isCurrent ? '800' : '600'}
               textAnchor="middle"
@@ -1616,7 +1651,7 @@ function TrendLineChart({
             <SvgText
               x={p.x}
               y={chartHeight - 7}
-              fill={p.isCurrent ? '#06b6d4' : '#64748b'}
+              fill={p.isCurrent ? '#9B8AC1' : '#7E7889'}
               fontSize="9"
               fontWeight={p.isCurrent ? '700' : '500'}
               textAnchor="middle"
@@ -1824,7 +1859,7 @@ function StatisticsContent() {
             {dynamicDescriptionText}
           </Text>
           <View style={styles.dbBadge}>
-            <Database size={10} color={AuraColors.cyan} />
+            <Database size={10} color="#2E7D6E" />
             <Text style={styles.dbBadgeText}>GMT+8 連線</Text>
           </View>
         </View>
@@ -1838,16 +1873,16 @@ function StatisticsContent() {
             <View
               style={[
                 styles.statIconBadge,
-                { backgroundColor: 'rgba(239, 68, 68, 0.15)' },
+                { backgroundColor: 'rgba(245, 192, 192, 0.45)' },
               ]}
             >
-              <Zap size={14} color={AuraColors.warning} />
+              <Zap size={14} color="#D9534F" />
             </View>
             <Text style={styles.statOverviewLabel}>已發生</Text>
           </View>
           <View style={styles.statOverviewValueRow}>
             <Text
-              style={[styles.statOverviewNumber, { color: AuraColors.warning }]}
+              style={[styles.statOverviewNumber, { color: '#D9534F' }]}
             >
               {filterOccurred}
             </Text>
@@ -1862,16 +1897,16 @@ function StatisticsContent() {
             <View
               style={[
                 styles.statIconBadge,
-                { backgroundColor: 'rgba(6, 182, 212, 0.15)' },
+                { backgroundColor: 'rgba(202, 231, 224, 0.45)' },
               ]}
             >
-              <ShieldCheck size={14} color={AuraColors.cyan} />
+              <ShieldCheck size={14} color="#2E7D6E" />
             </View>
             <Text style={styles.statOverviewLabel}>已克制</Text>
           </View>
           <View style={styles.statOverviewValueRow}>
             <Text
-              style={[styles.statOverviewNumber, { color: AuraColors.cyan }]}
+              style={[styles.statOverviewNumber, { color: '#2E7D6E' }]}
             >
               {filterRestrained}
             </Text>
@@ -1902,7 +1937,7 @@ function StatisticsContent() {
               </Text>
             </View>
             <View style={styles.swipeHintBadge}>
-              <TrendingUp size={11} color={AuraColors.cyan} />
+              <TrendingUp size={11} color="#9B8AC1" />
               <Text style={styles.swipeHintText}>
                 {timeFilter === 'day'
                   ? '每日趨勢'
@@ -1974,7 +2009,7 @@ function StatisticsContent() {
                 {selectedTypesTitle} 行為統計
               </Text>
               <View style={styles.activeTagBadge}>
-                <ShieldCheck size={11} color="#06b6d4" />
+                <ShieldCheck size={11} color="#2E7D6E" />
                 <Text style={styles.activeTagText}>
                   {selectedTypes.length > 1 ? `已整合 ${selectedTypes.length} 種` : '已選行為'}
                 </Text>
@@ -2001,8 +2036,6 @@ function StatisticsContent() {
     </View>
   );
 }
-
-
 
 function InformationRow({
   label,
@@ -2058,35 +2091,42 @@ function getStressPresentation(
   if (!hasData) {
     return {
       label: '等待資料',
-      color: AuraColors.mutedDark,
+      color: 'rgba(255, 255, 255, 0.75)',
+      textColor: '#7E7889',
     };
   }
 
   if (isStressed || score > 75) {
     return {
       label: '狀態：高壓警戒',
-      color: AuraColors.warning,
+      color: 'rgba(245, 192, 192, 0.65)',
+      textColor: '#D9534F',
     };
   }
 
   if (score > 40) {
     return {
       label: '狀態：輕度緊繃',
-      color: AuraColors.caution,
+      color: 'rgba(253, 242, 184, 0.75)',
+      textColor: '#8C6B14',
     };
   }
 
   return {
     label: '狀態：平靜放鬆',
-    color: AuraColors.normal,
+    color: 'rgba(202, 231, 224, 0.75)',
+    textColor: '#2E7D6E',
   };
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor:
-      AuraColors.background,
+    backgroundColor: '#EDE5F8',
+  },
+
+  gradientBg: {
+    flex: 1,
   },
 
   container: {
@@ -2099,38 +2139,42 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingBottom: 12,
+    paddingBottom: 14,
     borderBottomWidth: 1,
-    borderBottomColor:
-      'rgba(255,255,255,0.05)',
+    borderBottomColor: 'rgba(155, 138, 193, 0.18)',
   },
 
   navigationTitle: {
-    color: AuraColors.white,
-    fontSize: 16,
+    color: '#1A2151',
+    fontSize: 18,
     fontWeight: '800',
+    letterSpacing: 0.3,
   },
 
   navigationSubtitle: {
-    color: AuraColors.muted,
-    fontSize: 10,
+    color: '#64748B',
+    fontSize: 11,
     marginTop: 3,
+    fontWeight: '500',
   },
 
   headerButtons: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 10,
   },
 
   roundIconButton: {
-    width: 32,
-    height: 32,
+    width: 38,
+    height: 38,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: AuraColors.border,
-    backgroundColor: AuraColors.cardStrong,
+    borderRadius: 19,
+    backgroundColor: '#CDE1F8',
+    shadowColor: '#A8C9EF',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.35,
+    shadowRadius: 5,
+    elevation: 3,
   },
 
   profileHeader: {
@@ -2141,54 +2185,60 @@ const styles = StyleSheet.create({
   },
 
   avatar: {
-    width: 40,
-    height: 40,
+    width: 42,
+    height: 42,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 20,
+    borderRadius: 21,
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
   },
 
   avatarText: {
-    color: AuraColors.white,
-    fontSize: 14,
+    color: '#ffffff',
+    fontSize: 15,
     fontWeight: '800',
   },
 
   profileInformation: {
     flex: 1,
-    marginLeft: 10,
+    marginLeft: 12,
   },
 
   profileName: {
-    color: AuraColors.white,
-    fontSize: 13,
-    fontWeight: '700',
+    color: '#1A2151',
+    fontSize: 15,
+    fontWeight: '800',
   },
 
   profileDescription: {
-    color: AuraColors.muted,
-    fontSize: 10,
+    color: '#64748B',
+    fontSize: 11,
     marginTop: 3,
+    fontWeight: '500',
   },
 
   connectionBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderWidth: 1,
-    borderRadius: 9,
+    borderRadius: 12,
   },
 
   connectionDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginRight: 5,
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    marginRight: 6,
   },
 
   connectionBadgeText: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '700',
   },
 
@@ -2197,81 +2247,90 @@ const styles = StyleSheet.create({
     padding: 4,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: AuraColors.border,
-    borderRadius: 12,
-    backgroundColor:
-      'rgba(255,255,255,0.02)',
+    borderColor: 'rgba(201, 173, 240, 0.35)',
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.88)',
+    shadowColor: '#84719D',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
 
   tabButton: {
     flex: 1,
-    height: 36,
+    height: 40,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    borderRadius: 8,
+    borderRadius: 10,
   },
 
   tabButtonActive: {
-    borderWidth: 1,
-    borderColor:
-      'rgba(6,182,212,0.22)',
-    backgroundColor:
-      'rgba(6,182,212,0.10)',
+    backgroundColor: '#c9adf0',
+    shadowColor: '#c9adf0',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 3,
   },
 
   tabText: {
-    color: AuraColors.muted,
-    fontSize: 12,
-    fontWeight: '700',
+    color: '#6B6675',
+    fontSize: 13,
+    fontWeight: '600',
   },
 
   tabTextActive: {
-    color: AuraColors.white,
+    color: '#ffffff',
+    fontWeight: '700',
   },
 
   thresholdBanner: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    padding: 11,
+    padding: 12,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor:
-      'rgba(139,92,246,0.35)',
-    borderRadius: 12,
-    backgroundColor:
-      'rgba(18,14,36,0.60)',
+    borderColor: 'rgba(46, 125, 110, 0.25)',
+    borderRadius: 14,
+    backgroundColor: 'rgba(202, 231, 224, 0.45)',
   },
 
   thresholdIcon: {
     marginRight: 7,
-    fontSize: 12,
+    fontSize: 13,
   },
 
   thresholdText: {
     flex: 1,
-    color: AuraColors.white,
-    fontSize: 10,
+    color: '#2E7D6E',
+    fontSize: 11,
     lineHeight: 16,
     fontWeight: '600',
   },
 
   stressCard: {
     alignItems: 'center',
-    padding: 16,
+    padding: 18,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: AuraColors.border,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 20,
-    backgroundColor: AuraColors.card,
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    shadowColor: '#84719D',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3,
   },
 
   sectionLabel: {
     alignSelf: 'flex-start',
-    color: AuraColors.muted,
-    fontSize: 11,
-    fontWeight: '600',
+    color: '#5A5A5A',
+    fontSize: 12,
+    fontWeight: '700',
   },
 
   gaugeContainer: {
@@ -2288,27 +2347,34 @@ const styles = StyleSheet.create({
   },
 
   stressScore: {
-    color: AuraColors.white,
-    fontSize: 34,
+    color: '#1A2151',
+    fontSize: 36,
     fontWeight: '800',
   },
 
   stressScoreLabel: {
-    color: AuraColors.muted,
-    fontSize: 9,
+    color: '#64748B',
+    fontSize: 10,
     marginTop: 2,
+    fontWeight: '600',
   },
 
   stressStatus: {
-    paddingHorizontal: 11,
+    paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 12,
   },
 
   stressStatusText: {
-    color: '#07100e',
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '800',
+  },
+
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 5,
   },
 
   metricsGrid: {
@@ -2319,27 +2385,35 @@ const styles = StyleSheet.create({
 
   metricCard: {
     flex: 1,
-    padding: 13,
+    padding: 14,
     borderWidth: 1,
-    borderColor: AuraColors.border,
-    borderRadius: 16,
-    backgroundColor: AuraColors.card,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    shadowColor: '#84719D',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
   },
 
   largeMetricCard: {
-    padding: 14,
+    padding: 15,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: AuraColors.border,
-    borderRadius: 16,
-    backgroundColor: AuraColors.card,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    shadowColor: '#84719D',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
   },
 
   warningCard: {
-    borderColor:
-      'rgba(239,68,68,0.45)',
-    backgroundColor:
-      'rgba(239,68,68,0.045)',
+    borderColor: 'rgba(245, 192, 192, 0.85)',
+    backgroundColor: 'rgba(245, 192, 192, 0.25)',
   },
 
   metricHeader: {
@@ -2349,36 +2423,41 @@ const styles = StyleSheet.create({
   },
 
   metricLabel: {
-    color: AuraColors.muted,
-    fontSize: 11,
-    fontWeight: '600',
+    color: '#5A5A5A',
+    fontSize: 12,
+    fontWeight: '700',
   },
 
   metricSubLabel: {
-    color: '#94a3b8',
-    fontSize: 10,
+    color: '#64748B',
+    fontSize: 10.5,
     fontWeight: '500',
     marginTop: 2,
   },
 
   metricDescription: {
-    color: AuraColors.mutedDark,
-    fontSize: 9,
+    color: '#64748B',
+    fontSize: 9.5,
     marginTop: 3,
   },
 
   motorCard: {
-    padding: 14,
+    padding: 15,
     marginBottom: 14,
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    shadowColor: '#84719D',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
   },
 
   motorCardActive: {
-    borderColor: 'rgba(245,158,11,0.4)',
-    backgroundColor: 'rgba(245,158,11,0.08)',
+    borderColor: 'rgba(245, 192, 192, 0.9)',
+    backgroundColor: 'rgba(245, 192, 192, 0.35)',
   },
 
   motorCardHeader: {
@@ -2389,72 +2468,72 @@ const styles = StyleSheet.create({
   },
 
   motorCardTitle: {
-    color: '#94a3b8',
-    fontSize: 12,
+    color: '#5A5A5A',
+    fontSize: 13,
     fontWeight: '700',
   },
 
   motorCardTitleActive: {
-    color: '#f59e0b',
+    color: '#D9534F',
   },
 
   motorCardSub: {
-    color: '#64748b',
-    fontSize: 10,
+    color: '#64748B',
+    fontSize: 10.5,
     lineHeight: 15,
   },
 
   valueRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    marginTop: 7,
+    marginTop: 8,
   },
 
   metricValue: {
-    color: AuraColors.white,
-    fontSize: 23,
+    color: '#1A2151',
+    fontSize: 24,
     fontWeight: '800',
   },
 
   largeMetricValue: {
-    color: AuraColors.white,
-    fontSize: 23,
+    color: '#1A2151',
+    fontSize: 24,
     fontWeight: '800',
   },
 
   metricUnit: {
-    color: AuraColors.muted,
-    fontSize: 10,
+    color: '#64748B',
+    fontSize: 11,
     marginLeft: 5,
+    fontWeight: '600',
   },
 
   metricStatus: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '700',
-    marginTop: 5,
+    marginTop: 6,
   },
 
   forceTrack: {
-    height: 6,
-    marginTop: 9,
+    height: 7,
+    marginTop: 10,
     overflow: 'hidden',
-    borderRadius: 3,
-    backgroundColor:
-      'rgba(255,255,255,0.06)',
+    borderRadius: 3.5,
+    backgroundColor: 'rgba(205, 225, 248, 0.45)',
   },
 
   forceFill: {
     height: '100%',
-    borderRadius: 3,
+    borderRadius: 3.5,
   },
 
   imuCard: {
-    padding: 14,
+    padding: 15,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: AuraColors.border,
-    borderRadius: 16,
-    backgroundColor: AuraColors.card,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.82)',
   },
 
   imuGrid: {
@@ -2466,66 +2545,70 @@ const styles = StyleSheet.create({
   imuAxis: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 9,
+    paddingVertical: 10,
     borderWidth: 1,
-    borderColor:
-      'rgba(255,255,255,0.05)',
-    borderRadius: 10,
-    backgroundColor:
-      'rgba(255,255,255,0.02)',
+    borderColor: 'rgba(226, 232, 240, 0.8)',
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
   },
 
   imuAxisLabel: {
-    color: AuraColors.muted,
-    fontSize: 10,
+    color: '#5A5A5A',
+    fontSize: 10.5,
     fontWeight: '700',
   },
 
   imuAxisSubtitle: {
-    color: AuraColors.mutedDark,
-    fontSize: 8,
+    color: '#64748B',
+    fontSize: 8.5,
     marginTop: 2,
   },
 
   imuAxisValue: {
-    color: AuraColors.white,
-    fontSize: 12,
+    color: '#1A2151',
+    fontSize: 13,
     fontWeight: '800',
     marginTop: 5,
   },
 
   warningMessage: {
-    color: AuraColors.warning,
+    color: '#D9534F',
     textAlign: 'center',
-    fontSize: 9,
+    fontSize: 9.5,
     fontWeight: '700',
     marginTop: 9,
   },
 
   deviceInformation: {
-    padding: 14,
+    padding: 15,
     borderWidth: 1,
-    borderColor: AuraColors.border,
-    borderRadius: 16,
-    backgroundColor: AuraColors.card,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.82)',
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
   },
 
   informationRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 6,
+    paddingVertical: 7,
   },
 
   informationLabel: {
-    color: AuraColors.muted,
-    fontSize: 10,
+    color: '#5A5A5A',
+    fontSize: 11,
+    fontWeight: '600',
   },
 
   informationValue: {
     maxWidth: '65%',
-    color: AuraColors.white,
-    fontSize: 10,
-    fontWeight: '600',
+    color: '#1A2151',
+    fontSize: 11,
+    fontWeight: '700',
   },
 
   statisticsContainer: {
@@ -2535,9 +2618,9 @@ const styles = StyleSheet.create({
   historyCard: {
     padding: 16,
     borderWidth: 1,
-    borderColor: AuraColors.border,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 20,
-    backgroundColor: AuraColors.card,
+    backgroundColor: 'rgba(255, 255, 255, 0.82)',
   },
 
   historyHeaderBlock: {
@@ -2550,7 +2633,7 @@ const styles = StyleSheet.create({
 
   historyFormattedTitle: {
     flex: 1,
-    color: AuraColors.white,
+    color: '#1A2151',
     fontSize: 13,
     fontWeight: '800',
     lineHeight: 18,
@@ -2560,26 +2643,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(6,182,212,0.12)',
-    paddingHorizontal: 7,
+    backgroundColor: 'rgba(202, 231, 224, 0.45)',
+    paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: 'rgba(6,182,212,0.25)',
+    borderColor: 'rgba(46, 125, 110, 0.3)',
   },
 
   dbBadgeText: {
-    color: AuraColors.cyan,
-    fontSize: 9,
+    color: '#2E7D6E',
+    fontSize: 9.5,
     fontWeight: '700',
   },
 
   singleBehaviorItemCard: {
-    backgroundColor: 'rgba(6,182,212,0.06)',
+    backgroundColor: '#FFFFFF',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(6,182,212,0.20)',
-    padding: 13,
+    borderColor: 'rgba(226, 232, 240, 0.8)',
+    padding: 14,
   },
 
   singleBehaviorRow: {
@@ -2603,8 +2686,8 @@ const styles = StyleSheet.create({
   },
 
   singleBehaviorName: {
-    color: AuraColors.white,
-    fontSize: 13,
+    color: '#1A2151',
+    fontSize: 13.5,
     fontWeight: '800',
   },
 
@@ -2612,21 +2695,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(6,182,212,0.18)',
+    backgroundColor: 'rgba(202, 231, 224, 0.45)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(46, 125, 110, 0.3)',
   },
 
   activeTagText: {
-    color: '#06b6d4',
+    color: '#2E7D6E',
     fontSize: 9,
     fontWeight: '700',
   },
 
   singleBehaviorDescription: {
-    color: AuraColors.muted,
-    fontSize: 10,
+    color: '#5A5A5A',
+    fontSize: 10.5,
     lineHeight: 15,
     marginTop: 4,
   },
@@ -2637,14 +2722,14 @@ const styles = StyleSheet.create({
   },
 
   singleBehaviorCount: {
-    color: AuraColors.cyan,
-    fontSize: 13,
+    color: '#2E7D6E',
+    fontSize: 13.5,
     fontWeight: '800',
   },
 
   singleBehaviorToday: {
-    color: AuraColors.mutedDark,
-    fontSize: 9,
+    color: '#64748B',
+    fontSize: 9.5,
     marginTop: 3,
   },
 
@@ -2661,9 +2746,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     marginBottom: 10,
     borderRadius: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    backgroundColor: 'rgba(255, 255, 255, 0.88)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
+    borderColor: 'rgba(201, 173, 240, 0.35)',
+    shadowColor: '#84719D',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
 
   filterButton: {
@@ -2674,13 +2764,13 @@ const styles = StyleSheet.create({
   },
 
   filterButtonText: {
-    color: AuraColors.muted,
+    color: '#6B6675',
     fontSize: 13,
     fontWeight: '600',
   },
 
   filterButtonTextActive: {
-    color: AuraColors.white,
+    color: '#c9adf0',
     fontWeight: '800',
   },
 
@@ -2693,10 +2783,10 @@ const styles = StyleSheet.create({
   },
 
   filterIndicatorActive: {
-    backgroundColor: AuraColors.cyan,
-    shadowColor: AuraColors.cyan,
+    backgroundColor: '#c9adf0',
+    shadowColor: '#c9adf0',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.8,
+    shadowOpacity: 0.5,
     shadowRadius: 4,
   },
 
@@ -2717,18 +2807,23 @@ const styles = StyleSheet.create({
 
   statOverviewCard: {
     flex: 1,
-    padding: 14,
+    padding: 15,
     borderRadius: 18,
-    backgroundColor: AuraColors.card,
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
     borderWidth: 1,
+    shadowColor: '#84719D',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
   },
 
   occurredBorder: {
-    borderColor: 'rgba(239, 68, 68, 0.28)',
+    borderColor: 'rgba(245, 192, 192, 0.85)',
   },
 
   restrainedBorder: {
-    borderColor: 'rgba(6, 182, 212, 0.28)',
+    borderColor: 'rgba(202, 231, 224, 0.85)',
   },
 
   statOverviewIconRow: {
@@ -2739,16 +2834,16 @@ const styles = StyleSheet.create({
   },
 
   statIconBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   statOverviewLabel: {
-    color: AuraColors.muted,
-    fontSize: 10,
+    color: '#5A5A5A',
+    fontSize: 10.5,
     fontWeight: '700',
   },
 
@@ -2760,32 +2855,37 @@ const styles = StyleSheet.create({
   },
 
   statOverviewNumber: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '800',
   },
 
   statOverviewUnit: {
-    color: AuraColors.muted,
-    fontSize: 10,
+    color: '#64748B',
+    fontSize: 10.5,
     fontWeight: '600',
   },
 
   statOverviewSub: {
-    color: AuraColors.mutedDark,
-    fontSize: 8.5,
+    color: '#64748B',
+    fontSize: 9,
     fontWeight: '500',
   },
 
   // 3. 支援歷史滑動的週折線圖樣式
   chartCard: {
-    paddingVertical: 15,
-    paddingHorizontal: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: AuraColors.border,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 22,
-    backgroundColor: AuraColors.card,
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
     marginBottom: 14,
     overflow: 'hidden',
+    shadowColor: '#84719D',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
   },
 
   chartHeaderRow: {
@@ -2797,14 +2897,14 @@ const styles = StyleSheet.create({
   },
 
   chartTitle: {
-    color: AuraColors.white,
-    fontSize: 12,
+    color: '#1A2151',
+    fontSize: 13,
     fontWeight: '700',
   },
 
   chartSubtitle: {
-    color: AuraColors.mutedDark,
-    fontSize: 9.5,
+    color: '#64748B',
+    fontSize: 10,
     marginTop: 2,
   },
 
@@ -2812,15 +2912,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(6, 182, 212, 0.12)',
-    paddingHorizontal: 7,
+    backgroundColor: 'rgba(155, 138, 193, 0.15)',
+    paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(155, 138, 193, 0.25)',
   },
 
   swipeHintText: {
-    color: AuraColors.cyan,
-    fontSize: 9,
+    color: '#9B8AC1',
+    fontSize: 9.5,
     fontWeight: '700',
   },
 
@@ -2830,20 +2932,20 @@ const styles = StyleSheet.create({
   },
 
   trendChartWrapper: {
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    padding: 12,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
+    borderColor: 'rgba(226, 232, 240, 0.8)',
   },
 
   weekChartCard: {
     width: 310,
-    padding: 10,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    padding: 12,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
+    borderColor: 'rgba(226, 232, 240, 0.8)',
   },
 
   weekChartHeader: {
@@ -2861,14 +2963,14 @@ const styles = StyleSheet.create({
   },
 
   weekRangeText: {
-    color: AuraColors.cyan,
-    fontSize: 10.5,
+    color: '#9B8AC1',
+    fontSize: 11,
     fontWeight: '700',
   },
 
   weekTotalText: {
-    color: AuraColors.muted,
-    fontSize: 10,
+    color: '#5A5A5A',
+    fontSize: 10.5,
     fontWeight: '600',
   },
 
@@ -2876,10 +2978,15 @@ const styles = StyleSheet.create({
   integratedCard: {
     padding: 16,
     borderRadius: 20,
-    backgroundColor: AuraColors.card,
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
     borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.22)',
+    borderColor: 'rgba(202, 231, 224, 0.85)',
     marginBottom: 16,
+    shadowColor: '#84719D',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
   },
 
   integratedCardHeader: {
@@ -2898,9 +3005,9 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: 'rgba(202, 231, 224, 0.35)',
     borderWidth: 1.5,
-    borderColor: 'rgba(6, 182, 212, 0.3)',
+    borderColor: 'rgba(46, 125, 110, 0.3)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2922,14 +3029,14 @@ const styles = StyleSheet.create({
   },
 
   integratedTitle: {
-    color: AuraColors.white,
-    fontSize: 13,
+    color: '#1A2151',
+    fontSize: 13.5,
     fontWeight: '800',
   },
 
   integratedDescription: {
-    color: AuraColors.muted,
-    fontSize: 10,
+    color: '#5A5A5A',
+    fontSize: 10.5,
     lineHeight: 14,
   },
 
@@ -2939,14 +3046,14 @@ const styles = StyleSheet.create({
   },
 
   integratedCountTotal: {
-    color: AuraColors.white,
-    fontSize: 13,
+    color: '#1A2151',
+    fontSize: 13.5,
     fontWeight: '800',
   },
 
   integratedCountToday: {
-    color: AuraColors.cyan,
-    fontSize: 10.5,
+    color: '#9B8AC1',
+    fontSize: 11,
     fontWeight: '700',
     marginTop: 2,
   },
@@ -2957,7 +3064,7 @@ const styles = StyleSheet.create({
 
   breakdownDivider: {
     height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: 'rgba(226, 232, 240, 0.7)',
     marginBottom: 10,
   },
 
@@ -2969,12 +3076,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.04)',
+    borderColor: 'rgba(226, 232, 240, 0.8)',
   },
 
   breakdownLeft: {
@@ -2988,8 +3095,8 @@ const styles = StyleSheet.create({
   },
 
   breakdownItemName: {
-    color: AuraColors.white,
-    fontSize: 11.5,
+    color: '#1A2151',
+    fontSize: 12,
     fontWeight: '700',
   },
 
@@ -3000,21 +3107,21 @@ const styles = StyleSheet.create({
   },
 
   breakdownItemCount: {
-    color: AuraColors.muted,
-    fontSize: 10.5,
+    color: '#5A5A5A',
+    fontSize: 11,
     fontWeight: '600',
   },
 
   breakdownItemToday: {
-    color: AuraColors.cyan,
-    fontSize: 10.5,
+    color: '#2E7D6E',
+    fontSize: 11,
     fontWeight: '700',
   },
 
   // 舒壓與解壓互動選單 Modal 樣式
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(7, 5, 15, 0.75)',
+    backgroundColor: 'rgba(30, 20, 40, 0.45)',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
@@ -3023,14 +3130,14 @@ const styles = StyleSheet.create({
   modalCard: {
     width: '100%',
     maxWidth: 380,
-    backgroundColor: '#120e24',
+    backgroundColor: 'rgba(255, 255, 255, 0.96)',
     borderWidth: 1,
-    borderColor: 'rgba(168, 85, 247, 0.25)',
+    borderColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 24,
     padding: 22,
-    shadowColor: '#8b5cf6',
+    shadowColor: '#9B8AC1',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.18,
     shadowRadius: 20,
     elevation: 15,
   },
@@ -3049,35 +3156,38 @@ const styles = StyleSheet.create({
   },
 
   modalIconBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'rgba(192, 132, 252, 0.15)',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#CDE1F8',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   modalTitle: {
     fontSize: 17,
-    fontWeight: '700',
-    color: AuraColors.white,
+    fontWeight: '800',
+    color: '#1A2151',
     letterSpacing: 0.3,
   },
 
   modalCloseBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(155, 138, 193, 0.25)',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   modalSubtitle: {
     fontSize: 12,
-    color: AuraColors.muted,
+    color: '#64748B',
     marginBottom: 18,
     lineHeight: 18,
+    fontWeight: '500',
   },
 
   modalOptionsContainer: {
@@ -3088,7 +3198,13 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(46, 125, 110, 0.25)',
+    backgroundColor: '#d9faee',
+    shadowColor: '#2E7D6E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
 
   optionCardPressed: {
@@ -3096,11 +3212,12 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.985 }],
   },
 
-  optionGradient: {
+  optionPureCard: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 14,
     gap: 12,
+    backgroundColor: '#d9faee',
   },
 
   optionIconContainer: {
@@ -3109,6 +3226,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
   },
 
   optionContent: {
@@ -3124,12 +3242,12 @@ const styles = StyleSheet.create({
 
   optionTitle: {
     fontSize: 15,
-    fontWeight: '700',
-    color: AuraColors.white,
+    fontWeight: '800',
+    color: '#1A2151',
   },
 
   badgeGuide: {
-    backgroundColor: 'rgba(192, 132, 252, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
@@ -3138,11 +3256,11 @@ const styles = StyleSheet.create({
   badgeGuideText: {
     fontSize: 9,
     fontWeight: '700',
-    color: '#c084fc',
+    color: '#2E7D6E',
   },
 
   badgeGame: {
-    backgroundColor: 'rgba(6, 182, 212, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
@@ -3151,11 +3269,11 @@ const styles = StyleSheet.create({
   badgeGameText: {
     fontSize: 9,
     fontWeight: '700',
-    color: '#06b6d4',
+    color: '#2E7D6E',
   },
 
   badgeTreehole: {
-    backgroundColor: 'rgba(236, 72, 153, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
@@ -3164,12 +3282,13 @@ const styles = StyleSheet.create({
   badgeTreeholeText: {
     fontSize: 9,
     fontWeight: '700',
-    color: '#ec4899',
+    color: '#2E7D6E',
   },
 
   optionDesc: {
     fontSize: 11,
-    color: AuraColors.muted,
+    color: '#2A5248',
     lineHeight: 15,
+    fontWeight: '500',
   },
 });

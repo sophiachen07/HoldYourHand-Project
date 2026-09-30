@@ -255,13 +255,13 @@ export default function LimitProgressGameScreen() {
   // -------------------------------------------------------------
   const spawnParticles = useCallback((count = 36) => {
     const colors = [
-      '#f59e0b',
-      '#ec4899',
-      '#8b5cf6',
-      '#06b6d4',
-      '#10b981',
-      '#fbbf24',
-      '#ffffff',
+      '#F5C0C0',
+      '#CAE7E0',
+      '#9B8AC1',
+      '#CDE1F8',
+      '#FDF2B8',
+      '#E9D5FF',
+      '#FFFFFF',
     ];
     const shapes: ('circle' | 'square' | 'diamond')[] = [
       'circle',
@@ -525,8 +525,8 @@ export default function LimitProgressGameScreen() {
 
     if (gameState === 'perfect') {
       return {
-        backgroundColor: '#fbbf24',
-        shadowColor: '#fbbf24',
+        backgroundColor: '#CAE7E0',
+        shadowColor: '#2E7D6E',
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.9,
         shadowRadius: 24,
@@ -536,10 +536,10 @@ export default function LimitProgressGameScreen() {
     }
     if (gameState === 'good') {
       return {
-        backgroundColor: '#10b981',
-        shadowColor: '#10b981',
+        backgroundColor: '#CAE7E0',
+        shadowColor: '#2E7D6E',
         shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.7,
+        shadowOpacity: 0.6,
         shadowRadius: 16,
         elevation: 10,
         borderRadius,
@@ -547,15 +547,15 @@ export default function LimitProgressGameScreen() {
     }
     if (gameState === 'fail') {
       return {
-        backgroundColor: '#ef4444',
-        opacity: 0.75,
+        backgroundColor: '#F5C0C0',
+        opacity: 0.85,
         borderRadius,
       };
     }
     if (gameState === 'growing') {
       return {
-        backgroundColor: '#8b5cf6',
-        shadowColor: '#a855f7',
+        backgroundColor: '#9B8AC1',
+        shadowColor: '#9B8AC1',
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.6,
         shadowRadius: 14,
@@ -564,262 +564,267 @@ export default function LimitProgressGameScreen() {
       };
     }
     return {
-      backgroundColor: '#a855f7',
+      backgroundColor: '#9B8AC1',
       borderRadius,
     };
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* 紅幕警示閃爍遮罩 */}
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          styles.flashOverlay,
-          {
-            opacity: flashAnim,
-          },
-        ]}
-      />
-
-      {/* 震動外框容器 (Screen Shake) */}
-      <Animated.View
-        style={[
-          styles.container,
-          {
-            transform: [
-              { translateX: shakeAnim.x },
-              { translateY: shakeAnim.y },
-            ],
-          },
-        ]}
+      <LinearGradient
+        colors={['#EDE5F8', '#DEEEF8', '#E5F4EE']}
+        style={styles.gradientBg}
       >
-        {/* 頂部導航列 */}
-        <View style={styles.header}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.navBtn,
-              pressed && { opacity: 0.7 },
-            ]}
-            onPress={() => router.back()}
-          >
-            <ArrowLeft size={18} color={AuraColors.white} />
-          </Pressable>
+        {/* 紅幕警示閃爍遮罩 */}
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.flashOverlay,
+            {
+              opacity: flashAnim,
+            },
+          ]}
+        />
 
-          <View style={styles.headerTitleGroup}>
-            <Text style={styles.headerTitle}>好玩互動遊戲</Text>
-            <Text style={styles.headerSubtitle}>極限進度條 · 專注與精準挑戰</Text>
-          </View>
-
-          {/* 右側平衡寬度佔位 */}
-          <View style={styles.headerPlaceholder} />
-        </View>
-
-        {/* 成績看板 */}
-        <View style={styles.scoreBoard}>
-          <View style={styles.scoreCard}>
-            <View style={styles.scoreLabelRow}>
-              <Trophy size={13} color="#eab308" />
-              <Text style={styles.scoreLabel}>得分</Text>
-            </View>
-            <Text style={styles.scoreValue}>{score}</Text>
-          </View>
-
-          <View style={styles.scoreCard}>
-            <View style={styles.scoreLabelRow}>
-              <Flame size={13} color="#f97316" />
-              <Text style={styles.scoreLabel}>連擊 Combo</Text>
-            </View>
-            <View style={styles.comboRow}>
-              <Text
-                style={[
-                  styles.scoreValue,
-                  combo > 0 && { color: '#f97316', fontWeight: '800' },
-                ]}
-              >
-                {combo}
-              </Text>
-              {combo >= 3 && (
-                <View style={styles.comboTag}>
-                  <Text style={styles.comboTagText}>HOT</Text>
-                </View>
-              )}
-            </View>
-          </View>
-
-          <View style={styles.scoreCard}>
-            <View style={styles.scoreLabelRow}>
-              <Award size={13} color="#8b5cf6" />
-              <Text style={styles.scoreLabel}>最高得分</Text>
-            </View>
-            <Text style={styles.scoreValue}>{highScore}</Text>
-          </View>
-        </View>
-
-        {/* 遊戲主互動區（可長按整個區域） */}
-        <Pressable
-          style={styles.gameArea}
-          onPressIn={handlePressIn}
-          onPressOut={handleRelease}
-          // 針對 Web 平台的 Pointer 事件支援
-          {...(Platform.OS === 'web'
-            ? {
-                onPointerDown: handlePressIn,
-                onPointerUp: handleRelease,
-              }
-            : {})}
+        {/* 震動外框容器 (Screen Shake) */}
+        <Animated.View
+          style={[
+            styles.container,
+            {
+              transform: [
+                { translateX: shakeAnim.x },
+                { translateY: shakeAnim.y },
+              ],
+            },
+          ]}
         >
-          {/* 粒子噴發特效渲染層 */}
-          <View pointerEvents="none" style={styles.particleContainer}>
-            {particles.map((p) => (
-              <View
-                key={p.id}
-                style={[
-                  styles.particle,
-                  {
-                    left: '50%',
-                    top: '50%',
-                    width: p.size,
-                    height: p.size,
-                    backgroundColor: p.color,
-                    borderRadius:
-                      p.shape === 'circle' ? p.size / 2 : p.shape === 'diamond' ? 2 : 3,
-                    opacity: p.opacity,
-                    transform: [
-                      { translateX: p.x },
-                      { translateY: p.y },
-                      { rotate: `${p.rotation}deg` },
-                    ],
-                  },
-                ]}
-              />
-            ))}
+          {/* 頂部導航列 */}
+          <View style={styles.header}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.navBtn,
+                pressed && { opacity: 0.7 },
+              ]}
+              onPress={() => router.back()}
+            >
+              <ArrowLeft size={18} color="#333333" />
+            </Pressable>
+
+            <View style={styles.headerTitleGroup}>
+              <Text style={styles.headerTitle}>好玩互動遊戲</Text>
+              <Text style={styles.headerSubtitle}>極限進度條 · 專注與精準挑戰</Text>
+            </View>
+
+            {/* 右側平衡寬度佔位 */}
+            <View style={styles.headerPlaceholder} />
           </View>
 
-          {/* 虛線目標外框 */}
-          <Animated.View
-            style={[
-              styles.targetFrame,
-              {
-                width: targetRadius * 2,
-                height: targetRadius * 2,
-                borderRadius: shapeType === 'square' ? 16 : targetRadius,
-                transform: [{ scale: pulseAnim }],
-              },
-            ]}
-          >
-            {/* 實心生長圖形 */}
-            <View
-              style={[
-                styles.filledShape,
-                getFilledStyle(),
-                {
-                  width: currentRadius * 2,
-                  height: currentRadius * 2,
-                },
-              ]}
-            />
-          </Animated.View>
+          {/* 成績看板 */}
+          <View style={styles.scoreBoard}>
+            <View style={styles.scoreCard}>
+              <View style={styles.scoreLabelRow}>
+                <Trophy size={13} color="#D97706" />
+                <Text style={styles.scoreLabel}>得分</Text>
+              </View>
+              <Text style={styles.scoreValue}>{score}</Text>
+            </View>
 
-          {/* 結果判定浮層 */}
-          {gameState !== 'idle' && gameState !== 'growing' && (
+            <View style={styles.scoreCard}>
+              <View style={styles.scoreLabelRow}>
+                <Flame size={13} color="#D9534F" />
+                <Text style={styles.scoreLabel}>連擊 Combo</Text>
+              </View>
+              <View style={styles.comboRow}>
+                <Text
+                  style={[
+                    styles.scoreValue,
+                    combo > 0 && { color: '#D9534F', fontWeight: '800' },
+                  ]}
+                >
+                  {combo}
+                </Text>
+                {combo >= 3 && (
+                  <View style={styles.comboTag}>
+                    <Text style={styles.comboTagText}>HOT</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+
+            <View style={styles.scoreCard}>
+              <View style={styles.scoreLabelRow}>
+                <Award size={13} color="#9B8AC1" />
+                <Text style={styles.scoreLabel}>最高得分</Text>
+              </View>
+              <Text style={styles.scoreValue}>{highScore}</Text>
+            </View>
+          </View>
+
+          {/* 遊戲主互動區（可長按整個區域） */}
+          <Pressable
+            style={styles.gameArea}
+            onPressIn={handlePressIn}
+            onPressOut={handleRelease}
+            // 針對 Web 平台的 Pointer 事件支援
+            {...(Platform.OS === 'web'
+              ? {
+                  onPointerDown: handlePressIn,
+                  onPointerUp: handleRelease,
+                }
+              : {})}
+          >
+            {/* 粒子噴發特效渲染層 */}
+            <View pointerEvents="none" style={styles.particleContainer}>
+              {particles.map((p) => (
+                <View
+                  key={p.id}
+                  style={[
+                    styles.particle,
+                    {
+                      left: '50%',
+                      top: '50%',
+                      width: p.size,
+                      height: p.size,
+                      backgroundColor: p.color,
+                      borderRadius:
+                        p.shape === 'circle' ? p.size / 2 : p.shape === 'diamond' ? 2 : 3,
+                      opacity: p.opacity,
+                      transform: [
+                        { translateX: p.x },
+                        { translateY: p.y },
+                        { rotate: `${p.rotation}deg` },
+                      ],
+                    },
+                  ]}
+                />
+              ))}
+            </View>
+
+            {/* 虛線目標外框 */}
             <Animated.View
               style={[
-                styles.resultBadge,
+                styles.targetFrame,
                 {
-                  transform: [{ scale: resultScaleAnim }],
+                  width: targetRadius * 2,
+                  height: targetRadius * 2,
+                  borderRadius: shapeType === 'square' ? 16 : targetRadius,
+                  transform: [{ scale: pulseAnim }],
                 },
               ]}
             >
-              {gameState === 'perfect' && (
-                <LinearGradient
-                  colors={['#f59e0b', '#d97706']}
-                  style={styles.resultBadgeGradient}
-                >
-                  <Sparkles size={20} color="#fff" />
-                  <Text style={styles.resultTitle}>PERFECT!!</Text>
-                  <Text style={styles.resultSubtitle}>
-                    重合度 {matchPercent?.toFixed(1)}% (+{100 + combo * 20})
-                  </Text>
-                </LinearGradient>
-              )}
-
-              {gameState === 'good' && (
-                <LinearGradient
-                  colors={['#10b981', '#059669']}
-                  style={styles.resultBadgeGradient}
-                >
-                  <Zap size={20} color="#fff" />
-                  <Text style={styles.resultTitle}>GOOD!</Text>
-                  <Text style={styles.resultSubtitle}>
-                    重合度 {matchPercent?.toFixed(1)}% (+{50 + combo * 10})
-                  </Text>
-                </LinearGradient>
-              )}
-
-              {gameState === 'fail' && (
-                <LinearGradient
-                  colors={['#ef4444', '#b91c1c']}
-                  style={styles.resultBadgeGradient}
-                >
-                  <Text style={styles.resultTitle}>
-                    {matchPercent && matchPercent > 100
-                      ? 'FAIL! 破殼超出'
-                      : 'FAIL! 尺寸不足'}
-                  </Text>
-                  <Text style={styles.resultSubtitle}>
-                    重合度 {matchPercent?.toFixed(1)}% (連擊中斷)
-                  </Text>
-                </LinearGradient>
-              )}
+              {/* 實心生長圖形 */}
+              <View
+                style={[
+                  styles.filledShape,
+                  getFilledStyle(),
+                  {
+                    width: currentRadius * 2,
+                    height: currentRadius * 2,
+                  },
+                ]}
+              />
             </Animated.View>
-          )}
 
-          {/* 互動提示字樣 */}
-          <View style={styles.tipBox}>
-            {gameState === 'idle' && (
-              <Text style={styles.tipText}>長按任意處生長，在完全重合時鬆手</Text>
+            {/* 結果判定浮層 */}
+            {gameState !== 'idle' && gameState !== 'growing' && (
+              <Animated.View
+                style={[
+                  styles.resultBadge,
+                  {
+                    transform: [{ scale: resultScaleAnim }],
+                  },
+                ]}
+              >
+                {gameState === 'perfect' && (
+                  <LinearGradient
+                    colors={['#CAE7E0', '#9B8AC1']}
+                    style={styles.resultBadgeGradient}
+                  >
+                    <Sparkles size={20} color="#ffffff" />
+                    <Text style={styles.resultTitle}>PERFECT!!</Text>
+                    <Text style={styles.resultSubtitle}>
+                      重合度 {matchPercent?.toFixed(1)}% (+{100 + combo * 20})
+                    </Text>
+                  </LinearGradient>
+                )}
+
+                {gameState === 'good' && (
+                  <LinearGradient
+                    colors={['#CAE7E0', '#A5D6A7']}
+                    style={styles.resultBadgeGradient}
+                  >
+                    <Zap size={20} color="#ffffff" />
+                    <Text style={styles.resultTitle}>GOOD!</Text>
+                    <Text style={styles.resultSubtitle}>
+                      重合度 {matchPercent?.toFixed(1)}% (+{50 + combo * 10})
+                    </Text>
+                  </LinearGradient>
+                )}
+
+                {gameState === 'fail' && (
+                  <LinearGradient
+                    colors={['#F5C0C0', '#E57373']}
+                    style={styles.resultBadgeGradient}
+                  >
+                    <Text style={styles.resultTitle}>
+                      {matchPercent && matchPercent > 100
+                        ? 'FAIL! 破殼超出'
+                        : 'FAIL! 尺寸不足'}
+                    </Text>
+                    <Text style={styles.resultSubtitle}>
+                      重合度 {matchPercent?.toFixed(1)}% (連擊中斷)
+                    </Text>
+                  </LinearGradient>
+                )}
+              </Animated.View>
             )}
-            {gameState === 'growing' && (
-              <Text style={[styles.tipText, { color: '#c084fc' }]}>
-                蓄力生長中... 剛好填滿時鬆手！
-              </Text>
-            )}
-            {(gameState === 'perfect' ||
-              gameState === 'good' ||
-              gameState === 'fail') && (
-              <Text style={styles.tipText}>長按或點擊下方按鈕開始下一局</Text>
-            )}
+
+            {/* 互動提示字樣 */}
+            <View style={styles.tipBox}>
+              {gameState === 'idle' && (
+                <Text style={styles.tipText}>長按任意處生長，在完全重合時鬆手</Text>
+              )}
+              {gameState === 'growing' && (
+                <Text style={[styles.tipText, { color: '#9B8AC1', fontWeight: '700' }]}>
+                  蓄力生長中... 剛好填滿時鬆手！
+                </Text>
+              )}
+              {(gameState === 'perfect' ||
+                gameState === 'good' ||
+                gameState === 'fail') && (
+                <Text style={styles.tipText}>長按或點擊下方按鈕開始下一局</Text>
+              )}
+            </View>
+          </Pressable>
+
+          {/* 底部控制按鈕列 */}
+          <View style={styles.footer}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.actionButton,
+                styles.actionButtonSecondary,
+                pressed && { opacity: 0.7 },
+              ]}
+              onPress={resetGameFully}
+            >
+              <RotateCcw size={15} color="#7E7889" />
+              <Text style={styles.actionButtonSecondaryText}>重設分數</Text>
+            </Pressable>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.actionButton,
+                styles.actionButtonPrimary,
+                pressed && { opacity: 0.8 },
+              ]}
+              onPress={resetRound}
+            >
+              <Zap size={15} color="#fff" />
+              <Text style={styles.actionButtonPrimaryText}>下一局 (微調外框)</Text>
+            </Pressable>
           </View>
-        </Pressable>
-
-        {/* 底部控制按鈕列 */}
-        <View style={styles.footer}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.actionButton,
-              styles.actionButtonSecondary,
-              pressed && { opacity: 0.7 },
-            ]}
-            onPress={resetGameFully}
-          >
-            <RotateCcw size={15} color={AuraColors.muted} />
-            <Text style={styles.actionButtonSecondaryText}>重設分數</Text>
-          </Pressable>
-
-          <Pressable
-            style={({ pressed }) => [
-              styles.actionButton,
-              styles.actionButtonPrimary,
-              pressed && { opacity: 0.8 },
-            ]}
-            onPress={resetRound}
-          >
-            <Zap size={15} color="#fff" />
-            <Text style={styles.actionButtonPrimaryText}>下一局 (微調外框)</Text>
-          </Pressable>
-        </View>
-      </Animated.View>
+        </Animated.View>
+      </LinearGradient>
     </SafeAreaView>
   );
 }
@@ -827,11 +832,14 @@ export default function LimitProgressGameScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#0c0915',
+    backgroundColor: '#EDE5F8',
+  },
+  gradientBg: {
+    flex: 1,
   },
   flashOverlay: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(239, 68, 68, 0.45)',
+    backgroundColor: 'rgba(245, 192, 192, 0.45)',
     zIndex: 99,
   },
   container: {
@@ -851,14 +859,15 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: AuraColors.white,
+    fontWeight: '800',
+    color: '#1A2151',
     letterSpacing: 0.5,
   },
   headerSubtitle: {
     fontSize: 11,
-    color: AuraColors.muted,
+    color: '#64748B',
     marginTop: 2,
+    fontWeight: '500',
   },
   headerActions: {
     flexDirection: 'row',
@@ -872,9 +881,14 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: 'rgba(155, 138, 193, 0.25)',
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -885,13 +899,18 @@ const styles = StyleSheet.create({
   },
   scoreCard: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.035)',
+    backgroundColor: 'rgba(255, 255, 255, 0.82)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.07)',
+    borderColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 14,
     paddingVertical: 10,
     paddingHorizontal: 12,
     alignItems: 'center',
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
   scoreLabelRow: {
     flexDirection: 'row',
@@ -901,12 +920,13 @@ const styles = StyleSheet.create({
   },
   scoreLabel: {
     fontSize: 11,
-    color: AuraColors.muted,
+    color: '#5A5A5A',
+    fontWeight: '600',
   },
   scoreValue: {
     fontSize: 20,
-    fontWeight: '700',
-    color: AuraColors.white,
+    fontWeight: '800',
+    color: '#1A2151',
   },
   comboRow: {
     flexDirection: 'row',
@@ -914,17 +934,17 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   comboTag: {
-    backgroundColor: 'rgba(249, 115, 22, 0.2)',
-    paddingHorizontal: 4,
+    backgroundColor: 'rgba(245, 192, 192, 0.45)',
+    paddingHorizontal: 5,
     paddingVertical: 1,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: '#f97316',
+    borderColor: '#F5C0C0',
   },
   comboTagText: {
     fontSize: 9,
     fontWeight: '800',
-    color: '#f97316',
+    color: '#D9534F',
   },
   gameArea: {
     flex: 1,
@@ -945,14 +965,14 @@ const styles = StyleSheet.create({
   },
   targetFrame: {
     borderWidth: 2.5,
-    borderColor: 'rgba(168, 85, 247, 0.45)',
+    borderColor: 'rgba(155, 138, 193, 0.55)',
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(168, 85, 247, 0.02)',
-    shadowColor: '#8b5cf6',
+    backgroundColor: 'rgba(202, 231, 224, 0.15)',
+    shadowColor: '#9B8AC1',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.2,
     shadowRadius: 16,
   },
   filledShape: {
@@ -962,9 +982,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 24,
     zIndex: 30,
-    shadowColor: '#000',
+    shadowColor: '#9B8AC1',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.25,
     shadowRadius: 10,
     elevation: 12,
   },
@@ -984,23 +1004,29 @@ const styles = StyleSheet.create({
   resultSubtitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.95)',
+    color: '#ffffff',
     marginTop: 2,
   },
   tipBox: {
     position: 'absolute',
     bottom: 12,
     paddingHorizontal: 16,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    backgroundColor: 'rgba(255, 255, 255, 0.88)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
+    borderColor: 'rgba(255, 255, 255, 0.95)',
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 1,
   },
   tipText: {
     fontSize: 12,
-    color: AuraColors.muted,
+    color: '#5A5A5A',
     textAlign: 'center',
+    fontWeight: '500',
   },
   footer: {
     flexDirection: 'row',
@@ -1017,20 +1043,25 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   actionButtonSecondary: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: 'rgba(255, 255, 255, 0.82)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.09)',
+    borderColor: 'rgba(226, 232, 240, 0.8)',
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   actionButtonSecondaryText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: AuraColors.muted,
+    fontWeight: '700',
+    color: '#5A5A5A',
   },
   actionButtonPrimary: {
-    backgroundColor: '#8b5cf6',
-    shadowColor: '#8b5cf6',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35,
+    backgroundColor: '#9B8AC1',
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
