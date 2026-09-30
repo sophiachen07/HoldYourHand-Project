@@ -35,6 +35,7 @@ import {
   getProfileTypes,
   useUser,
 } from '../contexts/UserContext';
+import { BFRBIconBadge } from '../components/BFRBIconBadge';
 
 export default function ProfileScreen() {
   const { profile, hasCompletedOnboarding, updateProfile, completeOnboarding } =
@@ -362,15 +363,7 @@ export default function ProfileScreen() {
                     onPress={() => toggleType(type)}
                   >
                     <View style={styles.typeIconRow}>
-                      <Text style={styles.typeEmoji}>
-                        {type === '摳皮膚'
-                          ? '🖐️'
-                          : type === '拔毛髮'
-                          ? '💇'
-                          : type === '咬指甲'
-                          ? '🦷'
-                          : '✨'}
-                      </Text>
+                      <BFRBIconBadge type={type} size={30} iconSize={15} />
                       {isSelected && (
                         <Check size={14} color="#2E7D6E" />
                       )}

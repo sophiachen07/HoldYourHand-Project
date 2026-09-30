@@ -30,6 +30,7 @@ import {
 import { AuraColors } from '../constants/auraTheme';
 import { useSensor } from '../contexts/SensorContext';
 import { getProfileDrivers, getProfileTypes, useUser } from '../contexts/UserContext';
+import { BFRBIconBadge } from '../components/BFRBIconBadge';
 
 const STORAGE_KEY_VIBRATION_STRENGTH = 'aura_vibration_strength';
 
@@ -321,15 +322,7 @@ export default function SettingsScreen() {
           <View style={styles.badgeTagsContainer}>
             {getProfileTypes(profile).map((type) => (
               <View key={type} style={styles.typeTagBadge}>
-                <Text style={styles.typeTagEmoji}>
-                  {type === '摳皮膚'
-                    ? '🖐️'
-                    : type === '拔毛髮'
-                    ? '💇'
-                    : type === '咬指甲'
-                    ? '🦷'
-                    : '✨'}
-                </Text>
+                <BFRBIconBadge type={type} size={24} iconSize={13} />
                 <Text style={styles.typeTagText}>{type}</Text>
               </View>
             ))}
@@ -599,10 +592,10 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#9B8AC1',
+    backgroundColor: '#4C7BD9', // 沉穩純藍底色（無漸層）
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#9B8AC1',
+    shadowColor: '#3B6CBF',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,

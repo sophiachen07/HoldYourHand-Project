@@ -299,18 +299,18 @@ export default function RelaxScreen() {
 
   const isInhaling = breathPhase === 'inhale';
   const breathColors: [string, string] = isInhaling
-    ? [AuraColors.cyan, AuraColors.purple]
-    : [AuraColors.purple, AuraColors.pink];
+    ? ['#81D4FA', '#29B6F6'] // 吸氣：清透淺水藍 ➔ 海洋天藍
+    : ['#5C6BC0', '#3949AB']; // 吐氣：沉靜海軍藍 ➔ 深海寧靜藍
   const breathTitle = isInhaling ? '吸氣' : '吐氣';
   const breathDescription = isInhaling
-    ? '深深吸氣，感覺腹部緩緩隆起...'
-    : '緩緩呼氣，釋放身體的緊繃...';
+    ? '深深吸氣，感覺清涼海風灌注全身...'
+    : '緩緩吐氣，隨著潮汐釋放內心緊繃...';
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* 柔和粉紫到鼠尾草薄荷綠的無壓力背景 */}
+      {/* 沉浸海洋柔和藍漸層背景 */}
       <LinearGradient
-        colors={['#EDE5F8', '#DEEEF8', '#E5F4EE']}
+        colors={['#E1F5FE', '#E0F7FA', '#E8EAF6']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
@@ -339,9 +339,9 @@ export default function RelaxScreen() {
         {/* 呼吸引導區塊 */}
         <View style={styles.breathSection}>
           <View style={styles.breathOuterCircle}>
-            <Ripple value={rippleOne} borderColor="rgba(202,231,224,0.7)" />
-            <Ripple value={rippleTwo} borderColor="rgba(155,138,193,0.5)" />
-            <Ripple value={rippleThree} borderColor="rgba(245,192,192,0.5)" />
+            <Ripple value={rippleOne} borderColor="rgba(129, 212, 250, 0.75)" />
+            <Ripple value={rippleTwo} borderColor="rgba(41, 182, 246, 0.55)" />
+            <Ripple value={rippleThree} borderColor="rgba(92, 107, 192, 0.45)" />
 
             <Animated.View
               style={[
@@ -387,12 +387,12 @@ export default function RelaxScreen() {
         {/* 1. 音樂與情境切換專區 */}
         <View style={styles.noiseSection}>
           <View style={styles.noiseTitleRow}>
-            <Music size={16} color="#9B8AC1" />
+            <Music size={16} color="#0288D1" />
             <Text style={styles.noiseTitle}>正念放鬆白噪音</Text>
             {isLoadingAudio && (
               <ActivityIndicator
                 size="small"
-                color="#9B8AC1"
+                color="#0288D1"
                 style={{ marginLeft: 6 }}
               />
             )}
@@ -410,7 +410,7 @@ export default function RelaxScreen() {
                   size={20}
                   color={
                     selectedNoise === 'mind'
-                      ? '#2E7D6E'
+                      ? '#0288D1'
                       : '#7E7889'
                   }
                 />
@@ -429,7 +429,7 @@ export default function RelaxScreen() {
                   size={20}
                   color={
                     selectedNoise === 'ocean'
-                      ? '#2E7D6E'
+                      ? '#0288D1'
                       : '#7E7889'
                   }
                 />
@@ -448,7 +448,7 @@ export default function RelaxScreen() {
                   size={20}
                   color={
                     selectedNoise === 'rain'
-                      ? '#2E7D6E'
+                      ? '#0288D1'
                       : '#7E7889'
                   }
                 />
@@ -468,9 +468,9 @@ export default function RelaxScreen() {
                 step={0.01}
                 value={volume}
                 onValueChange={handleVolumeChange}
-                minimumTrackTintColor="#9B8AC1"
+                minimumTrackTintColor="#0288D1"
                 maximumTrackTintColor="rgba(226, 232, 240, 0.8)"
-                thumbTintColor="#9B8AC1"
+                thumbTintColor="#0288D1"
               />
               <Text style={styles.volumePercentText}>
                 {Math.round(volume * 100)}%
@@ -487,7 +487,7 @@ export default function RelaxScreen() {
               <Text
                 style={[
                   styles.playerState,
-                  selectedNoise && { color: '#2E7D6E' },
+                  selectedNoise && { color: '#0288D1' },
                 ]}
               >
                 {selectedNoise
@@ -507,7 +507,7 @@ export default function RelaxScreen() {
           onPress={handleCompletePractice}
         >
           <LinearGradient
-            colors={['#9B8AC1', '#CAE7E0']}
+            colors={['#29B6F6', '#3949AB']}
             start={{ x: 0, y: 0.5 }}
             end={{ x: 1, y: 0.5 }}
             style={styles.completeButton}
@@ -606,7 +606,7 @@ function NoiseButton({
               {
                 height: active && isPlaying ? height : 3,
                 opacity: active ? 1 : 0.25,
-                backgroundColor: active ? AuraColors.cyan : AuraColors.muted,
+                backgroundColor: active ? '#29B6F6' : AuraColors.muted,
               },
             ]}
           />
@@ -622,7 +622,7 @@ function NoiseButton({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#EDE5F8',
+    backgroundColor: '#E1F5FE',
   },
 
   container: {
@@ -637,7 +637,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(155, 138, 193, 0.12)',
+    borderBottomColor: 'rgba(41, 182, 246, 0.15)',
   },
 
   backButton: {
@@ -646,12 +646,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(155,138,193,0.3)',
+    borderColor: 'rgba(41, 182, 246, 0.3)',
     borderRadius: 18,
     backgroundColor: '#FFFFFF',
-    shadowColor: '#9B8AC1',
+    shadowColor: '#29B6F6',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 2,
   },
@@ -685,9 +685,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     borderWidth: 1,
     borderStyle: 'dashed',
-    borderColor: 'rgba(202,231,224,0.8)',
+    borderColor: 'rgba(129, 212, 250, 0.8)',
     borderRadius: 85,
-    backgroundColor: 'rgba(202,231,224,0.18)',
+    backgroundColor: 'rgba(129, 212, 250, 0.15)',
   },
 
   ripple: {
@@ -704,9 +704,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderRadius: 54,
     elevation: 8,
-    shadowColor: '#9B8AC1',
+    shadowColor: '#29B6F6',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.35,
     shadowRadius: 10,
   },
 
@@ -732,7 +732,7 @@ const styles = StyleSheet.create({
 
   breathDescription: {
     height: 22,
-    color: '#9B8AC1',
+    color: '#0288D1',
     textAlign: 'center',
     fontSize: 13,
     fontWeight: '700',
@@ -753,7 +753,7 @@ const styles = StyleSheet.create({
   },
 
   phaseDotActive: {
-    backgroundColor: '#2E7D6E',
+    backgroundColor: '#0288D1',
   },
 
   phaseLabel: {
@@ -769,10 +769,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.82)',
-    shadowColor: '#9B8AC1',
+    backgroundColor: 'rgba(255, 255, 255, 0.88)',
+    shadowColor: '#81D4FA',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 3,
   },
@@ -809,8 +809,8 @@ const styles = StyleSheet.create({
   },
 
   noiseButtonActive: {
-    borderColor: 'rgba(202,231,224,0.9)',
-    backgroundColor: 'rgba(202,231,224,0.3)',
+    borderColor: 'rgba(41, 182, 246, 0.85)',
+    backgroundColor: 'rgba(225, 245, 254, 0.85)',
     borderWidth: 1.5,
   },
 
@@ -827,7 +827,7 @@ const styles = StyleSheet.create({
   },
 
   noiseButtonTextActive: {
-    color: '#2E7D6E',
+    color: '#0288D1',
     fontWeight: '800',
   },
 
@@ -901,7 +901,7 @@ const styles = StyleSheet.create({
   },
 
   statusDotActive: {
-    backgroundColor: '#2E7D6E',
+    backgroundColor: '#0288D1',
   },
 
   playerState: {
@@ -914,7 +914,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
     borderRadius: 14,
     overflow: 'hidden',
-    shadowColor: '#9B8AC1',
+    shadowColor: '#29B6F6',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,

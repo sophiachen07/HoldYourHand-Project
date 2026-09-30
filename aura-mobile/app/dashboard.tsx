@@ -57,6 +57,7 @@ import {
 
 import { useAlert } from '../contexts/AlertContext';
 import { useSensor } from '../contexts/SensorContext';
+import { BFRBIconBadge } from '../components/BFRBIconBadge';
 import {
   BFRB_BEHAVIOR_TYPES,
   DailyRecord,
@@ -185,6 +186,7 @@ export default function DashboardScreen() {
 
           <View style={styles.headerButtons}>
             <RoundIconButton
+              style={styles.flowerIconButton}
               onPress={() => setShowRelaxMenu(true)}
             >
               <Flower2
@@ -194,6 +196,7 @@ export default function DashboardScreen() {
             </RoundIconButton>
 
             <RoundIconButton
+              style={styles.settingsIconButton}
               onPress={() => router.push('/settings')}
             >
               <Settings
@@ -251,14 +254,11 @@ export default function DashboardScreen() {
 
         {/* 個人資料與手環狀態膠囊 */}
         <View style={styles.profileHeader}>
-          <LinearGradient
-            colors={['#9B8AC1', '#CAE7E0']}
-            style={styles.avatar}
-          >
+          <View style={styles.avatar}>
             <Text style={styles.avatarText}>
               {profile.name ? profile.name.slice(0, 1) : '宇'}
             </Text>
-          </LinearGradient>
+          </View>
 
           <View style={styles.profileInformation}>
             <Text style={styles.profileName}>
@@ -717,7 +717,7 @@ export default function DashboardScreen() {
             <View style={styles.modalHeader}>
               <View style={styles.modalTitleRow}>
                 <View style={styles.modalIconBadge}>
-                  <Flower2 size={16} color="#ffffff" />
+                  <Flower2 size={16} color="#9E670B" />
                 </View>
                 <Text style={styles.modalTitle}>放鬆與解壓中心</Text>
               </View>
@@ -747,7 +747,7 @@ export default function DashboardScreen() {
               >
                 <View style={styles.optionPureCard}>
                   <View style={styles.optionIconContainer}>
-                    <Wind size={22} color="#2E7D6E" />
+                    <Wind size={22} color="#9E670B" />
                   </View>
                   <View style={styles.optionContent}>
                     <View style={styles.optionTitleRow}>
@@ -760,7 +760,7 @@ export default function DashboardScreen() {
                       科學節律呼吸引導與高沉浸白噪音音效，舒緩身心壓力
                     </Text>
                   </View>
-                  <ChevronRight size={18} color="#2E7D6E" />
+                  <ChevronRight size={18} color="#9E670B" />
                 </View>
               </Pressable>
 
@@ -777,7 +777,7 @@ export default function DashboardScreen() {
               >
                 <View style={styles.optionPureCard}>
                   <View style={styles.optionIconContainer}>
-                    <Sparkles size={22} color="#2E7D6E" />
+                    <Sparkles size={22} color="#9E670B" />
                   </View>
                   <View style={styles.optionContent}>
                     <View style={styles.optionTitleRow}>
@@ -790,7 +790,7 @@ export default function DashboardScreen() {
                       長按蓄力挑戰幾何尺寸 100% 完美重合，享受粒子震動回饋
                     </Text>
                   </View>
-                  <ChevronRight size={18} color="#2E7D6E" />
+                  <ChevronRight size={18} color="#9E670B" />
                 </View>
               </Pressable>
 
@@ -807,7 +807,7 @@ export default function DashboardScreen() {
               >
                 <View style={styles.optionPureCard}>
                   <View style={styles.optionIconContainer}>
-                    <MessageCircle size={22} color="#2E7D6E" />
+                    <MessageCircle size={22} color="#9E670B" />
                   </View>
                   <View style={styles.optionContent}>
                     <View style={styles.optionTitleRow}>
@@ -820,7 +820,7 @@ export default function DashboardScreen() {
                       溫柔傾聽你的焦慮與緊繃，AI 陪伴小助手隨時守護你
                     </Text>
                   </View>
-                  <ChevronRight size={18} color="#2E7D6E" />
+                  <ChevronRight size={18} color="#9E670B" />
                 </View>
               </Pressable>
             </View>
@@ -875,14 +875,17 @@ function DashboardTabButton({
 function RoundIconButton({
   children,
   onPress,
+  style,
 }: {
   children: ReactNode;
   onPress: () => void;
+  style?: any;
 }) {
   return (
     <Pressable
       style={({ pressed }) => [
         styles.roundIconButton,
+        style,
         pressed && {
           opacity: 0.65,
         },
@@ -1988,18 +1991,12 @@ function StatisticsContent() {
         <View style={styles.integratedCardHeader}>
           <View style={styles.integratedEmojiGroup}>
             {aggregatedBehaviorStats.items.map((it) => (
-              <View key={it.type} style={styles.emojiCircle}>
-                <Text style={styles.emojiText}>
-                  {it.icon ||
-                    (it.type === '拔毛髮'
-                      ? '💇'
-                      : it.type === '咬指甲'
-                      ? '🦷'
-                      : it.type === '其他'
-                      ? '✨'
-                      : '🖐️')}
-                </Text>
-              </View>
+              <BFRBIconBadge
+                key={it.type}
+                type={it.type}
+                size={34}
+                iconSize={17}
+              />
             ))}
           </View>
 
@@ -2169,12 +2166,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 19,
-    backgroundColor: '#CDE1F8',
-    shadowColor: '#A8C9EF',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.3,
     shadowRadius: 5,
     elevation: 3,
+  },
+
+  flowerIconButton: {
+    backgroundColor: '#FEF3C7', // 更淡雅柔和的奶油嫩黃 (Pale Cream Yellow)
+    shadowColor: '#F3D78E',
+  },
+
+  settingsIconButton: {
+    backgroundColor: '#CDE1F8', // 清新柔和淡藍色 (Pastel Soft Blue)
+    shadowColor: '#A4C8F0',
   },
 
   profileHeader: {
@@ -2190,11 +2197,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 21,
-    shadowColor: '#9B8AC1',
+    backgroundColor: '#4C7BD9', // 沉穩純藍底色
+    shadowColor: '#3B6CBF',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.25,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 3,
   },
 
   avatarText: {
@@ -3159,7 +3167,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: '#CDE1F8',
+    backgroundColor: '#FFF0D0',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -3198,17 +3206,17 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(46, 125, 110, 0.25)',
-    backgroundColor: '#d9faee',
-    shadowColor: '#2E7D6E',
+    borderColor: 'rgba(235, 185, 90, 0.35)',
+    backgroundColor: '#FFF7E6',
+    shadowColor: '#D99B26',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.12,
+    shadowRadius: 5,
     elevation: 2,
   },
 
   optionCardPressed: {
-    opacity: 0.8,
+    opacity: 0.82,
     transform: [{ scale: 0.985 }],
   },
 
@@ -3217,7 +3225,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 14,
     gap: 12,
-    backgroundColor: '#d9faee',
+    backgroundColor: '#FFF7E6',
   },
 
   optionIconContainer: {
@@ -3226,7 +3234,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    borderWidth: 1,
+    borderColor: 'rgba(235, 185, 90, 0.25)',
   },
 
   optionContent: {
@@ -3247,47 +3257,53 @@ const styles = StyleSheet.create({
   },
 
   badgeGuide: {
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(235, 185, 90, 0.3)',
   },
 
   badgeGuideText: {
     fontSize: 9,
     fontWeight: '700',
-    color: '#2E7D6E',
+    color: '#9E670B',
   },
 
   badgeGame: {
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(235, 185, 90, 0.3)',
   },
 
   badgeGameText: {
     fontSize: 9,
     fontWeight: '700',
-    color: '#2E7D6E',
+    color: '#9E670B',
   },
 
   badgeTreehole: {
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(235, 185, 90, 0.3)',
   },
 
   badgeTreeholeText: {
     fontSize: 9,
     fontWeight: '700',
-    color: '#2E7D6E',
+    color: '#9E670B',
   },
 
   optionDesc: {
     fontSize: 11,
-    color: '#2A5248',
+    color: '#6E5224',
     lineHeight: 15,
     fontWeight: '500',
   },
