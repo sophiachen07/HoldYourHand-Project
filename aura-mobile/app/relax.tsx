@@ -303,8 +303,8 @@ export default function RelaxScreen() {
     : ['#5C6BC0', '#3949AB']; // 吐氣：沉靜海軍藍 ➔ 深海寧靜藍
   const breathTitle = isInhaling ? '吸氣' : '吐氣';
   const breathDescription = isInhaling
-    ? '深深吸氣，感覺清涼海風灌注全身...'
-    : '緩緩吐氣，隨著潮汐釋放內心緊繃...';
+    ? '深深吸氣，感覺腹部緩緩隆起...'
+    : '緩緩呼氣，釋放身體的緊繃...';
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -512,7 +512,7 @@ export default function RelaxScreen() {
             end={{ x: 1, y: 0.5 }}
             style={styles.completeButton}
           >
-            <Text style={styles.completeButtonText}>完成練習並返回儀表板</Text>
+            <Text style={styles.completeButtonText}>完成練習</Text>
             <CheckCircle size={18} color="#ffffff" />
           </LinearGradient>
         </Pressable>

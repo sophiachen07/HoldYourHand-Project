@@ -255,12 +255,12 @@ export default function LimitProgressGameScreen() {
   // -------------------------------------------------------------
   const spawnParticles = useCallback((count = 36) => {
     const colors = [
-      '#F5C0C0',
-      '#CAE7E0',
-      '#9B8AC1',
-      '#CDE1F8',
-      '#FDF2B8',
-      '#E9D5FF',
+      '#8B5CF6',
+      '#10B981',
+      '#FF4D6D',
+      '#38BDF8',
+      '#FBBF24',
+      '#C084FC',
       '#FFFFFF',
     ];
     const shapes: ('circle' | 'square' | 'diamond')[] = [
@@ -525,10 +525,10 @@ export default function LimitProgressGameScreen() {
 
     if (gameState === 'perfect') {
       return {
-        backgroundColor: '#CAE7E0',
-        shadowColor: '#2E7D6E',
+        backgroundColor: '#10B981',
+        shadowColor: '#059669',
         shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.9,
+        shadowOpacity: 0.85,
         shadowRadius: 24,
         elevation: 15,
         borderRadius,
@@ -536,8 +536,8 @@ export default function LimitProgressGameScreen() {
     }
     if (gameState === 'good') {
       return {
-        backgroundColor: '#CAE7E0',
-        shadowColor: '#2E7D6E',
+        backgroundColor: '#10B981',
+        shadowColor: '#059669',
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.6,
         shadowRadius: 16,
@@ -547,24 +547,29 @@ export default function LimitProgressGameScreen() {
     }
     if (gameState === 'fail') {
       return {
-        backgroundColor: '#F5C0C0',
-        opacity: 0.85,
+        backgroundColor: '#FF4D6D',
+        shadowColor: '#E11D48',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.6,
+        shadowRadius: 14,
+        elevation: 8,
+        opacity: 0.92,
         borderRadius,
       };
     }
     if (gameState === 'growing') {
       return {
-        backgroundColor: '#9B8AC1',
-        shadowColor: '#9B8AC1',
+        backgroundColor: '#8B5CF6',
+        shadowColor: '#7C3AED',
         shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.6,
-        shadowRadius: 14,
+        shadowOpacity: 0.65,
+        shadowRadius: 16,
         elevation: 8,
         borderRadius,
       };
     }
     return {
-      backgroundColor: '#9B8AC1',
+      backgroundColor: '#8B5CF6',
       borderRadius,
     };
   };
@@ -737,7 +742,7 @@ export default function LimitProgressGameScreen() {
               >
                 {gameState === 'perfect' && (
                   <LinearGradient
-                    colors={['#CAE7E0', '#9B8AC1']}
+                    colors={['#10B981', '#059669']}
                     style={styles.resultBadgeGradient}
                   >
                     <Sparkles size={20} color="#ffffff" />
@@ -750,7 +755,7 @@ export default function LimitProgressGameScreen() {
 
                 {gameState === 'good' && (
                   <LinearGradient
-                    colors={['#CAE7E0', '#A5D6A7']}
+                    colors={['#34D399', '#059669']}
                     style={styles.resultBadgeGradient}
                   >
                     <Zap size={20} color="#ffffff" />
@@ -763,7 +768,7 @@ export default function LimitProgressGameScreen() {
 
                 {gameState === 'fail' && (
                   <LinearGradient
-                    colors={['#F5C0C0', '#E57373']}
+                    colors={['#FF4D6D', '#E11D48']}
                     style={styles.resultBadgeGradient}
                   >
                     <Text style={styles.resultTitle}>
@@ -785,7 +790,7 @@ export default function LimitProgressGameScreen() {
                 <Text style={styles.tipText}>長按任意處生長，在完全重合時鬆手</Text>
               )}
               {gameState === 'growing' && (
-                <Text style={[styles.tipText, { color: '#9B8AC1', fontWeight: '700' }]}>
+                <Text style={[styles.tipText, { color: '#8B5CF6', fontWeight: '700' }]}>
                   蓄力生長中... 剛好填滿時鬆手！
                 </Text>
               )}
@@ -839,7 +844,7 @@ const styles = StyleSheet.create({
   },
   flashOverlay: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(245, 192, 192, 0.45)',
+    backgroundColor: 'rgba(255, 77, 109, 0.35)',
     zIndex: 99,
   },
   container: {
@@ -1058,8 +1063,8 @@ const styles = StyleSheet.create({
     color: '#5A5A5A',
   },
   actionButtonPrimary: {
-    backgroundColor: '#9B8AC1',
-    shadowColor: '#9B8AC1',
+    backgroundColor: '#8B5CF6',
+    shadowColor: '#8B5CF6',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

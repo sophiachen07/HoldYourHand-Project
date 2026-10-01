@@ -12,6 +12,7 @@ import {
 import { FontAwesome } from '@expo/vector-icons';
 
 import {
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -68,32 +69,27 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.brandContainer}>
-            <LinearGradient
-              colors={['#9B8AC1', '#CAE7E0']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.logo}
-            >
-              <Activity
-                size={38}
-                strokeWidth={2.4}
-                color="#ffffff"
+            <View style={styles.logo}>
+              <Image
+                source={require('../../assets/images/icon.png')}
+                style={styles.logoImage}
+                resizeMode="cover"
               />
-            </LinearGradient>
+            </View>
 
             <Text style={styles.brandName}>
               Hold your hand
             </Text>
 
             <Text style={styles.slogan}>
-              BIO-STRESS MONITOR
+              守把手
             </Text>
 
             {!hasCompletedOnboarding && isReady && (
               <View style={styles.onboardingBadge}>
                 <Sparkles size={12} color="#2E7D6E" />
                 <Text style={styles.onboardingBadgeText}>
-                  歡迎使用 · 初次快速設定引導
+                  歡迎使用 · 快速設定引導
                 </Text>
               </View>
             )}
@@ -179,7 +175,7 @@ export default function LoginScreen() {
             >
               <View style={styles.loginButton}>
                 <Text style={styles.loginButtonText}>
-                  {hasCompletedOnboarding ? '登入帳號' : '登入並開始初次設定'}
+                  {hasCompletedOnboarding ? '登入帳號' : '登入並開始設定'}
                 </Text>
 
                 <ArrowRight
@@ -220,22 +216,27 @@ const styles = StyleSheet.create({
   },
 
   logo: {
-    width: 72,
-    height: 72,
+    width: 80,
+    height: 80,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 17,
-    borderRadius: 21,
-
-    shadowColor: '#9B8AC1',
+    borderRadius: 22,
+    backgroundColor: '#FFE4E6',
+    shadowColor: '#F5C0C0',
     shadowOffset: {
       width: 0,
-      height: 8,
+      height: 6,
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 6,
+  },
 
-    elevation: 8,
+  logoImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 22,
   },
 
   brandName: {
