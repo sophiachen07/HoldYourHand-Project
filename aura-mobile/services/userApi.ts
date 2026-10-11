@@ -121,6 +121,14 @@ export const userApi = {
     });
   },
 
+  // 手機版：ID Token 驗證身分，Access Token 讀取生日／性別
+  googleLoginNative(idToken: string, accessToken: string | null) {
+    return request<LoginResponse>('/api/users/google-login', {
+      method: 'POST',
+      body: JSON.stringify({ idToken, accessToken }),
+    });
+  },
+
   getConfig() {
     return request<{ googleClientId: string | null }>('/api/config');
   },

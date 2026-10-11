@@ -169,7 +169,7 @@ function pickPrimary(list) {
  * 用 Google Access Token 取得已驗證的 email 與個人資料。
  * 會先確認這個 token 是發給我們的用戶端 ID，避免被別的網站的 token 冒用。
  */
-async function getGoogleProfile(accessToken) {
+async function getGoogleProfile(accessToken, { expectedEmail } = {}) {
   let tokenInfo;
   try {
     const { data } = await axios.get('https://oauth2.googleapis.com/tokeninfo', {
@@ -183,7 +183,14 @@ async function getGoogleProfile(accessToken) {
     throw err;
   }
 
-  if (tokenInfo.aud !== GOOGLE_CLIENT_ID && tokenInfo.azp !== GOOGLE_CLIENT_ID) {
+  if (expectedEmail) {
+    // 手機版：身分已由 ID Token 驗證，這裡只確認 Access Token 屬於同一個 Google 帳號
+    if (String(tokenInfo.email || '').toLowerCase() !== expectedEmail) {
+      const err = new Error('Google 憑證與登入帳號不一致');
+      err.status = 401;
+      throw err;
+    }
+  } else if (tokenInfo.aud !== GOOGLE_CLIENT_ID && tokenInfo.azp !== GOOGLE_CLIENT_ID) {
     const err = new Error('Google 憑證不屬於本應用程式');
     err.status = 401;
     throw err;
@@ -284,58 +291,81 @@ router.post('/login', async (req, res, next) => {
 });
 
 // Google 登入
-// - accessToken：網頁版按鈕使用，可同時取得姓名、大頭貼、生日、性別
-// - credential：Google ID Token（只有 email 與姓名），保留相容
+// - 網頁版：只送 accessToken（驗證是發給本應用程式的 token）
+// - 手機版：送 idToken（驗證身分）＋ accessToken（讀取生日、性別、大頭貼）
 router.post('/google-login', async (req, res, next) => {
   try {
     if (!GOOGLE_CLIENT_ID) {
       return res.status(503).json({ error: '後端尚未設定 GOOGLE_CLIENT_ID' });
     }
 
+    const idToken = String(req.body?.idToken || req.body?.credential || '');
     const accessToken = String(req.body?.accessToken || '');
-    if (accessToken) {
-      let googleProfile;
+    if (!idToken && !accessToken) {
+      return res.status(400).json({ error: '缺少 Google 登入憑證' });
+    }
+
+    let googleProfile;
+
+    if (idToken) {
+      let payload;
+      try {
+        const ticket = await getGoogleClient().verifyIdToken({
+          idToken,
+          audience: GOOGLE_CLIENT_ID,
+        });
+        payload = ticket.getPayload();
+      } catch (err) {
+        if (err.code === 'MODULE_NOT_FOUND') throw err;
+        return res.status(401).json({ error: 'Google 登入驗證失敗，請重新登入' });
+      }
+
+      if (!payload?.email || !payload.email_verified) {
+        return res.status(401).json({ error: '這個 Google 帳號的 email 尚未驗證' });
+      }
+
+      const email = payload.email.toLowerCase();
+      googleProfile = {
+        email,
+        name: payload.name || null,
+        age: null,
+        gender: null,
+        avatarUrl: payload.picture || null,
+      };
+
+      if (accessToken) {
+        try {
+          const details = await getGoogleProfile(accessToken, { expectedEmail: email });
+          googleProfile = {
+            ...googleProfile,
+            name: details.name || googleProfile.name,
+            age: details.age,
+            gender: details.gender,
+            avatarUrl: details.avatarUrl || googleProfile.avatarUrl,
+          };
+        } catch (err) {
+          console.warn(`[Google] 讀取詳細資料失敗，只帶入基本資料：${err.message}`);
+        }
+      }
+    } else {
       try {
         googleProfile = await getGoogleProfile(accessToken);
       } catch (err) {
         if (err.status) return res.status(err.status).json({ error: err.message });
         throw err;
       }
-      const result = await loginByEmail(googleProfile.email, { ...googleProfile, via: 'Google' });
-      return res.json({
-        ...result,
-        googleProfile: {
-          name: googleProfile.name,
-          age: googleProfile.age,
-          gender: googleProfile.gender,
-          avatarUrl: googleProfile.avatarUrl,
-        },
-      });
     }
 
-    const credential = String(req.body?.credential || '');
-    if (!credential) {
-      return res.status(400).json({ error: '缺少 Google 登入憑證' });
-    }
-
-    let payload;
-    try {
-      const ticket = await getGoogleClient().verifyIdToken({
-        idToken: credential,
-        audience: GOOGLE_CLIENT_ID,
-      });
-      payload = ticket.getPayload();
-    } catch (err) {
-      if (err.code === 'MODULE_NOT_FOUND') throw err;
-      return res.status(401).json({ error: 'Google 登入驗證失敗，請重新登入' });
-    }
-
-    if (!payload?.email || !payload.email_verified) {
-      return res.status(401).json({ error: '這個 Google 帳號的 email 尚未驗證' });
-    }
-
-    const email = payload.email.toLowerCase();
-    res.json(await loginByEmail(email, { name: payload.name, via: 'Google' }));
+    const result = await loginByEmail(googleProfile.email, { ...googleProfile, via: 'Google' });
+    res.json({
+      ...result,
+      googleProfile: {
+        name: googleProfile.name,
+        age: googleProfile.age,
+        gender: googleProfile.gender,
+        avatarUrl: googleProfile.avatarUrl,
+      },
+    });
   } catch (err) {
     next(err);
   }

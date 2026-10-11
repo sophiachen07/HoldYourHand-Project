@@ -29,6 +29,12 @@ import {
 import { AuraColors } from '../../constants/auraTheme';
 import { useUser } from '../../contexts/UserContext';
 import { GoogleSignInButton } from '../../components/GoogleSignInButton';
+import {
+  isNativeGoogleAvailable,
+  NATIVE_GOOGLE_UNAVAILABLE_MESSAGE,
+  nativeGoogleSignIn,
+} from '../../services/nativeGoogle';
+import { userApi } from '../../services/userApi';
 
 // React Native 的 Alert 在網頁版不會顯示，網頁改用瀏覽器內建提示框
 function notify(title: string, message: string) {
@@ -50,6 +56,7 @@ export default function LoginScreen() {
     isGuest,
     loginWithEmail,
     loginWithGoogle,
+    loginWithGoogleNative,
     loginAsGuest,
   } = useUser();
 
@@ -80,23 +87,40 @@ export default function LoginScreen() {
   }
 
   // Google 登入（網頁版）：拿到 Google 授權後交給後端驗證並讀取帳號資料
-  async function handleGoogleAccessToken(accessToken: string) {
+  // Google 登入成功後的導頁（網頁版與手機版共用）
+  function goAfterGoogleLogin(result: Awaited<ReturnType<typeof loginWithGoogle>>) {
+    if (result.onboardingCompleted) {
+      router.replace('/device');
+      return;
+    }
+    const g = result.googleProfile;
+    const missing = [!g?.age && '年齡', !g?.gender && '性別'].filter(Boolean);
+    router.push('/profile');
+    if (missing.length > 0) {
+      notify(
+        '部分資料需手動填寫',
+        `你的 Google 帳號沒有提供${missing.join('、')}（可能未填寫或未公開），請在設定頁補上。`
+      );
+    }
+  }
+
+  // 手機版 Google 登入（開發版／正式版 App）
+  async function handleNativeGoogle() {
+    if (!isNativeGoogleAvailable()) {
+      notify('Google 登入', NATIVE_GOOGLE_UNAVAILABLE_MESSAGE);
+      return;
+    }
+
     setIsLoggingIn(true);
     try {
-      const result = await loginWithGoogle(accessToken);
-      if (result.onboardingCompleted) {
-        router.replace('/device');
-      } else {
-        const g = result.googleProfile;
-        const missing = [!g?.age && '年齡', !g?.gender && '性別'].filter(Boolean);
-        router.push('/profile');
-        if (missing.length > 0) {
-          notify(
-            '部分資料需手動填寫',
-            `你的 Google 帳號沒有提供${missing.join('、')}（可能未填寫或未公開），請在設定頁補上。`
-          );
-        }
+      const { googleClientId } = await userApi.getConfig();
+      if (!googleClientId) {
+        notify('Google 登入', '後端尚未設定 GOOGLE_CLIENT_ID，暫時無法使用 Google 登入。');
+        return;
       }
+      const tokens = await nativeGoogleSignIn(googleClientId);
+      if (!tokens) return; // 使用者取消
+      goAfterGoogleLogin(await loginWithGoogleNative(tokens.idToken, tokens.accessToken));
     } catch (err: any) {
       notify('Google 登入失敗', err?.message || '請稍後再試。');
     } finally {
@@ -104,11 +128,15 @@ export default function LoginScreen() {
     }
   }
 
-  function showNativeGoogleNotice() {
-    Alert.alert(
-      'Google 登入',
-      'Expo Go 無法使用 Google 登入。請用電腦瀏覽器開啟網頁版，或等打包成正式 App 後使用。目前請先用電子信箱登入。'
-    );
+  async function handleGoogleAccessToken(accessToken: string) {
+    setIsLoggingIn(true);
+    try {
+      goAfterGoogleLogin(await loginWithGoogle(accessToken));
+    } catch (err: any) {
+      notify('Google 登入失敗', err?.message || '請稍後再試。');
+    } finally {
+      setIsLoggingIn(false);
+    }
   }
 
   async function handleLogin() {
@@ -234,7 +262,8 @@ export default function LoginScreen() {
             ) : (
             <View style={styles.socialRow}>
               <Pressable
-                onPress={showNativeGoogleNotice}
+                onPress={handleNativeGoogle}
+                disabled={isLoggingIn}
                 style={({ pressed }) => [
                   styles.socialButton,
                   pressed && styles.buttonPressed,

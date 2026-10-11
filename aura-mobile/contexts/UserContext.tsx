@@ -10,6 +10,7 @@ import {
   useState,
 } from 'react';
 
+import { nativeGoogleSignOut } from '../services/nativeGoogle';
 import {
   userApi,
   type GoogleProfileInfo,
@@ -210,6 +211,7 @@ type UserContextValue = {
   account: UserAccount | null;
   loginWithEmail: (email: string) => Promise<LoginResult>;
   loginWithGoogle: (accessToken: string) => Promise<LoginResult>;
+  loginWithGoogleNative: (idToken: string, accessToken: string | null) => Promise<LoginResult>;
   isGuest: boolean;
   loginAsGuest: () => Promise<{ onboardingCompleted: boolean }>;
   profile: UserProfile;
@@ -583,6 +585,12 @@ export function UserProvider({ children }: PropsWithChildren) {
   const loginWithEmail = useCallback(
     async (rawEmail: string) =>
       applyLoginResponse(await userApi.login(rawEmail.trim().toLowerCase())),
+    [applyLoginResponse]
+  );
+
+  const loginWithGoogleNative = useCallback(
+    async (idToken: string, accessToken: string | null) =>
+      applyLoginResponse(await userApi.googleLoginNative(idToken, accessToken)),
     [applyLoginResponse]
   );
 
@@ -1078,6 +1086,7 @@ export function UserProvider({ children }: PropsWithChildren) {
       AsyncStorage.removeItem(STORAGE_KEY_ONBOARDING),
       AsyncStorage.removeItem(STORAGE_KEY_ACCOUNT),
       AsyncStorage.removeItem(STORAGE_KEY_GUEST),
+      nativeGoogleSignOut(),
     ]);
     console.log('[UserContext] 已登出並重置登入狀態。');
   }, []);
@@ -1104,6 +1113,7 @@ export function UserProvider({ children }: PropsWithChildren) {
       account,
       loginWithEmail,
       loginWithGoogle,
+      loginWithGoogleNative,
       isGuest,
       loginAsGuest,
       profile,
@@ -1130,6 +1140,7 @@ export function UserProvider({ children }: PropsWithChildren) {
       account,
       loginWithEmail,
       loginWithGoogle,
+      loginWithGoogleNative,
       isGuest,
       loginAsGuest,
       profile,
