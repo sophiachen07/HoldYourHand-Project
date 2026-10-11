@@ -178,6 +178,7 @@ export default function TreeholeChatScreen() {
         clearTimeout(timeoutId);
 
         let replyText = FALLBACK_REPLY;
+        let isErrorReply = false;
 
         if (response.ok) {
           const data = await response.json();
@@ -188,6 +189,8 @@ export default function TreeholeChatScreen() {
           try {
             const errData = await response.json();
             replyText = errData.reply || FALLBACK_REPLY;
+            // 後端未設定 AI 連線：以系統提示樣式顯示
+            isErrorReply = errData.code === 'AI_NOT_CONFIGURED';
           } catch (e) {
             replyText = FALLBACK_REPLY;
           }
@@ -198,6 +201,7 @@ export default function TreeholeChatScreen() {
           sender: 'assistant',
           text: replyText,
           timestamp: formatTime(new Date()),
+          isError: isErrorReply,
         };
 
         setMessages((prev) => [...prev, assistantMsg]);

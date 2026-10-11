@@ -12,6 +12,8 @@ import {
 import { FontAwesome } from '@expo/vector-icons';
 
 import {
+  ActivityIndicator,
+  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -26,24 +28,118 @@ import {
 
 import { AuraColors } from '../../constants/auraTheme';
 import { useUser } from '../../contexts/UserContext';
+import { GoogleSignInButton } from '../../components/GoogleSignInButton';
+
+// React Native 的 Alert 在網頁版不會顯示，網頁改用瀏覽器內建提示框
+function notify(title: string, message: string) {
+  if (Platform.OS === 'web') {
+    window.alert(`${title}\n\n${message}`);
+  } else {
+    Alert.alert(title, message);
+  }
+}
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState('demo@holdyourhand.io');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { hasCompletedOnboarding, isReady } = useUser();
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const {
+    hasCompletedOnboarding,
+    isReady,
+    account,
+    isGuest,
+    loginWithEmail,
+    loginWithGoogle,
+    loginAsGuest,
+  } = useUser();
 
-  // 若使用者已完成初次設定，開啟時若已就緒可直接導航至 dashboard
+  // 已登入帳號且完成初次設定：開啟時先到裝置連線頁連接手環
   useEffect(() => {
-    if (isReady && hasCompletedOnboarding) {
-      router.replace('/dashboard');
+    if (isReady && hasCompletedOnboarding && (account || isGuest)) {
+      router.replace('/device');
     }
-  }, [isReady, hasCompletedOnboarding]);
+  }, [isReady, hasCompletedOnboarding, account, isGuest]);
 
-  function handleLogin() {
+  // 訪客登入：不需要 email，資料只存在這台裝置、不寫入資料庫
+  async function handleGuestLogin() {
+    const result = await loginAsGuest();
+    if (result.onboardingCompleted) {
+      router.replace('/device');
+    } else {
+      router.push('/profile');
+    }
+  }
+
+  // 不連資料庫，直接以本機資料使用（後端沒開時的備案）
+  function continueOffline() {
     if (!hasCompletedOnboarding) {
       router.push('/profile');
     } else {
-      router.replace('/dashboard');
+      router.replace('/device');
+    }
+  }
+
+  // Google 登入（網頁版）：拿到 Google 授權後交給後端驗證並讀取帳號資料
+  async function handleGoogleAccessToken(accessToken: string) {
+    setIsLoggingIn(true);
+    try {
+      const result = await loginWithGoogle(accessToken);
+      if (result.onboardingCompleted) {
+        router.replace('/device');
+      } else {
+        const g = result.googleProfile;
+        const missing = [!g?.age && '年齡', !g?.gender && '性別'].filter(Boolean);
+        router.push('/profile');
+        if (missing.length > 0) {
+          notify(
+            '部分資料需手動填寫',
+            `你的 Google 帳號沒有提供${missing.join('、')}（可能未填寫或未公開），請在設定頁補上。`
+          );
+        }
+      }
+    } catch (err: any) {
+      notify('Google 登入失敗', err?.message || '請稍後再試。');
+    } finally {
+      setIsLoggingIn(false);
+    }
+  }
+
+  function showNativeGoogleNotice() {
+    Alert.alert(
+      'Google 登入',
+      'Expo Go 無法使用 Google 登入。請用電腦瀏覽器開啟網頁版，或等打包成正式 App 後使用。目前請先用電子信箱登入。'
+    );
+  }
+
+  async function handleLogin() {
+    const trimmed = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      notify('提示', '請輸入有效的電子信箱');
+      return;
+    }
+
+    setIsLoggingIn(true);
+    try {
+      const result = await loginWithEmail(trimmed);
+      if (result.onboardingCompleted) {
+        router.replace('/device');
+      } else {
+        router.push('/profile');
+      }
+    } catch (err: any) {
+      const reason = err?.message || '登入失敗，請稍後再試。';
+      if (Platform.OS === 'web') {
+        if (window.confirm(`無法連線資料庫\n\n${reason}\n\n要先離線使用嗎？`)) {
+          continueOffline();
+        }
+      } else {
+        Alert.alert('無法連線資料庫', reason, [
+          { text: '取消', style: 'cancel' },
+          { text: '先離線使用', onPress: continueOffline },
+        ]);
+      }
+    } finally {
+      setIsLoggingIn(false);
     }
   }
 
@@ -130,8 +226,15 @@ export default function LoginScreen() {
               />
             </View>
 
+            {Platform.OS === 'web' ? (
+              <GoogleSignInButton
+                onAccessToken={handleGoogleAccessToken}
+                disabled={isLoggingIn}
+              />
+            ) : (
             <View style={styles.socialRow}>
               <Pressable
+                onPress={showNativeGoogleNotice}
                 style={({ pressed }) => [
                   styles.socialButton,
                   pressed && styles.buttonPressed,
@@ -165,17 +268,20 @@ export default function LoginScreen() {
                 </Text>
               </Pressable>
             </View>
+            )}
 
             <Pressable
               onPress={handleLogin}
+              disabled={isLoggingIn}
               style={({ pressed }) => [
                 styles.loginButtonWrapper,
                 pressed && styles.loginButtonPressed,
               ]}
             >
               <View style={styles.loginButton}>
+                {isLoggingIn && <ActivityIndicator size="small" color="#2E7D6E" />}
                 <Text style={styles.loginButtonText}>
-                  {hasCompletedOnboarding ? '登入帳號' : '登入並開始設定'}
+                  {isLoggingIn ? '登入中…' : '登入帳號'}
                 </Text>
 
                 <ArrowRight
@@ -184,6 +290,16 @@ export default function LoginScreen() {
                   color="#2E7D6E"
                 />
               </View>
+            </Pressable>
+
+            {/* 訪客登入：不寫入資料庫 */}
+            <Pressable
+              onPress={handleGuestLogin}
+              disabled={isLoggingIn}
+              style={({ pressed }) => [styles.guestButton, pressed && styles.buttonPressed]}
+            >
+              <Text style={styles.guestButtonText}>以訪客身分使用</Text>
+              <Text style={styles.guestHintText}>資料只會存在這台裝置，不會上傳</Text>
             </Pressable>
           </View>
         </ScrollView>
@@ -339,6 +455,25 @@ const styles = StyleSheet.create({
   buttonPressed: {
     opacity: 0.7,
     backgroundColor: 'rgba(241, 245, 249, 0.7)',
+  },
+
+  guestButton: {
+    alignItems: 'center',
+    marginTop: 14,
+    paddingVertical: 8,
+  },
+
+  guestButtonText: {
+    color: '#6B5B95',
+    fontSize: 14,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
+  },
+
+  guestHintText: {
+    color: '#8A8A9E',
+    fontSize: 11,
+    marginTop: 4,
   },
 
   loginButtonWrapper: {

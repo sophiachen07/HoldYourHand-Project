@@ -17,7 +17,13 @@ import type {
   SensorData,
 } from '../types/sensor';
 import { bleService, BLE_CONFIG } from '../services/bleService';
+import { userApi, type SensorReadingPayload } from '../services/userApi';
 import { useUser } from './UserContext';
+
+// 感測數據寫入資料庫：每秒最多取樣一筆，每 5 秒批次上傳
+const SENSOR_SAMPLE_INTERVAL_MS = 1000;
+const SENSOR_UPLOAD_INTERVAL_MS = 5000;
+const SENSOR_BUFFER_LIMIT = 500;
 
 import { getWebSocketUrl } from '../constants/apiConfig';
 
@@ -38,7 +44,7 @@ type SensorContextValue = {
 const SensorContext = createContext<SensorContextValue | null>(null);
 
 export function SensorProvider({ children }: PropsWithChildren) {
-  const { injectMockHistory, recordBehaviorTrigger, triggerMidnightReset } =
+  const { injectMockHistory, recordBehaviorTrigger, triggerMidnightReset, account } =
     useUser();
 
   const [mode, setMode] = useState<ConnectionMode>('ble');
@@ -51,6 +57,12 @@ export function SensorProvider({ children }: PropsWithChildren) {
   const socketRef = useRef<WebSocket | null>(null);
   const throttleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestBleDataRef = useRef<SensorData | null>(null);
+  const sensorBufferRef = useRef<SensorReadingPayload[]>([]);
+  const lastSampleAtRef = useRef<number>(0);
+  const modeRef = useRef<ConnectionMode>('ble');
+  useEffect(() => {
+    modeRef.current = mode;
+  }, [mode]);
 
   // 用 ref 保存最新的指令處理函式，避免重複建立連線
   const actionsRef = useRef({
@@ -72,6 +84,26 @@ export function SensorProvider({ children }: PropsWithChildren) {
   // ==========================================
   const scheduleThrottledUpdate = useCallback((newData: SensorData) => {
     latestBleDataRef.current = newData;
+
+    // 取樣進資料庫上傳暫存區
+    const now = Date.now();
+    if (now - lastSampleAtRef.current >= SENSOR_SAMPLE_INTERVAL_MS) {
+      lastSampleAtRef.current = now;
+      const buffer = sensorBufferRef.current;
+      buffer.push({
+        timestamp: newData.timestamp || now,
+        distance: newData.distance,
+        angularVelocity: newData.angularVelocity,
+        heartRate: newData.heartRate,
+        spo2: newData.spo2,
+        motorStatus: newData.motorStatus,
+        isOutOfRange: newData.isOutOfRange,
+        source: modeRef.current,
+      });
+      if (buffer.length > SENSOR_BUFFER_LIMIT) {
+        buffer.splice(0, buffer.length - SENSOR_BUFFER_LIMIT);
+      }
+    }
 
     if (!throttleTimerRef.current) {
       throttleTimerRef.current = setTimeout(() => {
@@ -265,6 +297,37 @@ export function SensorProvider({ children }: PropsWithChildren) {
       if (socketRef.current) socketRef.current.close();
     };
   }, [mode, scheduleThrottledUpdate]);
+
+  // ==========================================
+  // 4. 定時把感測數據批次寫入 MySQL
+  // ==========================================
+  useEffect(() => {
+    if (!account) {
+      sensorBufferRef.current = [];
+      return;
+    }
+
+    let isUploading = false;
+    const timer = setInterval(async () => {
+      if (isUploading || sensorBufferRef.current.length === 0) return;
+      const batch = sensorBufferRef.current;
+      sensorBufferRef.current = [];
+      isUploading = true;
+      try {
+        await userApi.uploadSensorReadings(account.userId, batch);
+      } catch (err: any) {
+        // 上傳失敗：放回暫存區，下次再試
+        sensorBufferRef.current = [...batch, ...sensorBufferRef.current].slice(
+          -SENSOR_BUFFER_LIMIT
+        );
+        console.warn('[SensorContext] 感測數據上傳失敗:', err?.message);
+      } finally {
+        isUploading = false;
+      }
+    }, SENSOR_UPLOAD_INTERVAL_MS);
+
+    return () => clearInterval(timer);
+  }, [account]);
 
   // 元件卸載時清理
   useEffect(() => {

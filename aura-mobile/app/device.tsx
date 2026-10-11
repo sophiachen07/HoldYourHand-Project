@@ -1,5 +1,7 @@
 import {
   ActivityIndicator,
+  Alert,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -27,6 +29,7 @@ import {
 } from 'lucide-react-native';
 
 import { useSensor } from '../contexts/SensorContext';
+import { useUser } from '../contexts/UserContext';
 import { AuraColors } from '../constants/auraTheme';
 import { BLE_CONFIG } from '../services/bleService';
 
@@ -45,7 +48,32 @@ export default function DeviceScreen() {
     disconnectDevice,
   } = useSensor();
 
+  const { logout } = useUser();
+
   const isConnected = status === 'connected' && sensorData?.connected === true;
+
+  // 返回鍵：初次設定流程中回上一頁；登入後直接來到此頁時則詢問是否登出
+  function handleBackPress() {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+
+    const doLogout = async () => {
+      await logout();
+      router.replace('/(tabs)');
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('確定要登出並返回登入頁嗎？')) doLogout();
+      return;
+    }
+
+    Alert.alert('確認登出', '確定要登出並返回登入頁嗎？', [
+      { text: '取消', style: 'cancel' },
+      { text: '登出', style: 'destructive', onPress: doLogout },
+    ]);
+  }
   const isScanning = status === 'scanning';
   const isConnecting = status === 'connecting';
 
@@ -110,7 +138,7 @@ export default function DeviceScreen() {
         <View style={styles.navigation}>
           <Pressable
             style={styles.backButton}
-            onPress={() => router.back()}
+            onPress={handleBackPress}
           >
             <Text style={styles.backButtonText}>‹</Text>
           </Pressable>
@@ -496,7 +524,14 @@ export default function DeviceScreen() {
                 <Text style={styles.disconnectButtonText}>中斷手環連線</Text>
               </Pressable>
             </>
-          ) : null}
+          ) : (
+            <Pressable
+              style={styles.skipButton}
+              onPress={() => router.push('/dashboard')}
+            >
+              <Text style={styles.skipButtonText}>暫不連線，先進入儀表板 ›</Text>
+            </Pressable>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -940,5 +975,17 @@ const styles = StyleSheet.create({
     color: '#dc2626',
     fontSize: 13,
     fontWeight: '600',
+  },
+
+  skipButton: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+
+  skipButtonText: {
+    color: '#64748B',
+    fontSize: 13,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });

@@ -9,7 +9,9 @@ import React, {
 import type { ReactNode } from 'react';
 
 import {
+  Alert,
   Modal,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -79,7 +81,34 @@ const GAUGE_CIRCUMFERENCE =
   2 * Math.PI * GAUGE_RADIUS;
 
 export default function DashboardScreen() {
-  const { profile } = useUser();
+  const { profile, isReady, hasCompletedOnboarding, logout } = useUser();
+
+  // 返回鍵：詢問是否登出，確認後回到登入頁
+  function handleBackPress() {
+    const doLogout = async () => {
+      await logout();
+      router.replace('/(tabs)');
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('確定要登出並返回登入頁嗎？')) {
+        doLogout();
+      }
+      return;
+    }
+
+    Alert.alert('確認登出', '確定要登出並返回登入頁嗎？', [
+      { text: '取消', style: 'cancel' },
+      { text: '登出', style: 'destructive', onPress: doLogout },
+    ]);
+  }
+
+  // 被登出（例如資料庫已找不到此帳號）時回到登入頁
+  useEffect(() => {
+    if (isReady && !hasCompletedOnboarding) {
+      router.replace('/(tabs)');
+    }
+  }, [isReady, hasCompletedOnboarding]);
   const { isPicking, ignoredCurrentEvent } = useAlert();
   const [activeTab, setActiveTab] =
     useState<DashboardTab>('realtime');
@@ -174,6 +203,15 @@ export default function DashboardScreen() {
       >
         {/* 頂部導航列 */}
         <View style={styles.topNavigation}>
+          <View style={styles.titleWithBack}>
+            <Pressable
+              style={styles.backButton}
+              onPress={handleBackPress}
+              hitSlop={10}
+            >
+              <ChevronLeft size={18} color="#333333" />
+            </Pressable>
+
           <View>
             <Text style={styles.navigationTitle}>
               健康儀表板
@@ -182,6 +220,7 @@ export default function DashboardScreen() {
             <Text style={styles.navigationSubtitle}>
               Hold your hand 即時生理監測
             </Text>
+          </View>
           </View>
 
           <View style={styles.headerButtons}>
@@ -406,8 +445,7 @@ export default function DashboardScreen() {
                         ? gaugeOffset
                         : GAUGE_CIRCUMFERENCE
                     }
-                    rotation="-90"
-                    origin="70, 70"
+                    transform="rotate(-90 70 70)"
                   />
                 </Svg>
 
@@ -2130,6 +2168,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingTop: 12,
     paddingBottom: 36,
+  },
+
+  titleWithBack: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+
+  // 與設定頁等其他頁面相同的返回鍵樣式
+  backButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(155,138,193,0.3)',
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
 
   topNavigation: {

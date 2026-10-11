@@ -10,6 +10,15 @@ import {
   useState,
 } from 'react';
 
+import {
+  userApi,
+  type GoogleProfileInfo,
+  type LoginResponse,
+  type SyncPayload,
+} from '../services/userApi';
+
+const STORAGE_KEY_ACCOUNT = '@aura_user_account';
+const STORAGE_KEY_GUEST = '@aura_guest_mode'; // 訪客模式：資料只存在手機，不寫入資料庫
 const STORAGE_KEY_PROFILE = '@aura_user_profile';
 const STORAGE_KEY_ONBOARDING = '@aura_onboarding_completed';
 const STORAGE_KEY_BEHAVIOR_DB = '@aura_bfrb_history_db';
@@ -78,6 +87,7 @@ export type UserProfile = {
   bfrbTypes: string[];
   bfrbDriver?: string | string[];
   bfrbType?: string | string[];
+  avatarUrl?: string | null; // Google 大頭貼
 };
 
 export function getProfileDrivers(p?: Partial<UserProfile> | null): string[] {
@@ -159,6 +169,33 @@ export const defaultBehaviorStats: Record<string, BehaviorStatItem> = {
   },
 };
 
+// 新帳號用的歸零統計（不含展示用假數字）
+export function createEmptyBehaviorStats(): Record<string, BehaviorStatItem> {
+  const result: Record<string, BehaviorStatItem> = {};
+  Object.keys(defaultBehaviorStats).forEach((key) => {
+    result[key] = { ...defaultBehaviorStats[key], count: 0, todayCount: 0 };
+  });
+  return result;
+}
+
+function createEmptyDailyRecord(dateStr: string): DailyRecord {
+  return { date: dateStr, occurred: 0, restrained: 0, relaxed: 0 };
+}
+
+// 對應資料庫 users 表：id 由 MySQL 自動編號，以 email 辨識
+export type UserAccount = {
+  userId: number;
+  email: string;
+};
+
+export type LoginResult = {
+  isNew: boolean;
+  onboardingCompleted: boolean;
+  googleProfile?: GoogleProfileInfo;
+};
+
+const SYNC_DEBOUNCE_MS = 1500;
+
 export const defaultProfile: UserProfile = {
   name: '宇航',
   age: '21',
@@ -170,6 +207,11 @@ export const defaultProfile: UserProfile = {
 };
 
 type UserContextValue = {
+  account: UserAccount | null;
+  loginWithEmail: (email: string) => Promise<LoginResult>;
+  loginWithGoogle: (accessToken: string) => Promise<LoginResult>;
+  isGuest: boolean;
+  loginAsGuest: () => Promise<{ onboardingCompleted: boolean }>;
   profile: UserProfile;
   hasCompletedOnboarding: boolean;
   isReady: boolean;
@@ -203,6 +245,22 @@ export function UserProvider({ children }: PropsWithChildren) {
   const [firstActiveDate, setFirstActiveDate] = useState<string>(getTaiwanDateString());
   const [lastActiveDate, setLastActiveDate] = useState<string>(getTaiwanDateString());
   const [isReady, setIsReady] = useState<boolean>(false);
+  const [account, setAccount] = useState<UserAccount | null>(null);
+  const [isGuest, setIsGuest] = useState<boolean>(false);
+  const isGuestRef = useRef<boolean>(false);
+  useEffect(() => {
+    isGuestRef.current = isGuest;
+  }, [isGuest]);
+
+  // 給非同步回呼用的最新值
+  const accountRef = useRef<UserAccount | null>(null);
+  const hasCompletedOnboardingRef = useRef<boolean>(false);
+  useEffect(() => {
+    accountRef.current = account;
+  }, [account]);
+  useEffect(() => {
+    hasCompletedOnboardingRef.current = hasCompletedOnboarding;
+  }, [hasCompletedOnboarding]);
 
   const midnightTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -220,6 +278,8 @@ export function UserProvider({ children }: PropsWithChildren) {
           savedDailyJson,
           savedFirstDate,
           savedLastDate,
+          savedAccountJson,
+          savedGuest,
         ] = await Promise.all([
           AsyncStorage.getItem(STORAGE_KEY_PROFILE),
           AsyncStorage.getItem(STORAGE_KEY_ONBOARDING),
@@ -227,9 +287,26 @@ export function UserProvider({ children }: PropsWithChildren) {
           AsyncStorage.getItem(STORAGE_KEY_DAILY_HISTORY),
           AsyncStorage.getItem(STORAGE_KEY_FIRST_ACTIVE_DATE),
           AsyncStorage.getItem(STORAGE_KEY_LAST_ACTIVE_DATE),
+          AsyncStorage.getItem(STORAGE_KEY_ACCOUNT),
+          AsyncStorage.getItem(STORAGE_KEY_GUEST),
         ]);
 
         if (!isMounted) return;
+
+        if (savedGuest === 'true') {
+          setIsGuest(true);
+        }
+
+        if (savedAccountJson) {
+          try {
+            const parsedAccount = JSON.parse(savedAccountJson);
+            if (parsedAccount?.userId && parsedAccount?.email) {
+              setAccount(parsedAccount);
+            }
+          } catch (e) {
+            console.error('解析帳號資料失敗:', e);
+          }
+        }
 
         if (savedProfileJson) {
           try {
@@ -363,6 +440,204 @@ export function UserProvider({ children }: PropsWithChildren) {
     };
   }, []);
 
+  // 以 email 登入資料庫：已有資料就載入，新帳號則從零開始
+  // 套用後端回傳的登入結果（email 登入與 Google 登入共用）
+  const applyLoginResponse = useCallback(async (res: LoginResponse): Promise<LoginResult> => {
+    const email = res.email;
+    const todayStr = getTaiwanDateString();
+    const nextAccount: UserAccount = { userId: res.userId, email: res.email };
+
+    // 舊版本機資料搬遷：手機上已有資料、但從未登入過，且這個 email 是新帳號
+    // 訪客的資料不上傳（訪客模式的承諾是不寫入資料庫）
+    const migrateLocalData =
+      res.isNew &&
+      hasCompletedOnboardingRef.current &&
+      !accountRef.current &&
+      !isGuestRef.current;
+
+    // 改用正式帳號登入：離開訪客模式
+    setIsGuest(false);
+    await AsyncStorage.removeItem(STORAGE_KEY_GUEST);
+
+    if (migrateLocalData) {
+      // 保留目前畫面上的資料，稍後由自動同步上傳
+      setAccount(nextAccount);
+      await AsyncStorage.setItem(STORAGE_KEY_ACCOUNT, JSON.stringify(nextAccount));
+      console.log(`[UserContext] 已將本機資料綁定到帳號 #${res.userId}`);
+      return { isNew: true, onboardingCompleted: true };
+    }
+
+    let nextProfile: UserProfile;
+    let nextStats: Record<string, BehaviorStatItem>;
+    let nextDaily: Record<string, DailyRecord>;
+    let nextFirstDate: string;
+
+    if (res.onboardingCompleted) {
+      const drivers = res.profile.bfrbDrivers?.length
+        ? res.profile.bfrbDrivers
+        : getProfileDrivers(null);
+      const types = res.profile.bfrbTypes?.length ? res.profile.bfrbTypes : getProfileTypes(null);
+      nextProfile = {
+        name: res.profile.name || defaultProfile.name,
+        age: res.profile.age || defaultProfile.age,
+        gender: res.profile.gender || defaultProfile.gender,
+        bfrbDrivers: drivers,
+        bfrbTypes: types,
+        bfrbDriver: drivers.join('、'),
+        bfrbType: types.join('、'),
+        avatarUrl: res.profile.avatarUrl || null,
+      };
+      nextStats = { ...createEmptyBehaviorStats(), ...res.behaviorStats };
+      nextDaily = { ...res.dailyHistory };
+      nextFirstDate = res.firstActiveDate || todayStr;
+
+      // 上次使用不是今天：今日次數歸零
+      if (res.lastActiveDate && res.lastActiveDate !== todayStr) {
+        Object.keys(nextStats).forEach((k) => {
+          nextStats[k] = { ...nextStats[k], todayCount: 0 };
+        });
+      }
+    } else {
+      // 新帳號：Google 登入時資料庫已存了 Google 提供的資料，預填到設定頁
+      nextProfile = {
+        ...defaultProfile,
+        name: res.profile.name || defaultProfile.name,
+        age: res.profile.age || defaultProfile.age,
+        gender: res.profile.gender || defaultProfile.gender,
+        avatarUrl: res.profile.avatarUrl || null,
+      };
+      nextStats = createEmptyBehaviorStats();
+      nextDaily = {};
+      nextFirstDate = todayStr;
+    }
+
+    if (!nextDaily[todayStr]) {
+      nextDaily[todayStr] = createEmptyDailyRecord(todayStr);
+    }
+
+    setProfile(nextProfile);
+    setBehaviorStats(nextStats);
+    setDailyHistory(nextDaily);
+    setFirstActiveDate(nextFirstDate);
+    setLastActiveDate(todayStr);
+    setHasCompletedOnboarding(res.onboardingCompleted);
+    setAccount(nextAccount);
+
+    await Promise.all([
+      AsyncStorage.setItem(STORAGE_KEY_ACCOUNT, JSON.stringify(nextAccount)),
+      AsyncStorage.setItem(STORAGE_KEY_PROFILE, JSON.stringify(nextProfile)),
+      AsyncStorage.setItem(STORAGE_KEY_BEHAVIOR_DB, JSON.stringify(nextStats)),
+      AsyncStorage.setItem(STORAGE_KEY_DAILY_HISTORY, JSON.stringify(nextDaily)),
+      AsyncStorage.setItem(STORAGE_KEY_FIRST_ACTIVE_DATE, nextFirstDate),
+      AsyncStorage.setItem(STORAGE_KEY_LAST_ACTIVE_DATE, todayStr),
+      res.onboardingCompleted
+        ? AsyncStorage.setItem(STORAGE_KEY_ONBOARDING, 'true')
+        : AsyncStorage.removeItem(STORAGE_KEY_ONBOARDING),
+    ]);
+
+    console.log(
+      `[UserContext] 登入帳號 #${res.userId} ${email}${res.isNew ? '（新帳號）' : ''}`
+    );
+    return {
+      isNew: res.isNew,
+      onboardingCompleted: res.onboardingCompleted,
+      googleProfile: res.googleProfile,
+    };
+  }, []);
+
+  // 訪客登入：不連資料庫，資料只存在這台裝置
+  const loginAsGuest = useCallback(async () => {
+    // 已經是訪客且設定過：沿用手機上的訪客資料
+    if (isGuestRef.current && hasCompletedOnboardingRef.current) {
+      return { onboardingCompleted: true };
+    }
+
+    const todayStr = getTaiwanDateString();
+    const freshStats = createEmptyBehaviorStats();
+    const freshDaily = { [todayStr]: createEmptyDailyRecord(todayStr) };
+
+    setAccount(null);
+    setIsGuest(true);
+    setProfile(defaultProfile);
+    setBehaviorStats(freshStats);
+    setDailyHistory(freshDaily);
+    setFirstActiveDate(todayStr);
+    setLastActiveDate(todayStr);
+    setHasCompletedOnboarding(false);
+
+    await Promise.all([
+      AsyncStorage.setItem(STORAGE_KEY_GUEST, 'true'),
+      AsyncStorage.removeItem(STORAGE_KEY_ACCOUNT),
+      AsyncStorage.removeItem(STORAGE_KEY_ONBOARDING),
+      AsyncStorage.setItem(STORAGE_KEY_PROFILE, JSON.stringify(defaultProfile)),
+      AsyncStorage.setItem(STORAGE_KEY_BEHAVIOR_DB, JSON.stringify(freshStats)),
+      AsyncStorage.setItem(STORAGE_KEY_DAILY_HISTORY, JSON.stringify(freshDaily)),
+      AsyncStorage.setItem(STORAGE_KEY_FIRST_ACTIVE_DATE, todayStr),
+      AsyncStorage.setItem(STORAGE_KEY_LAST_ACTIVE_DATE, todayStr),
+    ]);
+
+    console.log('[UserContext] 以訪客身分使用（不寫入資料庫）');
+    return { onboardingCompleted: false };
+  }, []);
+
+  const loginWithEmail = useCallback(
+    async (rawEmail: string) =>
+      applyLoginResponse(await userApi.login(rawEmail.trim().toLowerCase())),
+    [applyLoginResponse]
+  );
+
+  const loginWithGoogle = useCallback(
+    async (accessToken: string) => applyLoginResponse(await userApi.googleLogin(accessToken)),
+    [applyLoginResponse]
+  );
+
+  // 自動同步：資料有變動時，延遲 1.5 秒把整包資料寫進 MySQL
+  useEffect(() => {
+    if (!isReady || !account || !hasCompletedOnboarding) return;
+
+    const payload: SyncPayload = {
+      profile: {
+        name: profile.name,
+        age: profile.age,
+        gender: profile.gender,
+        bfrbDrivers: getProfileDrivers(profile),
+        bfrbTypes: getProfileTypes(profile),
+      },
+      onboardingCompleted: true,
+      firstActiveDate,
+      lastActiveDate,
+      behaviorStats,
+      dailyHistory,
+    };
+
+    const timer = setTimeout(() => {
+      userApi.sync(account.userId, payload).catch((err) => {
+        if (err?.status === 404) {
+          // 資料庫裡已沒有這個帳號（例如資料庫被清空）：自動登出，回到登入頁重新登入
+          console.warn('[UserContext] 資料庫找不到此帳號，已自動登出');
+          setAccount(null);
+          setHasCompletedOnboarding(false);
+          AsyncStorage.multiRemove([STORAGE_KEY_ACCOUNT, STORAGE_KEY_ONBOARDING]).catch(
+            console.error
+          );
+          return;
+        }
+        console.warn('[UserContext] 同步資料庫失敗（下次變動時會再嘗試）:', err.message);
+      });
+    }, SYNC_DEBOUNCE_MS);
+
+    return () => clearTimeout(timer);
+  }, [
+    isReady,
+    account,
+    hasCompletedOnboarding,
+    profile,
+    behaviorStats,
+    dailyHistory,
+    firstActiveDate,
+    lastActiveDate,
+  ]);
+
   const updateProfile = useCallback(async (partial: Partial<UserProfile>) => {
     setProfile((prev) => {
       const next = { ...prev, ...partial };
@@ -427,6 +702,14 @@ export function UserProvider({ children }: PropsWithChildren) {
       const key: string = Array.isArray(rawTarget)
         ? rawTarget[0] || '摳皮膚'
         : String(rawTarget || '摳皮膚');
+
+      // 0. 寫入資料庫事件紀錄（失敗不影響本機統計）
+      const currentAccount = accountRef.current;
+      if (currentAccount) {
+        userApi.logEvent(currentAccount.userId, key).catch((err) =>
+          console.warn('[UserContext] 事件寫入資料庫失敗:', err.message)
+        );
+      }
 
       // 1. 更新 behaviorStats
       setBehaviorStats((prev) => {
@@ -501,6 +784,13 @@ export function UserProvider({ children }: PropsWithChildren) {
       const key: string = Array.isArray(rawTarget)
         ? rawTarget[0] || '摳皮膚'
         : String(rawTarget || '摳皮膚');
+
+      const currentAccount = accountRef.current;
+      if (currentAccount) {
+        userApi.revertLastEvent(currentAccount.userId, key).catch((err) =>
+          console.warn('[UserContext] 事件回退寫入資料庫失敗:', err.message)
+        );
+      }
 
       setBehaviorStats((prev) => {
         const currentItem = prev[key];
@@ -781,8 +1071,14 @@ export function UserProvider({ children }: PropsWithChildren) {
 
   // 登出：清除登入狀態與 Onboarding 紀錄
   const logout = useCallback(async () => {
+    setAccount(null);
+    setIsGuest(false);
     setHasCompletedOnboarding(false);
-    await AsyncStorage.removeItem(STORAGE_KEY_ONBOARDING);
+    await Promise.all([
+      AsyncStorage.removeItem(STORAGE_KEY_ONBOARDING),
+      AsyncStorage.removeItem(STORAGE_KEY_ACCOUNT),
+      AsyncStorage.removeItem(STORAGE_KEY_GUEST),
+    ]);
     console.log('[UserContext] 已登出並重置登入狀態。');
   }, []);
 
@@ -805,6 +1101,11 @@ export function UserProvider({ children }: PropsWithChildren) {
 
   const value = useMemo(
     () => ({
+      account,
+      loginWithEmail,
+      loginWithGoogle,
+      isGuest,
+      loginAsGuest,
       profile,
       hasCompletedOnboarding,
       isReady,
@@ -826,6 +1127,11 @@ export function UserProvider({ children }: PropsWithChildren) {
       logout,
     }),
     [
+      account,
+      loginWithEmail,
+      loginWithGoogle,
+      isGuest,
+      loginAsGuest,
       profile,
       hasCompletedOnboarding,
       isReady,

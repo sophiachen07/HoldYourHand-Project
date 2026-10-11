@@ -19,3 +19,6 @@ web-build/
 npm-debug.log*
 .DS_Store
 Thumbs.db
+
+# 範例設定檔要上傳
+!.env.example

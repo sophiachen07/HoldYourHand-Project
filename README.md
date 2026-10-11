@@ -217,6 +217,47 @@ npx expo start
 
 ---
 
+## MySQL 資料庫 (Database)
+
+後端 `aura-server` 會把每位使用者的資料存進 MySQL，App 只透過後端 API 存取，不會直接連資料庫。
+
+### 設定
+1. 安裝 MySQL 8（Windows 可用 MySQL Installer，記下 root 密碼）。
+2. 在 `aura-server` 執行 `npm install`（會安裝 `mysql2`）。
+3. 參考 `aura-server/.env.example`，在 `aura-server/.env` 加上 `DB_HOST`、`DB_PORT`、`DB_USER`、`DB_PASSWORD`、`DB_NAME`。
+4. `node server.js`。看到 `[DB] MySQL 已連線` 即成功；資料庫與資料表會自動建立（結構見 `aura-server/schema.sql`）。
+
+### 使用者辨識
+App 登入頁輸入 email → 後端在 `users` 表查找，沒有就自動新增，由 MySQL 自動編號 `id`。其他資料表都用 `user_id` 對應到使用者，每個人有自己的紀錄。目前只用 email 辨識，沒有密碼驗證。
+
+### Google 登入（網頁版）
+1. 在 Google Cloud Console 建立「網頁應用程式」OAuth 用戶端，已授權的 JavaScript 來源加入 `http://localhost:8081`、`http://localhost`。
+2. 在 `aura-server/.env` 加上 `GOOGLE_CLIENT_ID=你的用戶端ID`，重新啟動後端。
+3. 用電腦瀏覽器開 `http://localhost:8081`，登入頁會出現 Google 登入按鈕。後端驗證 Google 憑證後取出 email，沿用同一套使用者資料。
+- Google 只允許 `https://` 或 `localhost`，所以手機瀏覽器用區網 IP 開啟時無法使用；Expo Go 也不支援，需打包成 App。
+
+### 資料表
+| 資料表 | 內容 | 寫入時機 |
+| :--- | :--- | :--- |
+| `users` | email、姓名、年齡、性別、BFRB 類型與驅動因子 | 登入、修改個人資料 |
+| `behavior_stats` | 各類行為的累計與今日次數 | 資料變動後 1.5 秒自動同步 |
+| `daily_records` | 每日發生／克制／舒緩次數 | 資料變動後 1.5 秒自動同步 |
+| `behavior_events` | 每一次觸發的時間（台灣時間），誤判會標記 `reverted = 1` | 每次觸發 |
+| `sensor_readings` | 手環距離、角速度、心率、血氧（每秒 1 筆，台灣時間） | 每 5 秒批次上傳 |
+
+### API
+| 方法 | 路徑 | 說明 |
+| :--- | :--- | :--- |
+| POST | `/api/users/login` | `{ email }`，回傳 `userId` 與完整資料 |
+| GET | `/api/users/:userId` | 取得完整資料 |
+| PUT | `/api/users/:userId/sync` | 覆蓋個人資料、統計與每日紀錄 |
+| POST | `/api/users/:userId/events` | 新增觸發事件 |
+| POST | `/api/users/:userId/events/revert-last` | 標記最近一次事件為誤判 |
+| GET | `/api/users/:userId/events` | 查詢事件紀錄 |
+| POST | `/api/users/:userId/sensor-readings` | 批次寫入感測數據（一次最多 500 筆） |
+
+---
+
 ## Android APK 打包指南 (Build APK)
 
 ### 方法一：EAS 雲端打包 (推薦，免本機 Android SDK)

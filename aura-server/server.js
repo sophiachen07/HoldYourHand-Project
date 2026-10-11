@@ -7,6 +7,8 @@ const {
   WebSocket,
   WebSocketServer,
 } = require('ws');
+const { initDatabase, DB_NAME } = require('./db');
+const userRoutes = require('./userRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -14,10 +16,13 @@ const HF_API_KEY = process.env.HF_API_KEY;
 
 // 啟用中介軟體
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 
 // 預設安撫回覆字串
 const DEFAULT_FALLBACK_REPLY = '我現在有點累在休息，但我會一直陪著你，我們一起深呼吸好嗎？';
+
+// 未設定 HF_API_KEY 時直接告知，不假裝是 AI 回覆
+const AI_NOT_CONFIGURED_REPLY = '目前未設定連線，小樹洞暫無法使用。';
 
 // ==========================================
 // 心理陪伴聊天小助手 API 路由
@@ -28,6 +33,13 @@ app.post('/api/chat', async (req, res) => {
 
     if (!message || typeof message !== 'string') {
       return res.status(400).json({ error: '請提供有效的 message 內容' });
+    }
+
+    if (!HF_API_KEY) {
+      return res.status(503).json({
+        code: 'AI_NOT_CONFIGURED',
+        reply: AI_NOT_CONFIGURED_REPLY,
+      });
     }
 
     // 解析 userData 欄位
@@ -125,6 +137,16 @@ app.post('/api/chat', async (req, res) => {
       error: error.response?.data || error.message,
     });
   }
+});
+
+// ==========================================
+// 使用者資料 API（MySQL）
+// ==========================================
+app.use('/api/users', userRoutes);
+
+// 前端需要的公開設定（Google 用戶端 ID 不是機密）
+app.get('/api/config', (req, res) => {
+  res.json({ googleClientId: process.env.GOOGLE_CLIENT_ID || null });
 });
 
 // 健康檢查路由
@@ -231,6 +253,18 @@ httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`手機端 WebSocket 位址：ws://你的電腦IP:${PORT}`);
   console.log('按 Ctrl + C 可以停止伺服器');
   console.log('----------------------------------------');
+
+  if (!HF_API_KEY) {
+    console.warn('⚠️  未設定 HF_API_KEY：小樹洞 AI 無法使用（請在 .env 填入 Hugging Face Key）');
+  }
+
+  // 連線 MySQL（失敗時伺服器照常運作，只有 /api/users 會回 503）
+  initDatabase()
+    .then(() => console.log(`[DB] MySQL 已連線，資料庫：${DB_NAME}`))
+    .catch((err) => {
+      console.error(`[DB] MySQL 連線失敗：${err.message}`);
+      console.error('[DB] 請確認 MySQL 已啟動，並檢查 .env 的 DB_HOST / DB_USER / DB_PASSWORD');
+    });
 });
 
 httpServer.on('error', (error) => {
