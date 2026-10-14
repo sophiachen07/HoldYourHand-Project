@@ -1,7 +1,7 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
-const FALLBACK_IP = '192.168.0.18';
+const FALLBACK_IP = '192.168.0.14';
 const SERVER_PORT = '8080';
 
 /**

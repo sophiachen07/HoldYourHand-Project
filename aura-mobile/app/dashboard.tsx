@@ -291,7 +291,7 @@ export default function DashboardScreen() {
           </Pressable>
         </View>
 
-        {/* 個人資料與手環狀態膠囊 */}
+        {/* 個人資料與裝置狀態膠囊 */}
         <View style={styles.profileHeader}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>
@@ -309,17 +309,22 @@ export default function DashboardScreen() {
             </Text>
           </View>
 
-          <View
+          <Pressable
+            onPress={() => router.push('/device')}
             style={[
               styles.connectionBadge,
               {
                 backgroundColor:
                   status === 'connected' && sensorData?.connected
                     ? '#CAE7E0'
+                    : status === 'reconnecting' || status === 'connecting'
+                    ? '#FEF3C7'
                     : '#F5C0C0',
                 borderColor:
                   status === 'connected' && sensorData?.connected
                     ? 'rgba(46, 125, 110, 0.3)'
+                    : status === 'reconnecting' || status === 'connecting'
+                    ? 'rgba(217, 119, 6, 0.3)'
                     : 'rgba(217, 83, 79, 0.3)',
               },
             ]}
@@ -331,6 +336,8 @@ export default function DashboardScreen() {
                   backgroundColor:
                     status === 'connected' && sensorData?.connected
                       ? '#10B981'
+                      : status === 'reconnecting' || status === 'connecting'
+                      ? '#F59E0B'
                       : '#EF4444',
                 },
               ]}
@@ -343,13 +350,15 @@ export default function DashboardScreen() {
                   color:
                     status === 'connected' && sensorData?.connected
                       ? '#2E7D6E'
+                      : status === 'reconnecting' || status === 'connecting'
+                      ? '#B45309'
                       : '#9C4146',
                 },
               ]}
             >
               {connectionText}
             </Text>
-          </View>
+          </Pressable>
         </View>
 
         {activeTab === 'realtime' ? (
@@ -698,12 +707,12 @@ export default function DashboardScreen() {
                 >
                   {motorStatus
                     ? '📳 ESP32 震動馬達運作中（觸覺提醒反饋）'
-                    : '手環觸覺馬達：待機監控中'}
+                    : '裝置觸覺馬達：待機監控中'}
                 </Text>
               </View>
               <Text style={styles.motorCardSub}>
                 {motorStatus
-                  ? '手環偵測到 BFRB 行為成立，正持續震動 1 秒提醒您停止摳抓。'
+                  ? '裝置偵測到 BFRB 行為成立，正持續震動 1 秒提醒您停止摳抓。'
                   : '條件齊備時，ESP32 邊緣狀態機將自動驅動 GPIO 23 震動提醒。'}
               </Text>
             </View>
@@ -1906,56 +1915,6 @@ function StatisticsContent() {
         </View>
       </View>
 
-      {/* 2. 頂部兩個並排圓角卡片：「已發生」、「已克制」 */}
-      <View style={styles.twoCardsRow}>
-        {/* 卡片一：已發生 */}
-        <View style={[styles.statOverviewCard, styles.occurredBorder]}>
-          <View style={styles.statOverviewIconRow}>
-            <View
-              style={[
-                styles.statIconBadge,
-                { backgroundColor: 'rgba(245, 192, 192, 0.45)' },
-              ]}
-            >
-              <Zap size={14} color="#D9534F" />
-            </View>
-            <Text style={styles.statOverviewLabel}>已發生</Text>
-          </View>
-          <View style={styles.statOverviewValueRow}>
-            <Text
-              style={[styles.statOverviewNumber, { color: '#D9534F' }]}
-            >
-              {filterOccurred}
-            </Text>
-            <Text style={styles.statOverviewUnit}>次</Text>
-          </View>
-          <Text style={styles.statOverviewSub}>感測觸發紀錄</Text>
-        </View>
-
-        {/* 卡片二：已克制 */}
-        <View style={[styles.statOverviewCard, styles.restrainedBorder]}>
-          <View style={styles.statOverviewIconRow}>
-            <View
-              style={[
-                styles.statIconBadge,
-                { backgroundColor: 'rgba(202, 231, 224, 0.45)' },
-              ]}
-            >
-              <ShieldCheck size={14} color="#2E7D6E" />
-            </View>
-            <Text style={styles.statOverviewLabel}>已克制</Text>
-          </View>
-          <View style={styles.statOverviewValueRow}>
-            <Text
-              style={[styles.statOverviewNumber, { color: '#2E7D6E' }]}
-            >
-              {filterRestrained}
-            </Text>
-            <Text style={styles.statOverviewUnit}>次</Text>
-          </View>
-          <Text style={styles.statOverviewSub}>及時暫停中斷</Text>
-        </View>
-      </View>
 
       {/* 3. 支援歷史滑動的動態折線圖 (Line Chart) - 當選擇「全部」時完全隱藏 */}
       {timeFilter !== 'all' && (
@@ -2103,16 +2062,20 @@ function getConnectionText(
     return '連線中';
   }
 
+  if (status === 'reconnecting') {
+    return '自動回網中';
+  }
+
   if (status !== 'connected') {
-    return '伺服器中斷';
+    return '裝置待機';
   }
 
   if (!hasData) {
-    return '等待資料';
+    return '已連線';
   }
 
   if (!deviceConnected) {
-    return '裝置已斷線';
+    return '裝置離線';
   }
 
   return '監測中';

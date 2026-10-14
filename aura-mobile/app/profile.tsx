@@ -347,7 +347,7 @@ export default function ProfileScreen() {
               </View>
             </View>
             <Text style={styles.cardSubtitle}>
-              請選擇手環演算法首要辨識與防護的行為類型（可複選多項）：
+              請選擇裝置演算法首要辨識與防護的行為類型（可複選多項）：
             </Text>
 
             <View style={styles.typesGrid}>

@@ -3,6 +3,7 @@ export type ConnectionStatus =
   | 'scanning'
   | 'connecting'
   | 'connected'
+  | 'reconnecting'
   | 'error';
 
 export type SocketStatus =

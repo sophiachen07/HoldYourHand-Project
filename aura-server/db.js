@@ -62,15 +62,53 @@ async function initDatabase() {
 
 /** 舊版資料表補上新欄位（CREATE TABLE IF NOT EXISTS 不會幫已存在的表加欄位） */
 async function runMigrations(pool) {
-  const [[row]] = await pool.query(
+  // 1. avatar_url
+  const [[avatarCol]] = await pool.query(
     `SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS
      WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'avatar_url'`,
     [DB_NAME]
   );
-  if (Number(row.cnt) === 0) {
+  if (Number(avatarCol.cnt) === 0) {
     await pool.query('ALTER TABLE users ADD COLUMN avatar_url VARCHAR(500) NULL AFTER gender');
     console.log('[DB] 已新增欄位 users.avatar_url');
   }
+
+  // 2. google_id
+  const [[googleCol]] = await pool.query(
+    `SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'google_id'`,
+    [DB_NAME]
+  );
+  if (Number(googleCol.cnt) === 0) {
+    await pool.query('ALTER TABLE users ADD COLUMN google_id VARCHAR(100) NULL UNIQUE AFTER email');
+    console.log('[DB] 已新增欄位 users.google_id');
+  }
+
+  // 3. email_verified
+  const [[verifiedCol]] = await pool.query(
+    `SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'email_verified'`,
+    [DB_NAME]
+  );
+  if (Number(verifiedCol.cnt) === 0) {
+    await pool.query('ALTER TABLE users ADD COLUMN email_verified TINYINT(1) NOT NULL DEFAULT 0 AFTER onboarding_completed');
+    console.log('[DB] 已新增欄位 users.email_verified');
+  }
+
+  // 4. email_verifications 表
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS email_verifications (
+      id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      email VARCHAR(255) NOT NULL,
+      code_hash VARCHAR(255) NOT NULL,
+      attempts INT NOT NULL DEFAULT 0,
+      max_attempts INT NOT NULL DEFAULT 5,
+      expires_at DATETIME NOT NULL,
+      consumed_at DATETIME NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_email_expires (email, expires_at)
+    )
+  `);
 }
 
 function getPool() {

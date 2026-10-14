@@ -36,6 +36,7 @@ import {
 
 import { AuraColors } from '../constants/auraTheme';
 import { getApiBaseUrl } from '../constants/apiConfig';
+import { getStoredToken } from '../services/tokenStorage';
 import {
   getProfileDrivers,
   getProfileTypes,
@@ -163,13 +164,19 @@ export default function TreeholeChatScreen() {
       const timeoutId = setTimeout(() => controller.abort(), 15000);
 
       try {
+        const authToken = await getStoredToken();
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+        if (authToken) {
+          headers['Authorization'] = `Bearer ${authToken}`;
+        }
+
         const response = await fetch(`${getApiBaseUrl()}/api/chat`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers,
           body: JSON.stringify({
-            message: text,
+            message: text.slice(0, 500),
             userData: userDataPayload,
           }),
           signal: controller.signal,

@@ -255,7 +255,7 @@ export default function SettingsScreen() {
                 </View>
               </View>
               <Text style={styles.deviceNavSub}>
-                切換 BLE 藍牙手環或 WebSocket 開發模擬器
+                切換 BLE 藍牙裝置或 WebSocket 開發模擬器
               </Text>
             </View>
 
@@ -316,7 +316,7 @@ export default function SettingsScreen() {
           </View>
 
           <Text style={styles.bfrbDescription}>
-            手環演算法首要辨識與防護的身體集中重複行為模式：
+            裝置演算法首要辨識與防護的身體集中重複行為模式：
           </Text>
 
           <View style={styles.badgeTagsContainer}>
@@ -329,13 +329,13 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* 區塊 3：手環回饋設定 */}
+        {/* 區塊 3：裝置回饋設定 */}
         <Text style={styles.pageTitle}>
-          手環回饋設定
+          裝置回饋設定
         </Text>
 
         <Text style={styles.pageSubtitle}>
-          客製化調整智慧手環在偵測到摳抓或焦慮行為時的振動回饋強度。
+          客製化調整智慧裝置在偵測到摳抓或焦慮行為時的振動回饋強度。
         </Text>
 
         <View style={styles.settingCard}>
@@ -347,7 +347,7 @@ export default function SettingsScreen() {
               />
 
               <Text style={styles.settingTitle}>
-                手環振動反饋強度
+                裝置振動反饋強度
               </Text>
             </View>
 
@@ -359,7 +359,7 @@ export default function SettingsScreen() {
           </View>
 
           <Text style={styles.settingDescription}>
-            高壓或異常摳抓事件發生時，手環將按照此強度提供觸覺提醒。（點選或滑動即自動儲存更新）
+            高壓或異常摳抓事件發生時，裝置將按照此強度提供觸覺提醒。（點選或滑動即自動儲存更新）
           </Text>
 
           <View style={styles.presetRow}>
@@ -473,7 +473,7 @@ export default function SettingsScreen() {
             <Text style={styles.previewDescription}>
               目前設定為 {vibrationStrength}%
               強度。實際振動將由 Hold your hand
-              智慧手環執行。
+              智慧裝置執行。
             </Text>
           </View>
         </View>

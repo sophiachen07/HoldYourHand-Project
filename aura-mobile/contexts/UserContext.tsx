@@ -13,10 +13,14 @@ import {
 import { nativeGoogleSignOut } from '../services/nativeGoogle';
 import {
   userApi,
+  registerUnauthorizedHandler,
+  setApiToken,
   type GoogleProfileInfo,
   type LoginResponse,
+  type SendCodeResponse,
   type SyncPayload,
 } from '../services/userApi';
+import { getStoredToken } from '../services/tokenStorage';
 
 const STORAGE_KEY_ACCOUNT = '@aura_user_account';
 const STORAGE_KEY_GUEST = '@aura_guest_mode'; // 訪客模式：資料只存在手機，不寫入資料庫
@@ -209,6 +213,8 @@ export const defaultProfile: UserProfile = {
 
 type UserContextValue = {
   account: UserAccount | null;
+  sendVerificationCode: (email: string) => Promise<SendCodeResponse>;
+  loginWithEmailCode: (email: string, code: string) => Promise<LoginResult>;
   loginWithEmail: (email: string) => Promise<LoginResult>;
   loginWithGoogle: (accessToken: string) => Promise<LoginResult>;
   loginWithGoogleNative: (idToken: string, accessToken: string | null) => Promise<LoginResult>;
@@ -272,6 +278,20 @@ export function UserProvider({ children }: PropsWithChildren) {
 
     async function loadStoredData() {
       try {
+        // 註冊 401 Unauthorized 全域回呼 (Token 過期自動登出)
+        registerUnauthorizedHandler(() => {
+          console.warn('[UserContext] 登入憑證已過期或失效，自動登出');
+          setAccount(null);
+          AsyncStorage.removeItem(STORAGE_KEY_ACCOUNT).catch(console.error);
+          userApi.clearAuth().catch(console.error);
+        });
+
+        // 嘗試還原安全儲存中的 Token
+        const storedToken = await getStoredToken();
+        if (storedToken) {
+          setApiToken(storedToken);
+        }
+
         const todayStr = getTaiwanDateString();
         const [
           savedProfileJson,
@@ -303,6 +323,7 @@ export function UserProvider({ children }: PropsWithChildren) {
           try {
             const parsedAccount = JSON.parse(savedAccountJson);
             if (parsedAccount?.userId && parsedAccount?.email) {
+              // 僅在有 Token 或離線模式下保留帳號
               setAccount(parsedAccount);
             }
           } catch (e) {
@@ -582,10 +603,26 @@ export function UserProvider({ children }: PropsWithChildren) {
     return { onboardingCompleted: false };
   }, []);
 
-  const loginWithEmail = useCallback(
-    async (rawEmail: string) =>
-      applyLoginResponse(await userApi.login(rawEmail.trim().toLowerCase())),
+  // 1. 索取 Email 驗證碼
+  const sendVerificationCode = useCallback(async (email: string) => {
+    return userApi.sendVerificationCode(email.trim().toLowerCase());
+  }, []);
+
+  // 2. 以 Email 驗證碼登入
+  const loginWithEmailCode = useCallback(
+    async (rawEmail: string, code: string) => {
+      const res = await userApi.verifyEmailCode(rawEmail.trim().toLowerCase(), code);
+      return applyLoginResponse(res);
+    },
     [applyLoginResponse]
+  );
+
+  // 向後相容方法
+  const loginWithEmail = useCallback(
+    async (rawEmail: string) => {
+      throw new Error('請使用驗證碼完成信箱驗證登入');
+    },
+    []
   );
 
   const loginWithGoogleNative = useCallback(
@@ -1087,6 +1124,7 @@ export function UserProvider({ children }: PropsWithChildren) {
       AsyncStorage.removeItem(STORAGE_KEY_ACCOUNT),
       AsyncStorage.removeItem(STORAGE_KEY_GUEST),
       nativeGoogleSignOut(),
+      userApi.clearAuth(),
     ]);
     console.log('[UserContext] 已登出並重置登入狀態。');
   }, []);
@@ -1111,6 +1149,8 @@ export function UserProvider({ children }: PropsWithChildren) {
   const value = useMemo(
     () => ({
       account,
+      sendVerificationCode,
+      loginWithEmailCode,
       loginWithEmail,
       loginWithGoogle,
       loginWithGoogleNative,
@@ -1138,6 +1178,8 @@ export function UserProvider({ children }: PropsWithChildren) {
     }),
     [
       account,
+      sendVerificationCode,
+      loginWithEmailCode,
       loginWithEmail,
       loginWithGoogle,
       loginWithGoogleNative,

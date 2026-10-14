@@ -12,6 +12,7 @@ USE holdyourhand;
 CREATE TABLE IF NOT EXISTS users (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   email VARCHAR(255) NOT NULL UNIQUE,
+  google_id VARCHAR(100) NULL UNIQUE,
   name VARCHAR(100) NULL,
   age VARCHAR(10) NULL,
   gender VARCHAR(20) NULL,
@@ -19,10 +20,24 @@ CREATE TABLE IF NOT EXISTS users (
   bfrb_drivers JSON NULL,
   bfrb_types JSON NULL,
   onboarding_completed TINYINT(1) NOT NULL DEFAULT 0,
+  email_verified TINYINT(1) NOT NULL DEFAULT 0,
   first_active_date DATE NULL,
   last_active_date DATE NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- 信箱一次性驗證碼 (OTP)
+CREATE TABLE IF NOT EXISTS email_verifications (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  email VARCHAR(255) NOT NULL,
+  code_hash VARCHAR(255) NOT NULL,
+  attempts INT NOT NULL DEFAULT 0,
+  max_attempts INT NOT NULL DEFAULT 5,
+  expires_at DATETIME NOT NULL,
+  consumed_at DATETIME NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_email_expires (email, expires_at)
 );
 
 -- 各類 BFRB 行為的累計統計（每位使用者每種類型一筆）

@@ -51,7 +51,7 @@ class BleService {
             PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
             {
               title: 'Hold your hand 藍牙權限需求',
-              message: 'App 需要定位權限以搜尋並連接手環 BLE 裝置',
+              message: 'App 需要定位權限以搜尋並連接 BLE 裝置',
               buttonNeutral: '稍後再說',
               buttonNegative: '取消',
               buttonPositive: '確定',
@@ -226,6 +226,37 @@ class BleService {
   }
 
   /**
+   * 定向快速連線 (用於已綁定裝置，跳過漫長的全域廣播掃描)
+   * 支援自定義超時防護 (預設 6 秒)
+   */
+  async connectDirect(
+    deviceId: string,
+    onData: (data: BleHoldYourHandData) => void,
+    onDisconnect: () => void,
+    timeoutMs: number = 6000
+  ): Promise<Device> {
+    const connectPromise = this.connectDevice(deviceId, onData, onDisconnect);
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('BLE 定向連線逾時（裝置可能未開機或不在通訊範圍內）')), timeoutMs);
+    });
+
+    return Promise.race([connectPromise, timeoutPromise]);
+  }
+
+  /**
+   * 檢查指定裝置或當前裝置是否仍保持實體連線
+   */
+  async isDeviceConnected(deviceId?: string): Promise<boolean> {
+    if (!this.connectedDevice) return false;
+    if (deviceId && this.connectedDevice.id !== deviceId) return false;
+    try {
+      return await this.connectedDevice.isConnected();
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * 斷開連線
    */
   async disconnectDevice(): Promise<void> {
@@ -254,3 +285,4 @@ class BleService {
 }
 
 export const bleService = new BleService();
+

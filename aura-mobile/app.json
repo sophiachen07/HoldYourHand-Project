@@ -10,7 +10,7 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSBluetoothAlwaysUsageDescription": "Hold your hand 需要使用藍牙連接您的 BFRB 智慧手環以接收即時動作與生理數據。",
+        "NSBluetoothAlwaysUsageDescription": "Hold your hand 需要使用藍牙連接您的 BFRB 智慧裝置以接收即時動作與生理數據。",
         "NSBluetoothPeripheralUsageDescription": "用於配對與傳輸穿戴裝置數據。"
       }
     },
@@ -57,7 +57,7 @@
             "peripheral",
             "central"
           ],
-          "bluetoothAlwaysPermission": "Hold your hand 需要使用藍牙連接您的 BFRB 智慧手環以接收即時動作與生理數據。"
+          "bluetoothAlwaysPermission": "Hold your hand 需要使用藍牙連接您的 BFRB 智慧裝置以接收即時動作與生理數據。"
         }
       ],
       "expo-font",

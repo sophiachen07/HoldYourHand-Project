@@ -1,16 +1,9 @@
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect, useState } from 'react';
-
-import {
-  Activity,
-  ArrowRight,
-  Sparkles,
-} from 'lucide-react-native';
-
-import { FontAwesome } from '@expo/vector-icons';
-
+import { ArrowRight, Mail, KeyRound, Sparkles } from 'lucide-react-native';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -18,25 +11,24 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
+import GoogleSignInButton from '../../components/GoogleSignInButton';
 import { AuraColors } from '../../constants/auraTheme';
 import { useUser } from '../../contexts/UserContext';
-import { GoogleSignInButton } from '../../components/GoogleSignInButton';
 import {
   isNativeGoogleAvailable,
-  NATIVE_GOOGLE_UNAVAILABLE_MESSAGE,
   nativeGoogleSignIn,
+  NATIVE_GOOGLE_UNAVAILABLE_MESSAGE,
 } from '../../services/nativeGoogle';
 import { userApi } from '../../services/userApi';
 
-// React Native 的 Alert 在網頁版不會顯示，網頁改用瀏覽器內建提示框
 function notify(title: string, message: string) {
   if (Platform.OS === 'web') {
     window.alert(`${title}\n\n${message}`);
@@ -47,23 +39,38 @@ function notify(title: string, message: string) {
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [isSendingCode, setIsSendingCode] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const [codeSent, setCodeSent] = useState(false);
+  const [devModeNotice, setDevModeNotice] = useState<string | null>(null);
+
+  const cooldownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const {
     hasCompletedOnboarding,
     isReady,
     account,
     isGuest,
-    loginWithEmail,
+    sendVerificationCode,
+    loginWithEmailCode,
     loginWithGoogle,
     loginWithGoogleNative,
     loginAsGuest,
   } = useUser();
 
-  // 已登入帳號且完成初次設定：開啟時先到裝置連線頁連接手環
+  // 清除倒數計時器
+  useEffect(() => {
+    return () => {
+      if (cooldownTimerRef.current) clearInterval(cooldownTimerRef.current);
+    };
+  }, []);
+
+  // 已登入帳號且完成初次設定：開啟時直接進入儀表板主頁（裝置由背景無感秒連）
   useEffect(() => {
     if (isReady && hasCompletedOnboarding && (account || isGuest)) {
-      router.replace('/device');
+      router.replace('/dashboard');
     }
   }, [isReady, hasCompletedOnboarding, account, isGuest]);
 
@@ -71,7 +78,7 @@ export default function LoginScreen() {
   async function handleGuestLogin() {
     const result = await loginAsGuest();
     if (result.onboardingCompleted) {
-      router.replace('/device');
+      router.replace('/dashboard');
     } else {
       router.push('/profile');
     }
@@ -82,15 +89,14 @@ export default function LoginScreen() {
     if (!hasCompletedOnboarding) {
       router.push('/profile');
     } else {
-      router.replace('/device');
+      router.replace('/dashboard');
     }
   }
 
-  // Google 登入（網頁版）：拿到 Google 授權後交給後端驗證並讀取帳號資料
   // Google 登入成功後的導頁（網頁版與手機版共用）
   function goAfterGoogleLogin(result: Awaited<ReturnType<typeof loginWithGoogle>>) {
     if (result.onboardingCompleted) {
-      router.replace('/device');
+      router.replace('/dashboard');
       return;
     }
     const g = result.googleProfile;
@@ -139,30 +145,84 @@ export default function LoginScreen() {
     }
   }
 
-  async function handleLogin() {
-    const trimmed = email.trim();
+  // 發送 Email 驗證碼
+  async function handleSendCode() {
+    const trimmed = email.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
       notify('提示', '請輸入有效的電子信箱');
       return;
     }
 
+    if (cooldown > 0) return;
+
+    setIsSendingCode(true);
+    try {
+      const res = await sendVerificationCode(trimmed);
+      setCodeSent(true);
+      setCooldown(60);
+
+      if (cooldownTimerRef.current) clearInterval(cooldownTimerRef.current);
+      cooldownTimerRef.current = setInterval(() => {
+        setCooldown((prev) => {
+          if (prev <= 1) {
+            if (cooldownTimerRef.current) clearInterval(cooldownTimerRef.current);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      if (res.devMode) {
+        setDevModeNotice('伺服器處於開發測試模式（未設定 SMTP），請於後端主控台查看驗證碼');
+        notify('驗證碼已生成 (開發測試模式)', '後端未設定 SMTP 郵件服務，驗證碼已輸出於伺服器終端機日誌中。');
+      } else {
+        setDevModeNotice(null);
+        notify('驗證碼已寄出', '登入驗證碼已寄送至您的信箱，10 分鐘內有效。');
+      }
+    } catch (err: any) {
+      notify('發送失敗', err?.message || '驗證碼發送失敗，請稍後再試');
+    } finally {
+      setIsSendingCode(false);
+    }
+  }
+
+  // 驗證碼登入
+  async function handleLogin() {
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedCode = otpCode.trim();
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      notify('提示', '請輸入有效的電子信箱');
+      return;
+    }
+
+    if (!codeSent) {
+      notify('提示', '請先點選「取得驗證碼」以驗證信箱身分');
+      return;
+    }
+
+    if (!trimmedCode || trimmedCode.length !== 6) {
+      notify('提示', '請輸入 6 位數純數字驗證碼');
+      return;
+    }
+
     setIsLoggingIn(true);
     try {
-      const result = await loginWithEmail(trimmed);
+      const result = await loginWithEmailCode(trimmedEmail, trimmedCode);
       if (result.onboardingCompleted) {
-        router.replace('/device');
+        router.replace('/dashboard');
       } else {
         router.push('/profile');
       }
     } catch (err: any) {
       const reason = err?.message || '登入失敗，請稍後再試。';
       if (Platform.OS === 'web') {
-        if (window.confirm(`無法連線資料庫\n\n${reason}\n\n要先離線使用嗎？`)) {
+        if (window.confirm(`登入失敗\n\n${reason}\n\n要先離線使用嗎？`)) {
           continueOffline();
         }
       } else {
-        Alert.alert('無法連線資料庫', reason, [
-          { text: '取消', style: 'cancel' },
+        Alert.alert('登入失敗', reason, [
+          { text: '確定', style: 'default' },
           { text: '先離線使用', onPress: continueOffline },
         ]);
       }
@@ -213,45 +273,81 @@ export default function LoginScreen() {
               <View style={styles.onboardingBadge}>
                 <Sparkles size={12} color="#2E7D6E" />
                 <Text style={styles.onboardingBadgeText}>
-                  歡迎使用 · 快速設定引導
+                  歡迎使用 · 守護身心健康
                 </Text>
               </View>
             )}
           </View>
 
           <View style={styles.form}>
+            {/* 信箱輸入 */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>
-                電子信箱／使用者帳號
+                電子信箱
               </Text>
 
-              <TextInput
-                style={styles.input}
-                value={email}
-                onChangeText={setEmail}
-                placeholder="user@example.com"
-                placeholderTextColor={AuraColors.mutedDark}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                selectionColor={AuraColors.purple}
-              />
+              <View style={styles.inputWithButtonRow}>
+                <View style={styles.inputIconPrefix}>
+                  <Mail size={16} color={AuraColors.mutedDark} />
+                </View>
+                <TextInput
+                  style={[styles.input, styles.inputFlex]}
+                  value={email}
+                  onChangeText={(val) => {
+                    setEmail(val);
+                    setDevModeNotice(null);
+                  }}
+                  placeholder="user@example.com"
+                  placeholderTextColor={AuraColors.mutedDark}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  selectionColor={AuraColors.purple}
+                />
+                <Pressable
+                  onPress={handleSendCode}
+                  disabled={isSendingCode || cooldown > 0}
+                  style={({ pressed }) => [
+                    styles.sendCodeButton,
+                    (isSendingCode || cooldown > 0) && styles.sendCodeButtonDisabled,
+                    pressed && styles.buttonPressed,
+                  ]}
+                >
+                  {isSendingCode ? (
+                    <ActivityIndicator size="small" color="#2E7D6E" />
+                  ) : (
+                    <Text style={styles.sendCodeButtonText}>
+                      {cooldown > 0 ? `${cooldown}s` : codeSent ? '重新發送' : '取得驗證碼'}
+                    </Text>
+                  )}
+                </Pressable>
+              </View>
             </View>
 
+            {/* 驗證碼輸入 */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>
-                密碼
+                6 位數驗證碼
               </Text>
 
-              <TextInput
-                style={styles.input}
-                value={password}
-                onChangeText={setPassword}
-                placeholder="輸入您的密碼"
-                placeholderTextColor={AuraColors.mutedDark}
-                secureTextEntry
-                selectionColor={AuraColors.purple}
-              />
+              <View style={styles.inputWithIconRow}>
+                <View style={styles.inputIconPrefix}>
+                  <KeyRound size={16} color={AuraColors.mutedDark} />
+                </View>
+                <TextInput
+                  style={[styles.input, styles.inputFlex]}
+                  value={otpCode}
+                  onChangeText={setOtpCode}
+                  placeholder="請輸入 6 位數驗證碼"
+                  placeholderTextColor={AuraColors.mutedDark}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  selectionColor={AuraColors.purple}
+                />
+              </View>
+              {devModeNotice && (
+                <Text style={styles.devNoticeText}>{devModeNotice}</Text>
+              )}
             </View>
 
             {Platform.OS === 'web' ? (
@@ -310,7 +406,7 @@ export default function LoginScreen() {
               <View style={styles.loginButton}>
                 {isLoggingIn && <ActivityIndicator size="small" color="#2E7D6E" />}
                 <Text style={styles.loginButtonText}>
-                  {isLoggingIn ? '登入中…' : '登入帳號'}
+                  {isLoggingIn ? '驗證登入中…' : '驗證並登入'}
                 </Text>
 
                 <ArrowRight
@@ -444,98 +540,157 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 
+  inputWithButtonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+
+  inputWithIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  inputIconPrefix: {
+    position: 'absolute',
+    left: 14,
+    zIndex: 1,
+  },
+
+  inputFlex: {
+    flex: 1,
+    paddingLeft: 40,
+  },
+
   input: {
     height: 50,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.8)',
-    borderRadius: 12,
+    borderColor: 'rgba(215, 203, 234, 0.95)',
+    borderRadius: 14,
     backgroundColor: '#FFFFFF',
-    color: '#1A2151',
+    color: '#333333',
     fontSize: 14,
+  },
+
+  sendCodeButton: {
+    height: 50,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    backgroundColor: 'rgba(192, 237, 226, 0.65)',
+    borderWidth: 1,
+    borderColor: 'rgba(162, 222, 208, 0.9)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 96,
+  },
+
+  sendCodeButtonDisabled: {
+    opacity: 0.5,
+  },
+
+  sendCodeButtonText: {
+    color: '#2E7D6E',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+
+  devNoticeText: {
+    fontSize: 11,
+    color: '#854d0e',
+    backgroundColor: '#fef9c3',
+    padding: 6,
+    borderRadius: 6,
+    marginTop: 6,
   },
 
   socialRow: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 2,
-    marginBottom: 18,
+    marginTop: 4,
+    marginBottom: 20,
   },
 
   socialButton: {
     flex: 1,
-    height: 46,
+    height: 48,
+    borderWidth: 1,
+    borderColor: 'rgba(215, 203, 234, 0.95)',
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.8)',
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    gap: 10,
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
 
   socialButtonText: {
-    color: '#1A2151',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-
-  buttonPressed: {
-    opacity: 0.7,
-    backgroundColor: 'rgba(241, 245, 249, 0.7)',
-  },
-
-  guestButton: {
-    alignItems: 'center',
-    marginTop: 14,
-    paddingVertical: 8,
-  },
-
-  guestButtonText: {
-    color: '#6B5B95',
-    fontSize: 14,
+    color: '#555555',
+    fontSize: 13,
     fontWeight: '700',
-    textDecorationLine: 'underline',
-  },
-
-  guestHintText: {
-    color: '#8A8A9E',
-    fontSize: 11,
-    marginTop: 4,
   },
 
   loginButtonWrapper: {
-    width: '100%',
-    borderRadius: 14,
-    shadowColor: '#c0ede2',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-
-  loginButtonPressed: {
-    opacity: 0.8,
-    transform: [{ scale: 0.99 }],
+    borderRadius: 16,
+    overflow: 'hidden',
   },
 
   loginButton: {
     height: 52,
+    borderRadius: 16,
+    backgroundColor: '#C0EDE2',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 9,
-    borderRadius: 14,
-    backgroundColor: '#c0ede2',
+    gap: 8,
+    shadowColor: '#2E7D6E',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 4,
   },
 
   loginButtonText: {
     color: '#2E7D6E',
-    fontSize: 14,
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+
+  loginButtonPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.99 }],
+  },
+
+  buttonPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.98 }],
+  },
+
+  guestButton: {
+    marginTop: 16,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+  },
+
+  guestButtonText: {
+    color: '#2E7D6E',
+    fontSize: 13,
     fontWeight: '700',
+  },
+
+  guestHintText: {
+    color: '#8A8A8A',
+    fontSize: 11,
+    marginTop: 3,
   },
 });

@@ -9,6 +9,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
@@ -25,6 +26,8 @@ import {
   Ruler,
   Server,
   Sparkles,
+  Trash2,
+  Watch,
   Zap,
 } from 'lucide-react-native';
 
@@ -42,6 +45,9 @@ export default function DeviceScreen() {
     lastMessageAt,
     connectedDeviceName,
     discoveredDevices,
+    pairedDevice,
+    pairDevice,
+    unpairDevice,
     startScan,
     stopScan,
     connectDevice,
@@ -49,10 +55,69 @@ export default function DeviceScreen() {
   } = useSensor();
 
   const { logout } = useUser();
+  const [fastPairSuccess, setFastPairSuccess] = useState(false);
+  const [isPairingAction, setIsPairingAction] = useState(false);
 
   const isConnected = status === 'connected' && sensorData?.connected === true;
+  const isScanning = status === 'scanning';
+  const isConnecting = status === 'connecting' || isPairingAction;
+  const isReconnecting = status === 'reconnecting';
 
-  // 返回鍵：初次設定流程中回上一頁；登入後直接來到此頁時則詢問是否登出
+  // 搜尋到的 Fast Pair 候選裝置（優先尋找目標裝置或訊號強的裝置）
+  const fastPairCandidate = useMemo(() => {
+    if (isConnected || pairedDevice) return null;
+    const target = discoveredDevices.find(
+      (d) => d.name === BLE_CONFIG.TARGET_DEVICE_NAME || d.name?.includes('HoldYourHand')
+    );
+    if (target) return target;
+    // 若沒有精確名稱，但有強訊號裝置 (>= -70 dBm)
+    return discoveredDevices.find((d) => d.rssi !== null && d.rssi >= -70) || null;
+  }, [discoveredDevices, isConnected, pairedDevice]);
+
+  // 進入頁面時若尚未連線且為 BLE 模式，自動開啟掃描以觸發 Fast Pair
+  useEffect(() => {
+    if (mode === 'ble' && !isConnected && !pairedDevice && status === 'disconnected') {
+      startScan();
+    }
+  }, [mode, isConnected, pairedDevice, status, startScan]);
+
+  // 一鍵 Fast Pair 配對處理
+  async function handleFastPair(deviceId: string, deviceName?: string) {
+    setIsPairingAction(true);
+    try {
+      await pairDevice({ id: deviceId, name: deviceName || BLE_CONFIG.TARGET_DEVICE_NAME });
+      setFastPairSuccess(true);
+      // 配對成功後顯示 1.5 秒打勾卡片，隨後自動進入儀表板
+      setTimeout(() => {
+        router.replace('/dashboard');
+      }, 1500);
+    } catch (err: any) {
+      Alert.alert('配對失敗', err?.message || '請確認裝置已開機並靠近手機');
+    } finally {
+      setIsPairingAction(false);
+    }
+  }
+
+  // 解除綁定裝置確認
+  function handleUnpair() {
+    const doUnpair = async () => {
+      await unpairDevice();
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('確定要解除裝置綁定嗎？解除後將不再自動秒連。')) {
+        doUnpair();
+      }
+      return;
+    }
+
+    Alert.alert('解除裝置綁定', '確定要忘記此專屬裝置嗎？解除後 App 將不再自動於背景秒連。', [
+      { text: '取消', style: 'cancel' },
+      { text: '忘記裝置', style: 'destructive', onPress: doUnpair },
+    ]);
+  }
+
+  // 返回鍵
   function handleBackPress() {
     if (router.canGoBack()) {
       router.back();
@@ -74,21 +139,27 @@ export default function DeviceScreen() {
       { text: '登出', style: 'destructive', onPress: doLogout },
     ]);
   }
-  const isScanning = status === 'scanning';
-  const isConnecting = status === 'connecting';
 
   function getStatusBadge() {
     if (isConnected) {
       return {
-        text: `${connectedDeviceName || 'Hold your hand'} 已連線`,
+        text: `${connectedDeviceName || pairedDevice?.name || 'Hold your hand'} 已連線`,
         color: '#10b981',
         bg: 'rgba(16,185,129,0.12)',
         border: 'rgba(16,185,129,0.25)',
       };
     }
+    if (isReconnecting) {
+      return {
+        text: '裝置暫時離開，自動回網中...',
+        color: '#d97706',
+        bg: 'rgba(217,119,6,0.12)',
+        border: 'rgba(217,119,6,0.25)',
+      };
+    }
     if (isScanning) {
       return {
-        text: '正在搜尋 BLE 穿戴手環...',
+        text: '正在搜尋附近的 BLE 穿戴裝置...',
         color: '#0284c7',
         bg: 'rgba(14,165,233,0.12)',
         border: 'rgba(14,165,233,0.25)',
@@ -111,7 +182,7 @@ export default function DeviceScreen() {
       };
     }
     return {
-      text: mode === 'ble' ? '手環未連線' : '模擬器未連線',
+      text: mode === 'ble' ? (pairedDevice ? '專屬裝置待機中' : '尚未配對裝置') : '模擬器未連線',
       color: '#64748b',
       bg: 'rgba(100,116,139,0.1)',
       border: 'rgba(100,116,139,0.2)',
@@ -122,7 +193,6 @@ export default function DeviceScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* 整體背景：微調加深的柔和粉紫到淺藍綠色漸層 */}
       <LinearGradient
         colors={['#EDE5F8', '#DEEEF8', '#E5F4EE']}
         start={{ x: 0, y: 0 }}
@@ -136,10 +206,7 @@ export default function DeviceScreen() {
       >
         {/* 頂部導航 */}
         <View style={styles.navigation}>
-          <Pressable
-            style={styles.backButton}
-            onPress={handleBackPress}
-          >
+          <Pressable style={styles.backButton} onPress={handleBackPress}>
             <Text style={styles.backButtonText}>‹</Text>
           </Pressable>
 
@@ -149,10 +216,7 @@ export default function DeviceScreen() {
         {/* 模式切換器 (BLE 真機 / 模擬器) */}
         <View style={styles.modeToggleContainer}>
           <Pressable
-            style={[
-              styles.modeTab,
-              mode === 'ble' && styles.modeTabActive,
-            ]}
+            style={[styles.modeTab, mode === 'ble' && styles.modeTabActive]}
             onPress={() => {
               if (mode !== 'ble') {
                 disconnectDevice();
@@ -175,10 +239,7 @@ export default function DeviceScreen() {
           </Pressable>
 
           <Pressable
-            style={[
-              styles.modeTab,
-              mode === 'simulator' && styles.modeTabActive,
-            ]}
+            style={[styles.modeTab, mode === 'simulator' && styles.modeTabActive]}
             onPress={() => {
               if (mode !== 'simulator') {
                 disconnectDevice();
@@ -204,16 +265,16 @@ export default function DeviceScreen() {
         {/* 標題區 */}
         <View style={styles.header}>
           <Text style={styles.title}>
-            {mode === 'ble' ? '連接 HoldYourHand 手環' : '連接開發測試模擬器'}
+            {mode === 'ble' ? 'HoldYourHand 智能裝置' : '開發測試模擬器'}
           </Text>
           <Text style={styles.description}>
             {mode === 'ble'
-              ? '手機將透過 BLE 接收 ESP32 推播之即時動作、距離與生理數據。'
-              : '手機將透過區網 WebSocket 接收電腦端測試面板之模擬數據。'}
+              ? '靠近手機即時配對，後續日常使用 100% 靜默無感定向秒連。'
+              : '透過區域網路接收電腦端 dev-tools 模擬器發送之感測數據。'}
           </Text>
         </View>
 
-        {/* 視覺雷達動態圈 */}
+        {/* 視覺動態雷達圈 */}
         <View style={styles.radarContainer}>
           <View style={styles.outerCircle}>
             <View style={styles.middleCircle}>
@@ -221,6 +282,8 @@ export default function DeviceScreen() {
                 colors={
                   isConnected
                     ? ['#06b6d4', '#10b981']
+                    : isReconnecting
+                    ? ['#f59e0b', '#d97706']
                     : isScanning
                     ? ['#9B8AC1', '#38bdf8']
                     : ['#2A476E', '#1B3252']
@@ -230,16 +293,12 @@ export default function DeviceScreen() {
                 {mode === 'ble' ? (
                   <Bluetooth
                     size={36}
-                    color={
-                      isConnected || isScanning ? '#ffffff' : '#67b2f5'
-                    }
+                    color={isConnected || isScanning || isReconnecting ? '#ffffff' : '#67b2f5'}
                   />
                 ) : (
                   <Radio
                     size={36}
-                    color={
-                      isConnected || isScanning ? '#ffffff' : '#67b2f5'
-                    }
+                    color={isConnected || isScanning ? '#ffffff' : '#67b2f5'}
                   />
                 )}
               </LinearGradient>
@@ -256,36 +315,144 @@ export default function DeviceScreen() {
               },
             ]}
           >
-            <View
-              style={[
-                styles.statusDot,
-                { backgroundColor: badge.color },
-              ]}
-            />
+            <View style={[styles.statusDot, { backgroundColor: badge.color }]} />
             <Text style={[styles.statusText, { color: badge.color }]}>
               {badge.text}
             </Text>
           </View>
         </View>
 
-        {/* BLE 掃描與裝置清單區（下方卡片：柔和米白/奶油黃色底色） */}
-        {mode === 'ble' && !isConnected && (
+        {/* ==================================================== */}
+        {/* 情境一：Google Fast Pair 風格半卡片 (靠近裝置彈出) */}
+        {/* ==================================================== */}
+        {mode === 'ble' && fastPairCandidate && !isConnected && (
+          <View style={styles.fastPairCard}>
+            <LinearGradient
+              colors={['#FFFFFF', '#F0F9FF']}
+              style={styles.fastPairGradient}
+            >
+              <View style={styles.fastPairHeader}>
+                <View style={styles.fastPairIconWrapper}>
+                  <Sparkles size={20} color="#0284c7" />
+                </View>
+                <View style={styles.fastPairTitleBox}>
+                  <Text style={styles.fastPairTitle}>✨ 發現附近的裝置</Text>
+                  <Text style={styles.fastPairSubtitle}>
+                    {fastPairCandidate.name || 'HoldYourHand_Device'}
+                    {fastPairCandidate.rssi ? ` · 訊號極佳 (${fastPairCandidate.rssi} dBm)` : ''}
+                  </Text>
+                </View>
+              </View>
+
+              <Text style={styles.fastPairDesc}>
+                偵測到裝置靠近，點擊按鈕即可一鍵綁定。之後每次開啟 App 皆能無感自動連線！
+              </Text>
+
+              {fastPairSuccess ? (
+                <View style={styles.fastPairSuccessBox}>
+                  <CheckCircle2 size={20} color="#10b981" />
+                  <Text style={styles.fastPairSuccessText}>
+                    配對成功！正在為您進入儀表板...
+                  </Text>
+                </View>
+              ) : (
+                <Pressable
+                  style={styles.fastPairButton}
+                  disabled={isConnecting}
+                  onPress={() => handleFastPair(fastPairCandidate.id, fastPairCandidate.name)}
+                >
+                  <LinearGradient
+                    colors={['#0284c7', '#0ea5e9']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.fastPairButtonGradient}
+                  >
+                    {isConnecting ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <>
+                        <Bluetooth size={16} color="#FFFFFF" />
+                        <Text style={styles.fastPairButtonText}>一鍵配對並連線</Text>
+                      </>
+                    )}
+                  </LinearGradient>
+                </Pressable>
+              )}
+            </LinearGradient>
+          </View>
+        )}
+
+        {/* ==================================================== */}
+        {/* 情境二：專屬配對裝置卡片 (Apple Watch 靜默管理體驗) */}
+        {/* ==================================================== */}
+        {mode === 'ble' && pairedDevice && (
+          <View style={styles.pairedDeviceCard}>
+            <View style={styles.pairedCardHeader}>
+              <View style={styles.pairedDeviceTitleGroup}>
+                <Watch size={20} color="#0284c7" />
+                <View>
+                  <Text style={styles.pairedDeviceTitle}>我的專屬裝置</Text>
+                  <Text style={styles.pairedDeviceSubtitle}>
+                    {pairedDevice.name} ({pairedDevice.id.slice(0, 14)}...)
+                  </Text>
+                </View>
+              </View>
+
+              <Pressable style={styles.unpairBtn} onPress={handleUnpair}>
+                <Trash2 size={15} color="#ef4444" />
+                <Text style={styles.unpairBtnText}>忘記裝置</Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.pairedCardStatusRow}>
+              <View style={styles.pairedStatusIndicator}>
+                <View
+                  style={[
+                    styles.pairedStatusDot,
+                    {
+                      backgroundColor: isConnected
+                        ? '#10b981'
+                        : isReconnecting
+                        ? '#f59e0b'
+                        : '#94a3b8',
+                    },
+                  ]}
+                />
+                <Text style={styles.pairedStatusLabel}>
+                  {isConnected
+                    ? '已連線・即時監測中'
+                    : isReconnecting
+                    ? '暫時離線・自動回網中'
+                    : '待機・開啟裝置即可無感秒連'}
+                </Text>
+              </View>
+
+              {!isConnected && !isConnecting && (
+                <Pressable
+                  style={styles.quickConnectBtn}
+                  onPress={() => connectDevice(pairedDevice.id)}
+                >
+                  <Text style={styles.quickConnectBtnText}>立即連線</Text>
+                </Pressable>
+              )}
+            </View>
+          </View>
+        )}
+
+        {/* ==================================================== */}
+        {/* BLE 掃描與裝置清單區 (尚未配對時手動搜尋) */}
+        {/* ==================================================== */}
+        {mode === 'ble' && !isConnected && !pairedDevice && !fastPairCandidate && (
           <View style={styles.scanSection}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>附近的手環裝置</Text>
+              <Text style={styles.sectionTitle}>搜尋附近的裝置</Text>
               {isScanning ? (
-                <Pressable
-                  style={styles.scanButtonSmall}
-                  onPress={stopScan}
-                >
+                <Pressable style={styles.scanButtonSmall} onPress={stopScan}>
                   <ActivityIndicator size="small" color="#9B8AC1" />
                   <Text style={styles.scanButtonSmallText}>停止搜尋</Text>
                 </Pressable>
               ) : (
-                <Pressable
-                  style={styles.scanButtonSmall}
-                  onPress={startScan}
-                >
+                <Pressable style={styles.scanButtonSmall} onPress={startScan}>
                   <RefreshCw size={13} color="#9B8AC1" />
                   <Text style={styles.scanButtonSmallText}>重新搜尋</Text>
                 </Pressable>
@@ -296,19 +463,14 @@ export default function DeviceScreen() {
               <View style={styles.emptyBox}>
                 <Text style={styles.emptyText}>
                   {isScanning
-                    ? '正在搜尋周圍的 HoldYourHand_Device...\n請確保手環已開機並處於廣播模式'
-                    : '尚未發現裝置，請點擊「搜尋 HoldYourHand 手環」開始配對'}
+                    ? '正在搜尋周圍的 HoldYourHand 裝置...\n請將裝置開機並靠近手機約 0.5 公尺'
+                    : '尚未發現裝置，請點擊「搜尋 HoldYourHand 裝置」開始'}
                 </Text>
 
                 {!isScanning && (
-                  <Pressable
-                    style={styles.primaryScanButton}
-                    onPress={startScan}
-                  >
+                  <Pressable style={styles.primaryScanButton} onPress={startScan}>
                     <Bluetooth size={16} color="#1A2151" />
-                    <Text style={styles.primaryScanButtonText}>
-                      搜尋 HoldYourHand 手環
-                    </Text>
+                    <Text style={styles.primaryScanButtonText}>搜尋 HoldYourHand 裝置</Text>
                   </Pressable>
                 )}
               </View>
@@ -319,33 +481,25 @@ export default function DeviceScreen() {
                   return (
                     <Pressable
                       key={dev.id}
-                      style={[
-                        styles.deviceItem,
-                        isTarget && styles.deviceItemTarget,
-                      ]}
-                      onPress={() => connectDevice(dev.id)}
+                      style={[styles.deviceItem, isTarget && styles.deviceItemTarget]}
+                      onPress={() => handleFastPair(dev.id, dev.name)}
                     >
                       <View style={styles.deviceInfo}>
                         <View style={styles.deviceIconBox}>
-                          <Bluetooth
-                            size={18}
-                            color={isTarget ? '#0284c7' : '#9B8AC1'}
-                          />
+                          <Bluetooth size={18} color={isTarget ? '#0284c7' : '#9B8AC1'} />
                         </View>
                         <View>
                           <View style={styles.deviceNameRow}>
-                            <Text style={styles.deviceName}>
-                              {dev.name || '未知裝置'}
-                            </Text>
+                            <Text style={styles.deviceName}>{dev.name || '未知裝置'}</Text>
                             {isTarget && (
                               <View style={styles.vipTag}>
                                 <Sparkles size={10} color="#0284c7" />
-                                <Text style={styles.vipTagText}>目標手環</Text>
+                                <Text style={styles.vipTagText}>目標裝置</Text>
                               </View>
                             )}
                           </View>
                           <Text style={styles.deviceMac}>
-                            UUID / MAC: {dev.id.slice(0, 17)}
+                            ID: {dev.id.slice(0, 17)}
                             {dev.rssi !== null ? ` · 訊號: ${dev.rssi} dBm` : ''}
                           </Text>
                         </View>
@@ -363,7 +517,9 @@ export default function DeviceScreen() {
           </View>
         )}
 
-        {/* 已連線後的即時資料卡片 */}
+        {/* ==================================================== */}
+        {/* 已連線後的即時數據面板 */}
+        {/* ==================================================== */}
         {isConnected && sensorData && (
           <View style={styles.liveCard}>
             <View style={styles.liveHeader}>
@@ -374,7 +530,7 @@ export default function DeviceScreen() {
               <Text style={styles.liveFrequency}>100ms / 10 Hz 串流中</Text>
             </View>
 
-            {/* 5 大指標網格 */}
+            {/* 指標網格 */}
             <View style={styles.metricsRow}>
               {/* 距離 */}
               <View style={styles.metricMiniCard}>
@@ -383,16 +539,12 @@ export default function DeviceScreen() {
                   <Text style={styles.metricMiniLabel}>手部距離</Text>
                 </View>
                 <Text style={styles.metricMiniValue}>
-                  {sensorData.isOutOfRange
-                    ? '無障礙物'
-                    : `${sensorData.distance} mm`}
+                  {sensorData.isOutOfRange ? '無障礙物' : `${sensorData.distance} mm`}
                 </Text>
                 <Text
                   style={[
                     styles.metricMiniSub,
-                    !sensorData.isOutOfRange &&
-                      sensorData.distance < 50 &&
-                      styles.alertText,
+                    !sensorData.isOutOfRange && sensorData.distance < 50 && styles.alertText,
                   ]}
                 >
                   {sensorData.isOutOfRange
@@ -410,8 +562,7 @@ export default function DeviceScreen() {
                   <Text style={styles.metricMiniLabel}>角速度</Text>
                 </View>
                 <Text style={styles.metricMiniValue}>
-                  {sensorData.angularVelocity.toFixed(1)}{' '}
-                  <Text style={styles.metricUnit}>deg/s</Text>
+                  {sensorData.angularVelocity.toFixed(1)} <Text style={styles.metricUnit}>deg/s</Text>
                 </Text>
                 <Text
                   style={[
@@ -438,8 +589,7 @@ export default function DeviceScreen() {
                   <Text style={styles.metricMiniLabel}>心率</Text>
                 </View>
                 <Text style={styles.metricMiniValue}>
-                  {sensorData.heartRate.toFixed(1)}{' '}
-                  <Text style={styles.metricUnit}>BPM</Text>
+                  {sensorData.heartRate.toFixed(1)} <Text style={styles.metricUnit}>BPM</Text>
                 </Text>
                 <Text
                   style={[
@@ -466,17 +616,14 @@ export default function DeviceScreen() {
               </View>
             </View>
 
-            {/* 馬達震動狀態條 */}
+            {/* 馬達狀態 */}
             <View
               style={[
                 styles.motorStatusBar,
                 sensorData.motorStatus && styles.motorStatusBarActive,
               ]}
             >
-              <Zap
-                size={15}
-                color={sensorData.motorStatus ? '#d97706' : '#64748b'}
-              />
+              <Zap size={15} color={sensorData.motorStatus ? '#d97706' : '#64748b'} />
               <Text
                 style={[
                   styles.motorStatusText,
@@ -485,7 +632,7 @@ export default function DeviceScreen() {
               >
                 {sensorData.motorStatus
                   ? '📳 ESP32 震動馬達運作中（觸覺反饋提醒）'
-                  : '手環馬達待機監測中'}
+                  : '裝置馬達待機監測中'}
               </Text>
             </View>
 
@@ -511,17 +658,12 @@ export default function DeviceScreen() {
                   end={{ x: 1, y: 0 }}
                   style={styles.gradientButton}
                 >
-                  <Text style={styles.startMonitorButtonText}>
-                    進入即時健康儀表板 ›
-                  </Text>
+                  <Text style={styles.startMonitorButtonText}>進入即時健康儀表板 ›</Text>
                 </LinearGradient>
               </Pressable>
 
-              <Pressable
-                style={styles.disconnectButton}
-                onPress={disconnectDevice}
-              >
-                <Text style={styles.disconnectButtonText}>中斷手環連線</Text>
+              <Pressable style={styles.disconnectButton} onPress={disconnectDevice}>
+                <Text style={styles.disconnectButtonText}>中斷裝置連線</Text>
               </Pressable>
             </>
           ) : (
@@ -650,14 +792,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   middleCircle: {
-    width: 130,
-    height: 130,
-    borderRadius: 65,
-    borderWidth: 1,
-    borderColor: 'rgba(155,138,193,0.3)',
-    backgroundColor: 'rgba(205,225,248,0.25)',
+    width: 124,
+    height: 124,
+    borderRadius: 62,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   deviceCircle: {
     width: 80,
@@ -665,21 +810,15 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#A8C9EF',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 6,
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    marginTop: 18,
-    backgroundColor: '#FFFFFF',
+    marginTop: 16,
   },
   statusDot: {
     width: 8,
@@ -688,58 +827,220 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   statusText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+  // Fast Pair 卡片
+  fastPairCard: {
+    marginVertical: 14,
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#0284c7',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  fastPairGradient: {
+    padding: 18,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#38bdf8',
+  },
+  fastPairHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  fastPairIconWrapper: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#e0f2fe',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fastPairTitleBox: {
+    flex: 1,
+  },
+  fastPairTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0369a1',
+  },
+  fastPairSubtitle: {
     fontSize: 12,
+    color: '#64748b',
+    marginTop: 2,
     fontWeight: '600',
   },
-  scanSection: {
-    marginTop: 18,
-    padding: 16,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.82)',
+  fastPairDesc: {
+    fontSize: 13,
+    color: '#334155',
+    lineHeight: 18,
+    marginVertical: 12,
+  },
+  fastPairButton: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    marginTop: 4,
+  },
+  fastPairButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 13,
+  },
+  fastPairButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  fastPairSuccessBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#ecfdf5',
+    paddingVertical: 12,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.95)',
+    borderColor: '#a7f3d0',
+  },
+  fastPairSuccessText: {
+    color: '#065f46',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+  // 專屬配對裝置卡片
+  pairedDeviceCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 16,
+    marginVertical: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(155,138,193,0.25)',
     shadowColor: '#9B8AC1',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.08,
-    shadowRadius: 8,
+    shadowRadius: 6,
     elevation: 3,
+  },
+  pairedCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  pairedDeviceTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  pairedDeviceTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1e293b',
+  },
+  pairedDeviceSubtitle: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 2,
+  },
+  unpairBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: '#fef2f2',
+  },
+  unpairBtnText: {
+    fontSize: 11,
+    color: '#ef4444',
+    fontWeight: '600',
+  },
+  pairedCardStatusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+  },
+  pairedStatusIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  pairedStatusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  pairedStatusLabel: {
+    fontSize: 12,
+    color: '#475569',
+    fontWeight: '500',
+  },
+  quickConnectBtn: {
+    backgroundColor: '#e0f2fe',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  quickConnectBtnText: {
+    fontSize: 12,
+    color: '#0284c7',
+    fontWeight: '700',
+  },
+
+  // 掃描搜尋區
+  scanSection: {
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 18,
+    padding: 16,
+    marginVertical: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(155,138,193,0.2)',
   },
   sectionHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 12,
   },
   sectionTitle: {
-    color: '#1A2151',
     fontSize: 15,
     fontWeight: '700',
+    color: '#1e293b',
   },
   scanButtonSmall: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
     paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 14,
-    backgroundColor: 'rgba(155,138,193,0.15)',
+    paddingVertical: 5,
+    borderRadius: 8,
+    backgroundColor: '#f8fafc',
   },
   scanButtonSmallText: {
+    fontSize: 12,
     color: '#9B8AC1',
-    fontSize: 11,
     fontWeight: '600',
   },
   emptyBox: {
-    padding: 22,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.8)',
-    backgroundColor: '#FFFFFF',
     alignItems: 'center',
+    paddingVertical: 24,
   },
   emptyText: {
-    color: '#4A4A4A',
     fontSize: 13,
+    color: '#64748b',
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 16,
@@ -748,112 +1049,105 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingHorizontal: 22,
-    paddingVertical: 12,
-    borderRadius: 12,
     backgroundColor: '#bfdff5',
-    shadowColor: '#bfdff5',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.35,
-    shadowRadius: 6,
-    elevation: 4,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 12,
   },
   primaryScanButtonText: {
-    color: '#1A2151',
     fontSize: 13,
     fontWeight: '700',
+    color: '#1A2151',
   },
   deviceList: {
     gap: 10,
   },
   deviceItem: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 14,
-    borderRadius: 14,
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: '#f8fafc',
     borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.8)',
-    backgroundColor: '#FFFFFF',
+    borderColor: '#e2e8f0',
   },
   deviceItemTarget: {
-    borderColor: 'rgba(14,165,233,0.5)',
-    backgroundColor: '#F0F9FF',
+    borderColor: '#38bdf8',
+    backgroundColor: '#f0f9ff',
   },
   deviceInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
     flex: 1,
   },
   deviceIconBox: {
     width: 36,
     height: 36,
-    borderRadius: 10,
-    backgroundColor: 'rgba(155,138,193,0.12)',
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   deviceNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   deviceName: {
-    color: '#1A2151',
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
+    color: '#1e293b',
   },
   vipTag: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
+    backgroundColor: '#e0f2fe',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
-    backgroundColor: 'rgba(14,165,233,0.15)',
   },
   vipTagText: {
-    color: '#0284c7',
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '700',
+    color: '#0284c7',
   },
   deviceMac: {
-    color: '#64748B',
     fontSize: 11,
+    color: '#94a3b8',
     marginTop: 2,
   },
   connectButtonBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 10,
-    backgroundColor: 'rgba(14,165,233,0.12)',
+    gap: 2,
   },
   connectButtonText: {
-    color: '#0284c7',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
+    color: '#0284c7',
   },
+
+  // 即時數據卡片
   liveCard: {
-    marginTop: 18,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
     padding: 16,
-    borderRadius: 20,
+    marginVertical: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.95)',
-    backgroundColor: 'rgba(255, 255, 255, 0.82)',
+    borderColor: 'rgba(155,138,193,0.2)',
     shadowColor: '#9B8AC1',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.08,
-    shadowRadius: 8,
+    shadowRadius: 6,
     elevation: 3,
   },
   liveHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 14,
   },
   liveTitleGroup: {
@@ -862,13 +1156,13 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   liveTitle: {
-    color: '#1A2151',
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
+    color: '#1e293b',
   },
   liveFrequency: {
-    color: '#0284c7',
-    fontSize: 10,
+    fontSize: 11,
+    color: '#10b981',
     fontWeight: '600',
   },
   metricsRow: {
@@ -878,11 +1172,11 @@ const styles = StyleSheet.create({
   },
   metricMiniCard: {
     flex: 1,
-    padding: 11,
+    backgroundColor: '#f8fafc',
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    padding: 10,
     borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.8)',
+    borderColor: '#e2e8f0',
   },
   metricMiniHeader: {
     flexDirection: 'row',
@@ -891,47 +1185,44 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   metricMiniLabel: {
+    fontSize: 11,
     color: '#64748b',
-    fontSize: 10,
     fontWeight: '600',
   },
   metricMiniValue: {
-    color: '#1A2151',
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: '800',
+    color: '#0f172a',
   },
   metricUnit: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#64748b',
+    color: '#94a3b8',
   },
   metricMiniSub: {
+    fontSize: 10,
     color: '#64748b',
-    fontSize: 9,
-    marginTop: 3,
-    fontWeight: '600',
+    marginTop: 2,
   },
   alertText: {
-    color: '#dc2626',
+    color: '#ef4444',
+    fontWeight: '700',
   },
   motorStatusBar: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    backgroundColor: '#f1f5f9',
     padding: 10,
     borderRadius: 10,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.8)',
     marginTop: 4,
   },
   motorStatusBarActive: {
-    backgroundColor: '#FEF3C7',
-    borderColor: '#FDE68A',
+    backgroundColor: '#fef3c7',
   },
   motorStatusText: {
-    color: '#64748b',
-    fontSize: 11,
+    fontSize: 12,
+    color: '#475569',
     fontWeight: '600',
   },
   motorStatusTextActive: {
@@ -939,53 +1230,53 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   lastTimeText: {
-    color: '#64748b',
-    fontSize: 9,
-    marginTop: 10,
-    textAlign: 'right',
+    fontSize: 10,
+    color: '#94a3b8',
+    textAlign: 'center',
+    marginTop: 8,
   },
+
+  // 底部按鈕
   bottomSection: {
-    marginTop: 20,
-    gap: 12,
+    marginTop: 8,
+    gap: 10,
   },
   startMonitorButton: {
-    borderRadius: 14,
+    borderRadius: 16,
     overflow: 'hidden',
   },
   gradientButton: {
-    height: 52,
+    paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   startMonitorButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
+    color: '#FFFFFF',
+    fontSize: 15,
     fontWeight: '700',
   },
   disconnectButton: {
-    height: 46,
+    paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 12,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
     borderWidth: 1,
-    borderColor: 'rgba(220,38,38,0.3)',
-    backgroundColor: 'rgba(220,38,38,0.06)',
+    borderColor: '#cbd5e1',
   },
   disconnectButtonText: {
-    color: '#dc2626',
+    color: '#64748b',
     fontSize: 13,
     fontWeight: '600',
   },
-
   skipButton: {
-    alignItems: 'center',
     paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-
   skipButtonText: {
-    color: '#64748B',
+    color: '#64748b',
     fontSize: 13,
     fontWeight: '600',
-    textDecorationLine: 'underline',
   },
 });

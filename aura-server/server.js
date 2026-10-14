@@ -7,7 +7,9 @@ const {
   WebSocket,
   WebSocketServer,
 } = require('ws');
-const { initDatabase, DB_NAME } = require('./db');
+const rateLimit = require('express-rate-limit');
+const { initDatabase, getPool, DB_NAME } = require('./db');
+const { optionalAuthenticate } = require('./auth');
 const userRoutes = require('./userRoutes');
 
 const app = express();
@@ -24,15 +26,52 @@ const DEFAULT_FALLBACK_REPLY = '我現在有點累在休息，但我會一直陪
 // 未設定 HF_API_KEY 時直接告知，不假裝是 AI 回覆
 const AI_NOT_CONFIGURED_REPLY = '目前未設定連線，小樹洞暫無法使用。';
 
+// AI 聊天端點頻率限制器：每個 IP 每分鐘最多 15 次請求
+const chatLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    reply: '小樹洞剛聽了好多話有點累了，我們先稍稍深呼吸休息 30 秒好嗎？',
+    error: '請求過於頻繁，請稍候再試',
+    code: 'RATE_LIMITED',
+  },
+});
+
+function parseJsonColumn(value, fallback) {
+  if (value == null) return fallback;
+  if (typeof value !== 'string') return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
 // ==========================================
 // 心理陪伴聊天小助手 API 路由
 // ==========================================
-app.post('/api/chat', async (req, res) => {
+app.post('/api/chat', chatLimiter, optionalAuthenticate, async (req, res) => {
   try {
     const { message, userData = {} } = req.body;
 
     if (!message || typeof message !== 'string') {
       return res.status(400).json({ error: '請提供有效的 message 內容' });
+    }
+
+    const trimmedMessage = message.trim();
+    if (trimmedMessage.length === 0) {
+      return res.status(400).json({ error: '請提供有效的 message 內容' });
+    }
+
+    // 限制輸入訊息長度上限 (500 字元)，防止 Prompt 濫用與過度消耗 Token
+    if (trimmedMessage.length > 500) {
+      return res.status(400).json({
+        reply: '說的內容稍微有點長，可以試著用簡短的一兩句話和我分享心情嗎？',
+        error: '訊息內容不可超過 500 個字元',
+        code: 'MESSAGE_TOO_LONG',
+      });
     }
 
     if (!HF_API_KEY) {
@@ -42,31 +81,67 @@ app.post('/api/chat', async (req, res) => {
       });
     }
 
-    // 解析 userData 欄位
-    const age = userData.age || '未知';
-    const gender = userData.gender || '未知';
+    let age = '未知';
+    let gender = '未知';
+    let bfrbType = '未指定';
+    let innerDriver = '未指定';
+    let statusAndCount = '未提供';
 
-    // 容錯處理：支援字串或陣列
-    const rawBfrbType = userData.bfrbType || userData.bfrbTypes;
-    const bfrbType = Array.isArray(rawBfrbType)
-      ? rawBfrbType.join('、')
-      : (rawBfrbType || '未指定');
+    // 若使用者為已登入狀態，一律從伺服器端資料庫讀取真實背景，禁止前端任意竄改偽造
+    if (req.user && req.user.userId && getPool()) {
+      try {
+        const [[userRow]] = await getPool().query(
+          'SELECT age, gender, bfrb_types, bfrb_drivers FROM users WHERE id = ?',
+          [req.user.userId]
+        );
+        if (userRow) {
+          age = userRow.age ? String(userRow.age).slice(0, 10) : '未知';
+          gender = userRow.gender ? String(userRow.gender).slice(0, 10) : '未知';
+          const types = parseJsonColumn(userRow.bfrb_types, []);
+          bfrbType = Array.isArray(types) && types.length > 0 ? types.join('、').slice(0, 30) : '未指定';
+          const drivers = parseJsonColumn(userRow.bfrb_drivers, []);
+          innerDriver = Array.isArray(drivers) && drivers.length > 0 ? drivers.join('、').slice(0, 50) : '未指定';
+        }
+      } catch (err) {
+        console.warn('[Chat] 讀取使用者背景資料失敗，採用預設值:', err.message);
+      }
+    } else {
+      // 訪客模式：對前端提交的 userData 進行嚴格白名單與防注入過濾
+      if (userData && typeof userData === 'object') {
+        const rawAge = String(userData.age || '').replace(/[^\d]/g, '');
+        const numAge = Number(rawAge);
+        if (numAge > 0 && numAge < 120) age = String(numAge);
 
-    const rawDriver = userData.innerDriver || userData.bfrbDriver || userData.bfrbDrivers;
-    const innerDriver = Array.isArray(rawDriver)
-      ? rawDriver.join('、')
-      : (rawDriver || '未指定');
+        const allowedGenders = ['男性', '女性', '其他'];
+        if (allowedGenders.includes(String(userData.gender || '').trim())) {
+          gender = String(userData.gender).trim();
+        }
 
-    const statusAndCount = userData.statusAndCount ||
-      userData.status ||
-      (userData.todayCount !== undefined ? `今日發生 ${userData.todayCount} 次` : '未提供');
+        const rawType = userData.bfrbType || userData.bfrbTypes;
+        if (rawType) {
+          const typeStr = Array.isArray(rawType) ? rawType.join('、') : String(rawType);
+          bfrbType = typeStr.replace(/[\r\n]/g, '').slice(0, 30);
+        }
+
+        const rawDriver = userData.innerDriver || userData.bfrbDriver || userData.bfrbDrivers;
+        if (rawDriver) {
+          const driverStr = Array.isArray(rawDriver) ? rawDriver.join('、') : String(rawDriver);
+          innerDriver = driverStr.replace(/[\r\n]/g, '').slice(0, 50);
+        }
+      }
+    }
+
+    if (userData?.statusAndCount || userData?.status) {
+      statusAndCount = String(userData.statusAndCount || userData.status)
+        .replace(/[\r\n]/g, '')
+        .slice(0, 30);
+    } else if (userData?.todayCount !== undefined) {
+      const cnt = Math.max(0, Math.min(Number(userData.todayCount) || 0, 999));
+      statusAndCount = `今日發生 ${cnt} 次`;
+    }
 
     // 組裝 System Prompt
     const systemPrompt = `你是一個溫柔的心理陪伴助手。這位使用者的背景為（年齡：${age}、性別：${gender}），其身體集中重複行為(BFRB)類型為${bfrbType}，內在驅動篩查結果為${innerDriver}，目前狀態與次數：${statusAndCount}。請根據上述心理與行為背景，用簡短、口語且溫暖的一句話安撫對方的焦慮，不要說教，且絕對不能提供醫療診斷或處方。`;
-
-    if (!HF_API_KEY) {
-      throw new Error('未設定 HF_API_KEY 環境變數');
-    }
 
     // 指定模型為 Qwen/Qwen2.5-7B-Instruct
     const primaryModel = process.env.HF_MODEL || 'Qwen/Qwen2.5-7B-Instruct';
@@ -80,7 +155,7 @@ app.post('/api/chat', async (req, res) => {
           model: primaryModel,
           messages: [
             { role: 'system', content: systemPrompt },
-            { role: 'user', content: message.trim() },
+            { role: 'user', content: trimmedMessage },
           ],
           max_tokens: 200,
           temperature: 0.7,
@@ -106,7 +181,7 @@ app.post('/api/chat', async (req, res) => {
             model: fallbackModel,
             messages: [
               { role: 'system', content: systemPrompt },
-              { role: 'user', content: message.trim() },
+              { role: 'user', content: trimmedMessage },
             ],
             max_tokens: 200,
             temperature: 0.7,
@@ -130,11 +205,11 @@ app.post('/api/chat', async (req, res) => {
 
     return res.json({ reply });
   } catch (error) {
-    // 實作 try-catch 錯誤處理：請求超時、額度用盡或發生錯誤時回傳 HTTP 500
-    console.error('[Chat API Error]', error.response?.data || error.message);
+    // 安全錯誤處理：日誌記錄內部詳細資訊，但對客戶端僅回傳保底內容，避免洩露 API Key 或伺服器細節
+    console.error('[Chat API Error]', error.response?.status, error.message);
     return res.status(500).json({
       reply: DEFAULT_FALLBACK_REPLY,
-      error: error.response?.data || error.message,
+      error: '陪伴助手連線逾時或暫時忙碌中，請稍後再試',
     });
   }
 });
@@ -245,28 +320,32 @@ server.on('connection', (socket, request) => {
   });
 });
 
-httpServer.listen(PORT, '0.0.0.0', () => {
-  console.log('----------------------------------------');
-  console.log('Aura 伺服器 (HTTP & WebSocket) 已啟動');
-  console.log(`HTTP API 端點：http://localhost:${PORT}`);
-  console.log(`電腦端 WebSocket 位址：ws://localhost:${PORT}`);
-  console.log(`手機端 WebSocket 位址：ws://你的電腦IP:${PORT}`);
-  console.log('按 Ctrl + C 可以停止伺服器');
-  console.log('----------------------------------------');
+if (require.main === module) {
+  httpServer.listen(PORT, '0.0.0.0', () => {
+    console.log('----------------------------------------');
+    console.log('Aura 伺服器 (HTTP & WebSocket) 已啟動');
+    console.log(`HTTP API 端點：http://localhost:${PORT}`);
+    console.log(`電腦端 WebSocket 位址：ws://localhost:${PORT}`);
+    console.log(`手機端 WebSocket 位址：ws://你的電腦IP:${PORT}`);
+    console.log('按 Ctrl + C 可以停止伺服器');
+    console.log('----------------------------------------');
 
-  if (!HF_API_KEY) {
-    console.warn('⚠️  未設定 HF_API_KEY：小樹洞 AI 無法使用（請在 .env 填入 Hugging Face Key）');
-  }
+    if (!HF_API_KEY) {
+      console.warn('⚠️  未設定 HF_API_KEY：小樹洞 AI 無法使用（請在 .env 填入 Hugging Face Key）');
+    }
 
-  // 連線 MySQL（失敗時伺服器照常運作，只有 /api/users 會回 503）
-  initDatabase()
-    .then(() => console.log(`[DB] MySQL 已連線，資料庫：${DB_NAME}`))
-    .catch((err) => {
-      console.error(`[DB] MySQL 連線失敗：${err.message}`);
-      console.error('[DB] 請確認 MySQL 已啟動，並檢查 .env 的 DB_HOST / DB_USER / DB_PASSWORD');
-    });
-});
+    // 連線 MySQL（失敗時伺服器照常運作，只有 /api/users 會回 503）
+    initDatabase()
+      .then(() => console.log(`[DB] MySQL 已連線，資料庫：${DB_NAME}`))
+      .catch((err) => {
+        console.error(`[DB] MySQL 連線失敗：${err.message}`);
+        console.error('[DB] 請確認 MySQL 已啟動，並檢查 .env 的 DB_HOST / DB_USER / DB_PASSWORD');
+      });
+  });
 
-httpServer.on('error', (error) => {
-  console.error('伺服器啟動失敗：', error.message);
-});
+  httpServer.on('error', (error) => {
+    console.error('伺服器啟動失敗：', error.message);
+  });
+}
+
+module.exports = { app, httpServer };
