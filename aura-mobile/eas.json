@@ -14,10 +14,18 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://holdyourhand-api.onrender.com",
+        "EXPO_PUBLIC_WS_URL": "wss://holdyourhand-api.onrender.com"
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://holdyourhand-api.onrender.com",
+        "EXPO_PUBLIC_WS_URL": "wss://holdyourhand-api.onrender.com"
+      }
     }
   },
   "submit": {
