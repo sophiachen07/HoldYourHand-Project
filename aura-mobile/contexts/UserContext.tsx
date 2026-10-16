@@ -473,32 +473,18 @@ export function UserProvider({ children }: PropsWithChildren) {
     const todayStr = getTaiwanDateString();
     const nextAccount: UserAccount = { userId: res.userId, email: res.email };
 
-    // 舊版本機資料搬遷：手機上已有資料、但從未登入過，且這個 email 是新帳號
-    // 訪客的資料不上傳（訪客模式的承諾是不寫入資料庫）
-    const migrateLocalData =
-      res.isNew &&
-      hasCompletedOnboardingRef.current &&
-      !accountRef.current &&
-      !isGuestRef.current;
 
     // 改用正式帳號登入：離開訪客模式
     setIsGuest(false);
     await AsyncStorage.removeItem(STORAGE_KEY_GUEST);
-
-    if (migrateLocalData) {
-      // 保留目前畫面上的資料，稍後由自動同步上傳
-      setAccount(nextAccount);
-      await AsyncStorage.setItem(STORAGE_KEY_ACCOUNT, JSON.stringify(nextAccount));
-      console.log(`[UserContext] 已將本機資料綁定到帳號 #${res.userId}`);
-      return { isNew: true, onboardingCompleted: true };
-    }
 
     let nextProfile: UserProfile;
     let nextStats: Record<string, BehaviorStatItem>;
     let nextDaily: Record<string, DailyRecord>;
     let nextFirstDate: string;
 
-    if (res.onboardingCompleted) {
+    if (!res.isNew && res.onboardingCompleted) {
+      // 既有已完成設定之帳號：載入資料庫雲端歷史資料
       const drivers = res.profile.bfrbDrivers?.length
         ? res.profile.bfrbDrivers
         : getProfileDrivers(null);
@@ -524,17 +510,25 @@ export function UserProvider({ children }: PropsWithChildren) {
         });
       }
     } else {
-      // 新帳號：Google 登入時資料庫已存了 Google 提供的資料，預填到設定頁
+      // 新註冊帳號或未完成基本資料之帳號：數據徹底歸零，帶入註冊時填寫的名字，清空舊手機殘留快取
+      const initialName = res.profile?.name || defaultProfile.name;
       nextProfile = {
         ...defaultProfile,
-        name: res.profile.name || defaultProfile.name,
-        age: res.profile.age || defaultProfile.age,
-        gender: res.profile.gender || defaultProfile.gender,
-        avatarUrl: res.profile.avatarUrl || null,
+        name: initialName,
+        age: res.profile?.age || defaultProfile.age,
+        gender: res.profile?.gender || defaultProfile.gender,
+        avatarUrl: res.profile?.avatarUrl || null,
       };
       nextStats = createEmptyBehaviorStats();
       nextDaily = {};
       nextFirstDate = todayStr;
+
+      // 清除本地舊快取，避免污染新帳號
+      await Promise.all([
+        AsyncStorage.removeItem(STORAGE_KEY_BEHAVIOR_DB),
+        AsyncStorage.removeItem(STORAGE_KEY_DAILY_HISTORY),
+        AsyncStorage.removeItem(STORAGE_KEY_ONBOARDING),
+      ]);
     }
 
     if (!nextDaily[todayStr]) {

@@ -80,7 +80,7 @@ export type SendCodeResponse = {
   devMode?: boolean;
 };
 
-const REQUEST_TIMEOUT_MS = 8000;
+const REQUEST_TIMEOUT_MS = 45000; // 延長至 45 秒以因應 Render 免費雲端服務冷啟動 (約需 30-40 秒)
 
 // Token 記憶體狀態與 401 監聽器
 let activeAuthToken: string | null = null;
@@ -138,11 +138,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     }
     return data as T;
   } catch (err: any) {
-    if (err?.name === 'AbortError') {
-      throw new Error('連線逾時，請確認後端伺服器已啟動、手機與電腦在同一個網路');
+    if (err?.name === 'AbortError' || err?.message?.includes('canceled')) {
+      throw new Error('伺服器正在自休眠中喚醒（Render 免費雲端首次啟動約需 30-40 秒），請稍候 10 秒後再試一次！');
     }
     if (err instanceof TypeError) {
-      throw new Error('無法連線到後端伺服器，請確認 node server.js 已啟動');
+      throw new Error('無法連線到後端伺服器，請確認網路連線正常');
     }
     throw err;
   } finally {

@@ -255,7 +255,7 @@ export default function SettingsScreen() {
                 </View>
               </View>
               <Text style={styles.deviceNavSub}>
-                切換 BLE 藍牙裝置或 WebSocket 開發模擬器
+                開啟 BLE 藍牙裝置進行裝置配對
               </Text>
             </View>
 
@@ -373,7 +373,7 @@ export default function SettingsScreen() {
                   style={[
                     styles.presetButton,
                     selected &&
-                      styles.presetButtonSelected,
+                    styles.presetButtonSelected,
                   ]}
                   onPress={() =>
                     handleUpdateVibration(
@@ -385,7 +385,7 @@ export default function SettingsScreen() {
                     style={[
                       styles.presetLabel,
                       selected &&
-                        styles.presetLabelSelected,
+                      styles.presetLabelSelected,
                     ]}
                   >
                     {preset.label}
@@ -395,7 +395,7 @@ export default function SettingsScreen() {
                     style={[
                       styles.presetValue,
                       selected &&
-                        styles.presetValueSelected,
+                      styles.presetValueSelected,
                     ]}
                   >
                     {preset.value}%
@@ -453,7 +453,7 @@ export default function SettingsScreen() {
                     scale:
                       0.85 +
                       vibrationStrength /
-                        240,
+                      240,
                   },
                 ],
               },
