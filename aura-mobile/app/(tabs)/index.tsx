@@ -2,7 +2,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { ArrowRight, Mail, KeyRound, Sparkles } from 'lucide-react-native';
+import { ArrowRight, Mail, Lock, User, Eye, EyeOff, Sparkles } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -38,34 +38,32 @@ function notify(title: string, message: string) {
 }
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState('');
-  const [otpCode, setOtpCode] = useState('');
-  const [isSendingCode, setIsSendingCode] = useState(false);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [cooldown, setCooldown] = useState(0);
-  const [codeSent, setCodeSent] = useState(false);
-  const [devModeNotice, setDevModeNotice] = useState<string | null>(null);
+  // 切換模式：'login' (登入) 或 'register' (建立新帳號)
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
 
-  const cooldownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // 表單欄位
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [registerName, setRegisterName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const {
     hasCompletedOnboarding,
     isReady,
     account,
     isGuest,
-    sendVerificationCode,
-    loginWithEmailCode,
+    registerWithPassword,
+    loginWithPassword,
     loginWithGoogle,
     loginWithGoogleNative,
     loginAsGuest,
   } = useUser();
 
-  // 清除倒數計時器
-  useEffect(() => {
-    return () => {
-      if (cooldownTimerRef.current) clearInterval(cooldownTimerRef.current);
-    };
-  }, []);
+
 
   // 已登入帳號且完成初次設定：開啟時直接進入儀表板主頁（裝置由背景無感秒連）
   useEffect(() => {
@@ -145,77 +143,31 @@ export default function LoginScreen() {
     }
   }
 
-  // 發送 Email 驗證碼
-  async function handleSendCode() {
-    const trimmed = email.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
-      notify('提示', '請輸入有效的電子信箱');
-      return;
-    }
-
-    if (cooldown > 0) return;
-
-    setIsSendingCode(true);
-    try {
-      const res = await sendVerificationCode(trimmed);
-      setCodeSent(true);
-      setCooldown(60);
-
-      if (cooldownTimerRef.current) clearInterval(cooldownTimerRef.current);
-      cooldownTimerRef.current = setInterval(() => {
-        setCooldown((prev) => {
-          if (prev <= 1) {
-            if (cooldownTimerRef.current) clearInterval(cooldownTimerRef.current);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-      if (res.devMode) {
-        setDevModeNotice('伺服器處於開發測試模式（未設定 SMTP），請於後端主控台查看驗證碼');
-        notify('驗證碼已生成 (開發測試模式)', '後端未設定 SMTP 郵件服務，驗證碼已輸出於伺服器終端機日誌中。');
-      } else {
-        setDevModeNotice(null);
-        notify('驗證碼已寄出', '登入驗證碼已寄送至您的信箱，10 分鐘內有效。');
-      }
-    } catch (err: any) {
-      notify('發送失敗', err?.message || '驗證碼發送失敗，請稍後再試');
-    } finally {
-      setIsSendingCode(false);
-    }
-  }
-
-  // 驗證碼登入
-  async function handleLogin() {
+  // 密碼登入處理
+  async function handlePasswordLogin() {
     const trimmedEmail = email.trim().toLowerCase();
-    const trimmedCode = otpCode.trim();
+    const trimmedPassword = password.trim();
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
       notify('提示', '請輸入有效的電子信箱');
       return;
     }
 
-    if (!codeSent) {
-      notify('提示', '請先點選「取得驗證碼」以驗證信箱身分');
-      return;
-    }
-
-    if (!trimmedCode || trimmedCode.length !== 6) {
-      notify('提示', '請輸入 6 位數純數字驗證碼');
+    if (!trimmedPassword) {
+      notify('提示', '請輸入密碼');
       return;
     }
 
     setIsLoggingIn(true);
     try {
-      const result = await loginWithEmailCode(trimmedEmail, trimmedCode);
+      const result = await loginWithPassword(trimmedEmail, trimmedPassword);
       if (result.onboardingCompleted) {
         router.replace('/dashboard');
       } else {
         router.push('/profile');
       }
     } catch (err: any) {
-      const reason = err?.message || '登入失敗，請稍後再試。';
+      const reason = err?.message || '登入失敗，請確認信箱與密碼。';
       if (Platform.OS === 'web') {
         if (window.confirm(`登入失敗\n\n${reason}\n\n要先離線使用嗎？`)) {
           continueOffline();
@@ -226,6 +178,45 @@ export default function LoginScreen() {
           { text: '先離線使用', onPress: continueOffline },
         ]);
       }
+    } finally {
+      setIsLoggingIn(false);
+    }
+  }
+
+  // 建立新帳號處理
+  async function handleRegister() {
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedPassword = password.trim();
+    const trimmedConfirm = confirmPassword.trim();
+    const trimmedName = registerName.trim();
+
+    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      notify('提示', '請輸入有效的電子信箱');
+      return;
+    }
+
+    if (!trimmedPassword || trimmedPassword.length < 6) {
+      notify('提示', '密碼長度至少需要 6 個字元');
+      return;
+    }
+
+    if (trimmedPassword !== trimmedConfirm) {
+      notify('提示', '兩次輸入的密碼不一致，請重新檢查');
+      return;
+    }
+
+    setIsLoggingIn(true);
+    try {
+      const result = await registerWithPassword(trimmedEmail, trimmedPassword, trimmedName);
+      notify('註冊成功', `歡迎您加入 HoldYourHand！${trimmedName ? `${trimmedName}，` : ''}讓我們一起守護身心健康。`);
+      if (result.onboardingCompleted) {
+        router.replace('/dashboard');
+      } else {
+        router.push('/profile');
+      }
+    } catch (err: any) {
+      const reason = err?.message || '建立帳號失敗，請稍後再試。';
+      notify('建立帳號失敗', reason);
     } finally {
       setIsLoggingIn(false);
     }
@@ -280,23 +271,82 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.form}>
-            {/* 信箱輸入 */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>
-                電子信箱
-              </Text>
+            {/* 1. 登入 / 建立新帳號 切換標籤 */}
+            <View style={styles.tabContainer}>
+              <Pressable
+                style={[
+                  styles.tabButton,
+                  authMode === 'login' && styles.tabButtonActive,
+                ]}
+                onPress={() => {
+                  setAuthMode('login');
+                  setPassword('');
+                  setConfirmPassword('');
+                }}
+              >
+                <Text
+                  style={[
+                    styles.tabButtonText,
+                    authMode === 'login' && styles.tabButtonTextActive,
+                  ]}
+                >
+                  登入
+                </Text>
+              </Pressable>
 
-              <View style={styles.inputWithButtonRow}>
+              <Pressable
+                style={[
+                  styles.tabButton,
+                  authMode === 'register' && styles.tabButtonActive,
+                ]}
+                onPress={() => {
+                  setAuthMode('register');
+                  setPassword('');
+                  setConfirmPassword('');
+                }}
+              >
+                <Text
+                  style={[
+                    styles.tabButtonText,
+                    authMode === 'register' && styles.tabButtonTextActive,
+                  ]}
+                >
+                  建立新帳號
+                </Text>
+              </Pressable>
+            </View>
+
+            {/* 2. 建立新帳號：稱呼欄位 (選填) */}
+            {authMode === 'register' && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>稱呼 / 暱稱 (選填)</Text>
+                <View style={styles.inputWithIconRow}>
+                  <View style={styles.inputIconPrefix}>
+                    <User size={16} color={AuraColors.mutedDark} />
+                  </View>
+                  <TextInput
+                    style={[styles.input, styles.inputFlex]}
+                    value={registerName}
+                    onChangeText={setRegisterName}
+                    placeholder="您希望我們怎麼稱呼您？"
+                    placeholderTextColor={AuraColors.mutedDark}
+                    selectionColor={AuraColors.purple}
+                  />
+                </View>
+              </View>
+            )}
+
+            {/* 3. 電子信箱欄位 (共用) */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>電子信箱</Text>
+              <View style={styles.inputWithIconRow}>
                 <View style={styles.inputIconPrefix}>
                   <Mail size={16} color={AuraColors.mutedDark} />
                 </View>
                 <TextInput
                   style={[styles.input, styles.inputFlex]}
                   value={email}
-                  onChangeText={(val) => {
-                    setEmail(val);
-                    setDevModeNotice(null);
-                  }}
+                  onChangeText={setEmail}
                   placeholder="user@example.com"
                   placeholderTextColor={AuraColors.mutedDark}
                   keyboardType="email-address"
@@ -304,52 +354,123 @@ export default function LoginScreen() {
                   autoCorrect={false}
                   selectionColor={AuraColors.purple}
                 />
+              </View>
+            </View>
+
+            {/* 4. 密碼欄位 (共用) */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>
+                {authMode === 'register' ? '設定密碼 (至少 6 碼)' : '登入密碼'}
+              </Text>
+              <View style={styles.inputWithIconRow}>
+                <View style={styles.inputIconPrefix}>
+                  <Lock size={16} color={AuraColors.mutedDark} />
+                </View>
+                <TextInput
+                  style={[styles.input, styles.inputFlex, { paddingRight: 44 }]}
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder={authMode === 'register' ? '請設定 6 位數以上密碼' : '請輸入密碼'}
+                  placeholderTextColor={AuraColors.mutedDark}
+                  secureTextEntry={!showPassword}
+                  selectionColor={AuraColors.purple}
+                />
                 <Pressable
-                  onPress={handleSendCode}
-                  disabled={isSendingCode || cooldown > 0}
-                  style={({ pressed }) => [
-                    styles.sendCodeButton,
-                    (isSendingCode || cooldown > 0) && styles.sendCodeButtonDisabled,
-                    pressed && styles.buttonPressed,
-                  ]}
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={styles.eyeButton}
+                  hitSlop={8}
                 >
-                  {isSendingCode ? (
-                    <ActivityIndicator size="small" color="#2E7D6E" />
+                  {showPassword ? (
+                    <EyeOff size={17} color={AuraColors.mutedDark} />
                   ) : (
-                    <Text style={styles.sendCodeButtonText}>
-                      {cooldown > 0 ? `${cooldown}s` : codeSent ? '重新發送' : '取得驗證碼'}
-                    </Text>
+                    <Eye size={17} color={AuraColors.mutedDark} />
                   )}
                 </Pressable>
               </View>
             </View>
 
-            {/* 驗證碼輸入 */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>
-                6 位數驗證碼
-              </Text>
-
-              <View style={styles.inputWithIconRow}>
-                <View style={styles.inputIconPrefix}>
-                  <KeyRound size={16} color={AuraColors.mutedDark} />
+            {/* 5. 建立新帳號：確認密碼 */}
+            {authMode === 'register' && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>確認密碼</Text>
+                <View style={styles.inputWithIconRow}>
+                  <View style={styles.inputIconPrefix}>
+                    <Lock size={16} color={AuraColors.mutedDark} />
+                  </View>
+                  <TextInput
+                    style={[styles.input, styles.inputFlex, { paddingRight: 44 }]}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    placeholder="請再次輸入相同密碼"
+                    placeholderTextColor={AuraColors.mutedDark}
+                    secureTextEntry={!showConfirmPassword}
+                    selectionColor={AuraColors.purple}
+                  />
+                  <Pressable
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                    style={styles.eyeButton}
+                    hitSlop={8}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff size={17} color={AuraColors.mutedDark} />
+                    ) : (
+                      <Eye size={17} color={AuraColors.mutedDark} />
+                    )}
+                  </Pressable>
                 </View>
-                <TextInput
-                  style={[styles.input, styles.inputFlex]}
-                  value={otpCode}
-                  onChangeText={setOtpCode}
-                  placeholder="請輸入 6 位數驗證碼"
-                  placeholderTextColor={AuraColors.mutedDark}
-                  keyboardType="number-pad"
-                  maxLength={6}
-                  selectionColor={AuraColors.purple}
+              </View>
+            )}
+
+            {/* 6. 主操作按鈕 (登入 或 建立帳號) */}
+            <Pressable
+              onPress={authMode === 'register' ? handleRegister : handlePasswordLogin}
+              disabled={isLoggingIn}
+              style={({ pressed }) => [
+                styles.loginButtonWrapper,
+                pressed && styles.loginButtonPressed,
+              ]}
+            >
+              <View style={styles.loginButton}>
+                {isLoggingIn && <ActivityIndicator size="small" color="#2E7D6E" />}
+                <Text style={styles.loginButtonText}>
+                  {isLoggingIn
+                    ? authMode === 'register' ? '建立帳號中…' : '登入中…'
+                    : authMode === 'register' ? '立即建立新帳號' : '帳號密碼登入'}
+                </Text>
+
+                <ArrowRight
+                  size={17}
+                  strokeWidth={2.3}
+                  color="#2E7D6E"
                 />
               </View>
-              {devModeNotice && (
-                <Text style={styles.devNoticeText}>{devModeNotice}</Text>
-              )}
+            </Pressable>
+
+            {/* 7. 切換登入 / 建立帳號 文字捷徑 */}
+            <Pressable
+              onPress={() => {
+                setAuthMode(authMode === 'login' ? 'register' : 'login');
+                setPassword('');
+                setConfirmPassword('');
+              }}
+              style={styles.switchModeRow}
+            >
+              <Text style={styles.switchModeText}>
+                {authMode === 'login' ? '還沒有帳號？' : '已經擁有帳號？'}
+                <Text style={styles.switchModeLink}>
+                  {authMode === 'login' ? '立即建立帳號' : '點此前往登入'}
+                </Text>
+              </Text>
+            </Pressable>
+
+            {/* 8. 其他登入方式分隔線 */}
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>其他快速登入</Text>
+              <View style={styles.dividerLine} />
             </View>
 
+            {/* 9. Google 與第三方登入（完全保留組員建置之功能） */}
             {Platform.OS === 'web' ? (
               <GoogleSignInButton
                 onAccessToken={handleGoogleAccessToken}
@@ -395,36 +516,14 @@ export default function LoginScreen() {
             </View>
             )}
 
-            <Pressable
-              onPress={handleLogin}
-              disabled={isLoggingIn}
-              style={({ pressed }) => [
-                styles.loginButtonWrapper,
-                pressed && styles.loginButtonPressed,
-              ]}
-            >
-              <View style={styles.loginButton}>
-                {isLoggingIn && <ActivityIndicator size="small" color="#2E7D6E" />}
-                <Text style={styles.loginButtonText}>
-                  {isLoggingIn ? '驗證登入中…' : '驗證並登入'}
-                </Text>
-
-                <ArrowRight
-                  size={17}
-                  strokeWidth={2.3}
-                  color="#2E7D6E"
-                />
-              </View>
-            </Pressable>
-
-            {/* 訪客登入：不寫入資料庫 */}
+            {/* 10. 訪客身分體驗（完全保留） */}
             <Pressable
               onPress={handleGuestLogin}
               disabled={isLoggingIn}
               style={({ pressed }) => [styles.guestButton, pressed && styles.buttonPressed]}
             >
-              <Text style={styles.guestButtonText}>以訪客身分使用</Text>
-              <Text style={styles.guestHintText}>資料只會存在這台裝置，不會上傳</Text>
+              <Text style={styles.guestButtonText}>以訪客身分體驗</Text>
+              <Text style={styles.guestHintText}>資料只會存在這台裝置，不會上傳雲端</Text>
             </Pressable>
           </View>
         </ScrollView>
@@ -528,8 +627,46 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
 
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#F1ECF7',
+    borderRadius: 14,
+    padding: 4,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(215, 203, 234, 0.65)',
+  },
+
+  tabButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+  },
+
+  tabButtonActive: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#9B8AC1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+
+  tabButtonText: {
+    color: '#8A8598',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+  tabButtonTextActive: {
+    color: '#2E7D6E',
+    fontWeight: '800',
+  },
+
   inputGroup: {
-    marginBottom: 18,
+    marginBottom: 16,
   },
 
   label: {
@@ -549,12 +686,23 @@ const styles = StyleSheet.create({
   inputWithIconRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    position: 'relative',
   },
 
   inputIconPrefix: {
     position: 'absolute',
     left: 14,
     zIndex: 1,
+  },
+
+  eyeButton: {
+    position: 'absolute',
+    right: 14,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    zIndex: 2,
   },
 
   inputFlex: {
@@ -573,35 +721,41 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
-  sendCodeButton: {
-    height: 50,
-    paddingHorizontal: 14,
-    borderRadius: 14,
-    backgroundColor: 'rgba(192, 237, 226, 0.65)',
-    borderWidth: 1,
-    borderColor: 'rgba(162, 222, 208, 0.9)',
+  switchModeRow: {
+    marginTop: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 96,
+    paddingVertical: 4,
   },
 
-  sendCodeButtonDisabled: {
-    opacity: 0.5,
-  },
-
-  sendCodeButtonText: {
-    color: '#2E7D6E',
+  switchModeText: {
+    color: '#7E7889',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '500',
   },
 
-  devNoticeText: {
+  switchModeLink: {
+    color: '#2E7D6E',
+    fontWeight: '800',
+  },
+
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 14,
+    gap: 10,
+  },
+
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(215, 203, 234, 0.6)',
+  },
+
+  dividerText: {
+    color: '#9C96A6',
     fontSize: 11,
-    color: '#854d0e',
-    backgroundColor: '#fef9c3',
-    padding: 6,
-    borderRadius: 6,
-    marginTop: 6,
+    fontWeight: '600',
   },
 
   socialRow: {

@@ -208,6 +208,37 @@ async function sendVerificationCodeMail(email, code) {
   }
 }
 
+/**
+ * 密碼加鹽雜湊 (使用 Node.js 內建安全演算法 scrypt)
+ * 格式：salt:keyHex
+ */
+function hashPassword(password) {
+  if (typeof password !== 'string' || password.length === 0) {
+    throw new Error('密碼不能為空');
+  }
+  const salt = crypto.randomBytes(16).toString('hex');
+  const derivedKey = crypto.scryptSync(password, salt, 64);
+  return `${salt}:${derivedKey.toString('hex')}`;
+}
+
+/**
+ * 驗證密碼是否相符 (常數時間安全比對)
+ */
+function verifyPassword(password, storedHash) {
+  if (!password || !storedHash || typeof storedHash !== 'string' || !storedHash.includes(':')) {
+    return false;
+  }
+  try {
+    const [salt, keyHex] = storedHash.split(':');
+    const expectedKey = Buffer.from(keyHex, 'hex');
+    const actualKey = crypto.scryptSync(password, salt, 64);
+    if (expectedKey.length !== actualKey.length) return false;
+    return crypto.timingSafeEqual(expectedKey, actualKey);
+  } catch (err) {
+    return false;
+  }
+}
+
 module.exports = {
   signToken,
   verifyToken,
@@ -218,4 +249,6 @@ module.exports = {
   hashVerificationCode,
   verifyCodeHash,
   sendVerificationCodeMail,
+  hashPassword,
+  verifyPassword,
 };

@@ -14,6 +14,8 @@ const {
   hashVerificationCode,
   verifyCodeHash,
   sendVerificationCodeMail,
+  hashPassword,
+  verifyPassword,
 } = require('./auth');
 
 const router = express.Router();
@@ -469,7 +471,131 @@ router.post('/verify-code', authLimiter, requireDb, async (req, res, next) => {
 });
 
 /**
- * 3. 廢除舊有免密碼直接以 Email 登入的端點，避免身分冒用漏洞
+ * 3. 建立新帳號 (註冊：電子信箱 + 密碼 + 稱呼)
+ */
+router.post('/register', authLimiter, requireDb, async (req, res, next) => {
+  try {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const password = String(req.body?.password || '');
+    const name = String(req.body?.name || '').trim();
+
+    if (!EMAIL_PATTERN.test(email)) {
+      return res.status(400).json({ error: '請輸入有效的電子郵件地址' });
+    }
+    if (!password || password.length < 6) {
+      return res.status(400).json({ error: '密碼長度至少需 6 個字元' });
+    }
+
+    const pool = getPool();
+
+    // 檢查該 Email 是否已被註冊
+    const [[existing]] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+    if (existing) {
+      if (existing.password_hash) {
+        return res.status(409).json({
+          error: '此電子信箱已被註冊，請直接前往登入',
+          code: 'EMAIL_ALREADY_REGISTERED',
+        });
+      }
+      // 若原先只透過 Google 登入過，則為其設定密碼並更新暱稱
+      const passwordHash = hashPassword(password);
+      await pool.query(
+        'UPDATE users SET password_hash = ?, name = COALESCE(NULLIF(name, ""), ?) WHERE id = ?',
+        [passwordHash, name || null, existing.id]
+      );
+      const snapshot = await loadUserSnapshot(pool, existing.id);
+      const token = signToken({ userId: existing.id, email });
+      console.log(`[Auth] 使用者 #${existing.id} ${email} 設定密碼成功`);
+      return res.json({ token, isNew: false, ...snapshot });
+    }
+
+    // 新增使用者
+    const passwordHash = hashPassword(password);
+    const [result] = await pool.query(
+      `INSERT INTO users (email, password_hash, name, email_verified)
+       VALUES (?, ?, ?, 1)`,
+      [email, passwordHash, name || null]
+    );
+
+    const userId = result.insertId;
+    const snapshot = await loadUserSnapshot(pool, userId);
+    const token = signToken({ userId, email });
+
+    console.log(`[Auth] 新使用者註冊成功 #${userId} ${email}`);
+    res.status(201).json({
+      token,
+      isNew: true,
+      ...snapshot,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * 4. 電子信箱 + 密碼登入
+ */
+router.post('/login-password', authLimiter, requireDb, async (req, res, next) => {
+  try {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const password = String(req.body?.password || '');
+
+    if (!EMAIL_PATTERN.test(email)) {
+      return res.status(400).json({ error: '請輸入有效的電子郵件地址' });
+    }
+    if (!password) {
+      return res.status(400).json({ error: '請輸入密碼' });
+    }
+
+    const pool = getPool();
+    const [[user]] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+
+    if (!user) {
+      return res.status(401).json({
+        error: '帳號或密碼不正確，若尚未建立帳號請先點選「建立新帳號」',
+        code: 'INVALID_CREDENTIALS',
+      });
+    }
+
+    // 若該帳號沒有 password_hash（例如僅透過 Google 登入過）
+    if (!user.password_hash) {
+      return res.status(400).json({
+        error: '此帳號先前係使用 Google 方式建立，請點選下方 Google 快速登入',
+        code: 'GOOGLE_AUTH_REQUIRED',
+      });
+    }
+
+    const isMatch = verifyPassword(password, user.password_hash);
+    if (!isMatch) {
+      return res.status(401).json({
+        error: '帳號或密碼不正確，請重新確認',
+        code: 'INVALID_CREDENTIALS',
+      });
+    }
+
+    // 更新最後活躍日期
+    const today = new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
+    await pool.query(
+      'UPDATE users SET last_active_date = ?, first_active_date = COALESCE(first_active_date, ?) WHERE id = ?',
+      [today, today, user.id]
+    );
+
+    const snapshot = await loadUserSnapshot(pool, user.id);
+    const token = signToken({ userId: user.id, email });
+
+    console.log(`[Auth] 密碼登入成功 #${user.id} ${email}`);
+    res.json({
+      token,
+      isNew: false,
+      ...snapshot,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * 5. 廢除舊有免密碼直接以 Email 登入的端點，避免身分冒用漏洞
  */
 router.post('/login', (req, res) => {
   return res.status(400).json({

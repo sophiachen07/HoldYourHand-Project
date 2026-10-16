@@ -1559,25 +1559,28 @@
       justify-content: center;
       font-weight: 700;
       color: #fff;
-      transition: transform 5s cubic-bezier(0.4, 0, 0.2, 1), background 5s, box-shadow 5s;
+      transition: transform 4s cubic-bezier(0.4, 0, 0.2, 1), background 0.8s, box-shadow 0.8s;
     }
 
     .relax-breathing-circle-inner.inhale {
       transform: scale(1.35);
       background: linear-gradient(135deg, var(--primary-cyan) 0%, var(--primary-purple) 100%);
       box-shadow: 0 0 50px rgba(6, 182, 212, 0.6);
+      transition: transform 4s cubic-bezier(0.4, 0, 0.2, 1), background 0.8s, box-shadow 0.8s;
     }
 
     .relax-breathing-circle-inner.hold {
       transform: scale(1.35);
       background: linear-gradient(135deg, #10b981 0%, #059669 100%);
       box-shadow: 0 0 50px rgba(16, 185, 129, 0.6);
+      transition: transform 0.4s ease, background 0.6s, box-shadow 0.6s;
     }
 
     .relax-breathing-circle-inner.exhale {
       transform: scale(1.0);
       background: linear-gradient(135deg, var(--primary-purple) 0%, var(--primary-pink) 100%);
       box-shadow: 0 0 35px rgba(139, 92, 246, 0.4);
+      transition: transform 8s cubic-bezier(0.4, 0, 0.2, 1), background 0.8s, box-shadow 0.8s;
     }
 
     .relax-breathe-text {
@@ -2642,7 +2645,7 @@
 
             <p class="view-subtitle" style="margin-bottom: 10px; font-size: 11px;">跟隨深呼吸節奏，選擇適合您的正念舒壓音效以緩和身心壓力。</p>
 
-            <!-- Calming Breathing Guide Circle -->
+            <!-- Calming Breathing Guide Circle (4-7-8 呼吸節奏引導) -->
             <div class="relax-circle-box" style="margin: 10px 0;">
               <div class="relax-breathing-circle-outer ripple-active" id="relaxBreatheOuter">
                 <div class="ripple-ring"></div>
@@ -2650,10 +2653,17 @@
                 <div class="ripple-ring"></div>
                 <div class="relax-breathing-circle-inner" id="relaxBreatheCircle">
                   <span class="relax-breathe-text" id="relaxBreatheWord">吸氣</span>
-                  <span class="relax-breathe-sub" id="relaxBreatheTime">5 秒</span>
+                  <span class="relax-breathe-sub" id="relaxBreatheTime">4 秒</span>
                 </div>
               </div>
-              <div class="relax-breathe-desc" id="relaxBreatheDesc">深深吸氣，感受身心平靜...</div>
+              <div class="relax-breathe-desc" id="relaxBreatheDesc">深深吸氣，感覺腹部緩緩隆起...</div>
+
+              <!-- 4-7-8 呼吸節奏階段指示標籤 -->
+              <div class="relax-phase-indicator" id="relaxPhaseIndicator" style="display:flex; align-items:center; justify-content:center; gap:8px; margin-top:10px;">
+                <span class="phase-pill active" id="pillInhale" style="font-size:10px; padding:3px 10px; border-radius:12px; background:rgba(6,182,212,0.22); color:var(--primary-cyan); font-weight:700; border:1px solid rgba(6,182,212,0.45); transition:all 0.3s ease;">● 吸氣 4 秒</span>
+                <span class="phase-pill" id="pillHold" style="font-size:10px; padding:3px 10px; border-radius:12px; background:rgba(255,255,255,0.05); color:var(--text-muted); font-weight:500; border:1px solid rgba(255,255,255,0.1); transition:all 0.3s ease;">● 憋氣 7 秒</span>
+                <span class="phase-pill" id="pillExhale" style="font-size:10px; padding:3px 10px; border-radius:12px; background:rgba(255,255,255,0.05); color:var(--text-muted); font-weight:500; border:1px solid rgba(255,255,255,0.1); transition:all 0.3s ease;">● 吐氣 8 秒</span>
+              </div>
             </div>
 
             <!-- Calm White Noise & Music Selector Card -->
@@ -3766,9 +3776,11 @@
       const timeEl = document.getElementById('relaxBreatheTime');
       const descEl = document.getElementById('relaxBreatheDesc');
 
+      // 符合科學 4-7-8 呼吸節奏引導 (吸氣 4 秒、憋氣 7 秒、吐氣 8 秒)
       const phases = [
-        { text: '吸氣中 (5s)', desc: '深深吸氣，感覺腹部緩緩隆起...', class: 'inhale', duration: 5 },
-        { text: '吐氣中 (5s)', desc: '緩緩呼氣，釋放所有的緊繃與焦慮...', class: 'exhale', duration: 5 }
+        { key: 'inhale', text: '吸氣中', desc: '深深吸氣，感覺腹部緩緩隆起...', class: 'inhale', duration: 4, pillId: 'pillInhale' },
+        { key: 'hold', text: '憋氣中', desc: '屏住呼吸，靜止體會片刻安寧...', class: 'hold', duration: 7, pillId: 'pillHold' },
+        { key: 'exhale', text: '吐氣中', desc: '緩緩呼氣，釋放身體的緊繃與焦慮...', class: 'exhale', duration: 8, pillId: 'pillExhale' }
       ];
 
       let currentPhaseIdx = 0;
@@ -3785,19 +3797,47 @@
         wordEl.innerText = phase.text;
         timeEl.innerText = `${secondsRemaining} 秒`;
         descEl.innerText = phase.desc;
+
+        // 更新 4-7-8 階段標籤高亮狀態
+        ['pillInhale', 'pillHold', 'pillExhale'].forEach(id => {
+          const pill = document.getElementById(id);
+          if (pill) {
+            if (id === phase.pillId) {
+              if (id === 'pillHold') {
+                pill.style.background = 'rgba(16, 185, 129, 0.22)';
+                pill.style.color = '#10b981';
+                pill.style.borderColor = 'rgba(16, 185, 129, 0.45)';
+              } else if (id === 'pillInhale') {
+                pill.style.background = 'rgba(6, 182, 212, 0.22)';
+                pill.style.color = 'var(--primary-cyan)';
+                pill.style.borderColor = 'rgba(6, 182, 212, 0.45)';
+              } else {
+                pill.style.background = 'rgba(192, 132, 252, 0.22)';
+                pill.style.color = '#c084fc';
+                pill.style.borderColor = 'rgba(192, 132, 252, 0.45)';
+              }
+              pill.style.fontWeight = '700';
+            } else {
+              pill.style.background = 'rgba(255, 255, 255, 0.05)';
+              pill.style.color = 'var(--text-muted)';
+              pill.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+              pill.style.fontWeight = '500';
+            }
+          }
+        });
       }
 
       updateVisuals();
-      playBreathingBeep(phases[currentPhaseIdx].class === 'inhale');
+      playBreathingBeep(phases[currentPhaseIdx].key);
 
       relaxBreathInterval = setInterval(() => {
         secondsRemaining--;
         if (secondsRemaining <= 0) {
           currentPhaseIdx = (currentPhaseIdx + 1) % phases.length;
           secondsRemaining = phases[currentPhaseIdx].duration;
+          playBreathingBeep(phases[currentPhaseIdx].key);
         }
         updateVisuals();
-        playBreathingBeep(phases[currentPhaseIdx].class === 'inhale');
       }, 1000);
     }
 
@@ -3808,7 +3848,7 @@
       }
     }
 
-    function playBreathingBeep(isHigh) {
+    function playBreathingBeep(phaseOrTone) {
       initAudio();
       if (!audioCtx) return;
 
@@ -3820,7 +3860,16 @@
         gainNode.connect(audioCtx.destination);
 
         osc.type = 'triangle';
-        const freq = isHigh ? 520 : 360;
+        let freq = 440;
+        if (phaseOrTone === 'inhale' || phaseOrTone === true) {
+          freq = 520;
+        } else if (phaseOrTone === 'hold') {
+          freq = 440;
+        } else if (phaseOrTone === 'exhale' || phaseOrTone === false) {
+          freq = 330;
+        } else if (typeof phaseOrTone === 'number') {
+          freq = phaseOrTone;
+        }
         osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
 
         const now = audioCtx.currentTime;

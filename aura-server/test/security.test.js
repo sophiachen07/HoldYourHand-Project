@@ -12,6 +12,8 @@ const {
   verifyToken,
   hashVerificationCode,
   verifyCodeHash,
+  hashPassword,
+  verifyPassword,
 } = require('../auth');
 
 // 測試用虛構帳號 (絕無真實使用者資料)
@@ -140,4 +142,20 @@ test('資安驗證 11：使用者 A 操作本人端點通過身分授權 (非 40
   // 通過身分授權中介軟體 (不會被 401 或 403 擋下)
   assert.notEqual(res.status, 401);
   assert.notEqual(res.status, 403);
+});
+
+test('資安驗證 12：密碼安全加鹽雜湊與比對機制 (scrypt + 常數時間比對)', () => {
+  const password = 'SecretPassword123!';
+  const wrongPassword = 'WrongPassword456!';
+
+  const hash = hashPassword(password);
+  assert.ok(hash.includes(':'), '密碼雜湊必須包含 salt:key 格式');
+
+  // 正確密碼比對成功
+  assert.equal(verifyPassword(password, hash), true);
+  // 錯誤密碼比對失敗
+  assert.equal(verifyPassword(wrongPassword, hash), false);
+  // 空白或無效雜湊防禦
+  assert.equal(verifyPassword('', hash), false);
+  assert.equal(verifyPassword(password, 'invalid_hash_without_salt'), false);
 });

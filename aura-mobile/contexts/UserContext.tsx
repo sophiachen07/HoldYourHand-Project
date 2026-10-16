@@ -213,6 +213,8 @@ export const defaultProfile: UserProfile = {
 
 type UserContextValue = {
   account: UserAccount | null;
+  registerWithPassword: (email: string, password: string, name?: string) => Promise<LoginResult>;
+  loginWithPassword: (email: string, password: string) => Promise<LoginResult>;
   sendVerificationCode: (email: string) => Promise<SendCodeResponse>;
   loginWithEmailCode: (email: string, code: string) => Promise<LoginResult>;
   loginWithEmail: (email: string) => Promise<LoginResult>;
@@ -617,10 +619,28 @@ export function UserProvider({ children }: PropsWithChildren) {
     [applyLoginResponse]
   );
 
+  // 3. 建立帳號 (註冊：信箱 + 密碼 + 稱呼)
+  const registerWithPassword = useCallback(
+    async (rawEmail: string, password: string, name?: string) => {
+      const res = await userApi.register(rawEmail.trim().toLowerCase(), password, name?.trim());
+      return applyLoginResponse(res);
+    },
+    [applyLoginResponse]
+  );
+
+  // 4. 以信箱與密碼登入
+  const loginWithPassword = useCallback(
+    async (rawEmail: string, password: string) => {
+      const res = await userApi.loginWithPassword(rawEmail.trim().toLowerCase(), password);
+      return applyLoginResponse(res);
+    },
+    [applyLoginResponse]
+  );
+
   // 向後相容方法
   const loginWithEmail = useCallback(
     async (rawEmail: string) => {
-      throw new Error('請使用驗證碼完成信箱驗證登入');
+      throw new Error('請使用驗證碼或密碼完成登入');
     },
     []
   );
@@ -1149,6 +1169,8 @@ export function UserProvider({ children }: PropsWithChildren) {
   const value = useMemo(
     () => ({
       account,
+      registerWithPassword,
+      loginWithPassword,
       sendVerificationCode,
       loginWithEmailCode,
       loginWithEmail,
@@ -1178,6 +1200,8 @@ export function UserProvider({ children }: PropsWithChildren) {
     }),
     [
       account,
+      registerWithPassword,
+      loginWithPassword,
       sendVerificationCode,
       loginWithEmailCode,
       loginWithEmail,

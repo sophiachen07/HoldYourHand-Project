@@ -95,21 +95,32 @@ async function runMigrations(pool) {
     console.log('[DB] 已新增欄位 users.email_verified');
   }
 
-  // 4. email_verifications 表
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS email_verifications (
-      id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      email VARCHAR(255) NOT NULL,
-      code_hash VARCHAR(255) NOT NULL,
-      attempts INT NOT NULL DEFAULT 0,
-      max_attempts INT NOT NULL DEFAULT 5,
-      expires_at DATETIME NOT NULL,
-      consumed_at DATETIME NULL,
-      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      INDEX idx_email_expires (email, expires_at)
-    )
-  `);
-}
+    // 4. email_verifications 表
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS email_verifications (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        email VARCHAR(255) NOT NULL,
+        code_hash VARCHAR(255) NOT NULL,
+        attempts INT NOT NULL DEFAULT 0,
+        max_attempts INT NOT NULL DEFAULT 5,
+        expires_at DATETIME NOT NULL,
+        consumed_at DATETIME NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_email_expires (email, expires_at)
+      )
+    `);
+
+    // 5. password_hash 密碼欄位
+    const [[passwordCol]] = await pool.query(
+      `SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'password_hash'`,
+      [DB_NAME]
+    );
+    if (Number(passwordCol.cnt) === 0) {
+      await pool.query('ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NULL AFTER google_id');
+      console.log('[DB] 已新增欄位 users.password_hash');
+    }
+  }
 
 function getPool() {
   return pool;

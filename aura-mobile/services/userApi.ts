@@ -172,6 +172,32 @@ export const userApi = {
     return res;
   },
 
+  // 建立新帳號 (註冊：信箱 + 密碼 + 稱呼)
+  async register(email: string, password: string, name?: string) {
+    const res = await request<LoginResponse>('/api/users/register', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, name }),
+    });
+    if (res.token) {
+      setApiToken(res.token);
+      await setStoredToken(res.token);
+    }
+    return res;
+  },
+
+  // 電子信箱 + 密碼登入
+  async loginWithPassword(email: string, password: string) {
+    const res = await request<LoginResponse>('/api/users/login-password', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+    if (res.token) {
+      setApiToken(res.token);
+      await setStoredToken(res.token);
+    }
+    return res;
+  },
+
   // 取得目前已登入者的自身資料
   getCurrentUser() {
     return request<UserSnapshot>('/api/users/me');

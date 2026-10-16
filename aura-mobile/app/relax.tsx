@@ -35,7 +35,49 @@ import {
 
 import { AuraColors } from '../constants/auraTheme';
 
-type BreathPhase = 'inhale' | 'exhale';
+type BreathPhase = 'inhale' | 'hold' | 'exhale';
+
+// 4-7-8 呼吸放鬆法節奏配置 (吸氣 4 秒、憋氣 7 秒、吐氣 8 秒)
+const BREATH_PHASE_CONFIG: Record<
+  BreathPhase,
+  {
+    title: string;
+    description: string;
+    duration: number;
+    nextPhase: BreathPhase;
+    colors: [string, string];
+    scale: number;
+    opacity: number;
+  }
+> = {
+  inhale: {
+    title: '吸氣',
+    description: '深深吸氣，感覺腹部緩緩隆起...',
+    duration: 4,
+    nextPhase: 'hold',
+    colors: ['#81D4FA', '#29B6F6'], // 清透水藍 ➔ 晨曦天藍
+    scale: 1.32,
+    opacity: 0.95,
+  },
+  hold: {
+    title: '憋氣',
+    description: '屏住呼吸，靜止體會片刻安寧...',
+    duration: 7,
+    nextPhase: 'exhale',
+    colors: ['#34D399', '#059669'], // 翡翠翠綠，沉穩屏息
+    scale: 1.32,
+    opacity: 0.95,
+  },
+  exhale: {
+    title: '吐氣',
+    description: '緩緩呼氣，釋放身體的緊繃與焦慮...',
+    duration: 8,
+    nextPhase: 'inhale',
+    colors: ['#5C6BC0', '#3949AB'], // 沉靜海軍藍 ➔ 深海寧靜藍
+    scale: 0.88,
+    opacity: 0.65,
+  },
+};
 
 export type NoiseType = 'mind' | 'ocean' | 'rain';
 
@@ -73,9 +115,14 @@ export const NOISE_TRACKS: Record<
 };
 
 export default function RelaxScreen() {
-  // 呼吸引導狀態
+  // 呼吸引導狀態 (4-7-8 呼吸節奏)
   const [breathPhase, setBreathPhase] = useState<BreathPhase>('inhale');
-  const [secondsRemaining, setSecondsRemaining] = useState(5);
+  const [secondsRemaining, setSecondsRemaining] = useState<number>(4);
+  const phaseRef = useRef<BreathPhase>('inhale');
+
+  useEffect(() => {
+    phaseRef.current = breathPhase;
+  }, [breathPhase]);
 
   // 音訊與播放狀態 (expo-audio 現代播放器)
   const [selectedNoise, setSelectedNoise] = useState<NoiseType | null>(null);
@@ -85,7 +132,7 @@ export default function RelaxScreen() {
   const playerRef = useRef<AudioPlayer | null>(null);
 
   // 動畫相關參考
-  const breathScale = useRef(new Animated.Value(0.85)).current;
+  const breathScale = useRef(new Animated.Value(0.88)).current;
   const breathOpacity = useRef(new Animated.Value(0.65)).current;
   const rippleOne = useRef(new Animated.Value(0)).current;
   const rippleTwo = useRef(new Animated.Value(0)).current;
@@ -120,16 +167,17 @@ export default function RelaxScreen() {
   }, []);
 
   // -------------------------------------------------------------
-  // 呼吸計時器
+  // 呼吸計時器 (4-7-8 節律)
   // -------------------------------------------------------------
   useEffect(() => {
     const interval = setInterval(() => {
       setSecondsRemaining((previousSeconds) => {
         if (previousSeconds <= 1) {
-          setBreathPhase((previousPhase) =>
-            previousPhase === 'inhale' ? 'exhale' : 'inhale'
-          );
-          return 5;
+          const currentPhase = phaseRef.current;
+          const next = BREATH_PHASE_CONFIG[currentPhase].nextPhase;
+          phaseRef.current = next;
+          setBreathPhase(next);
+          return BREATH_PHASE_CONFIG[next].duration;
         }
         return previousSeconds - 1;
       });
@@ -139,18 +187,21 @@ export default function RelaxScreen() {
   }, []);
 
   // -------------------------------------------------------------
-  // 呼吸縮放動畫
+  // 呼吸縮放動畫 (吸氣 4s 擴大、憋氣 7s 保持、吐氣 8s 縮小)
   // -------------------------------------------------------------
   useEffect(() => {
+    const currentConfig = BREATH_PHASE_CONFIG[breathPhase];
+    const durationMs = currentConfig.duration * 1000;
+
     const animation = Animated.parallel([
       Animated.timing(breathScale, {
-        toValue: breathPhase === 'inhale' ? 1.32 : 0.88,
-        duration: 5000,
+        toValue: currentConfig.scale,
+        duration: breathPhase === 'hold' ? 300 : durationMs,
         useNativeDriver: true,
       }),
       Animated.timing(breathOpacity, {
-        toValue: breathPhase === 'inhale' ? 0.95 : 0.65,
-        duration: 5000,
+        toValue: currentConfig.opacity,
+        duration: breathPhase === 'hold' ? 300 : durationMs,
         useNativeDriver: true,
       }),
     ]);
@@ -297,14 +348,10 @@ export default function RelaxScreen() {
     return <Volume2 size={16} color={AuraColors.cyan} />;
   };
 
-  const isInhaling = breathPhase === 'inhale';
-  const breathColors: [string, string] = isInhaling
-    ? ['#81D4FA', '#29B6F6'] // 吸氣：清透淺水藍 ➔ 海洋天藍
-    : ['#5C6BC0', '#3949AB']; // 吐氣：沉靜海軍藍 ➔ 深海寧靜藍
-  const breathTitle = isInhaling ? '吸氣' : '吐氣';
-  const breathDescription = isInhaling
-    ? '深深吸氣，感覺腹部緩緩隆起...'
-    : '緩緩呼氣，釋放身體的緊繃...';
+  const currentBreath = BREATH_PHASE_CONFIG[breathPhase];
+  const breathColors = currentBreath.colors;
+  const breathTitle = currentBreath.title;
+  const breathDescription = currentBreath.description;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -336,7 +383,7 @@ export default function RelaxScreen() {
           跟隨深呼吸節奏，選擇適合您的放鬆聲音，以緩和身心壓力。
         </Text>
 
-        {/* 呼吸引導區塊 */}
+        {/* 呼吸引導區塊 (4-7-8 呼吸節奏) */}
         <View style={styles.breathSection}>
           <View style={styles.breathOuterCircle}>
             <Ripple value={rippleOne} borderColor="rgba(129, 212, 250, 0.75)" />
@@ -366,21 +413,52 @@ export default function RelaxScreen() {
 
           <Text style={styles.breathDescription}>{breathDescription}</Text>
 
+          {/* 4-7-8 呼吸三階段指示標籤 */}
           <View style={styles.phaseIndicator}>
             <View
               style={[
                 styles.phaseDot,
-                isInhaling && styles.phaseDotActive,
+                breathPhase === 'inhale' && styles.phaseDotActive,
               ]}
             />
-            <Text style={styles.phaseLabel}>吸氣 5 秒</Text>
+            <Text
+              style={[
+                styles.phaseLabel,
+                breathPhase === 'inhale' && styles.phaseLabelActive,
+              ]}
+            >
+              吸氣 4 秒
+            </Text>
+
             <View
               style={[
                 styles.phaseDot,
-                !isInhaling && styles.phaseDotActive,
+                breathPhase === 'hold' && styles.phaseDotActiveHold,
               ]}
             />
-            <Text style={styles.phaseLabel}>吐氣 5 秒</Text>
+            <Text
+              style={[
+                styles.phaseLabel,
+                breathPhase === 'hold' && styles.phaseLabelActiveHold,
+              ]}
+            >
+              憋氣 7 秒
+            </Text>
+
+            <View
+              style={[
+                styles.phaseDot,
+                breathPhase === 'exhale' && styles.phaseDotActive,
+              ]}
+            />
+            <Text
+              style={[
+                styles.phaseLabel,
+                breathPhase === 'exhale' && styles.phaseLabelActive,
+              ]}
+            >
+              吐氣 8 秒
+            </Text>
           </View>
         </View>
 
@@ -756,11 +834,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#0288D1',
   },
 
+  phaseDotActiveHold: {
+    backgroundColor: '#10B981',
+  },
+
   phaseLabel: {
-    color: '#5A5A5A',
+    color: '#7E7889',
     fontSize: 11,
     marginRight: 14,
-    fontWeight: '600',
+    fontWeight: '500',
+  },
+
+  phaseLabelActive: {
+    color: '#0288D1',
+    fontWeight: '800',
+  },
+
+  phaseLabelActiveHold: {
+    color: '#10B981',
+    fontWeight: '800',
   },
 
   noiseSection: {
