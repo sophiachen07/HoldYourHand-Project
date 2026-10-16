@@ -475,12 +475,12 @@ export function SensorProvider({ children }: PropsWithChildren) {
               timestamp: Date.now(),
             };
             scheduleThrottledUpdate(unified);
-          } else if (message.type === 'dev-inject-data') {
+          } else if (__DEV__ && message.type === 'dev-inject-data') {
             const days = typeof message.days === 'number' && message.days > 0 ? message.days : 60;
             actionsRef.current.injectMockHistory(days);
-          } else if (message.type === 'dev-trigger-pick') {
+          } else if (__DEV__ && message.type === 'dev-trigger-pick') {
             actionsRef.current.recordBehaviorTrigger();
-          } else if (message.type === 'dev-trigger-midnight') {
+          } else if (__DEV__ && message.type === 'dev-trigger-midnight') {
             actionsRef.current.triggerMidnightReset();
           }
         } catch (error) {

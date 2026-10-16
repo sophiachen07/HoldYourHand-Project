@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Hold your hand",
+    "name": "Hold Your Hand",
     "slug": "aura-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -55,12 +55,11 @@
       [
         "react-native-ble-plx",
         {
-          "isBackgroundEnabled": true,
+          "isBackgroundEnabled": false,
           "modes": [
-            "peripheral",
             "central"
           ],
-          "bluetoothAlwaysPermission": "Hold your hand 需要使用藍牙連接您的 BFRB 智慧裝置以接收即時動作與生理數據。",
+          "bluetoothAlwaysPermission": "Hold Your Hand 需要使用藍牙連接您的 BFRB 智慧裝置以接收即時動作與生理數據。",
           "neverForLocation": true
         }
       ],

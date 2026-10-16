@@ -5,6 +5,18 @@ const fs = require('fs');
 const path = require('path');
 const mysql = require('mysql2/promise');
 
+const isProduction = process.env.NODE_ENV === 'production';
+
+// 正式環境安全防護：生產模式下強制要求設定資料庫密碼，禁止退回空密碼
+if (isProduction) {
+  if (!process.env.DB_PASSWORD) {
+    throw new Error('[DB] 正式環境 (NODE_ENV=production) 必須設定 DB_PASSWORD 環境變數，禁止使用空密碼！');
+  }
+  if (!process.env.DB_USER || process.env.DB_USER === 'root') {
+    console.warn('[DB] 建議：正式環境應使用獨立低權限資料庫帳號，避免直接使用 root。');
+  }
+}
+
 const DB_CONFIG = {
   host: process.env.DB_HOST || 'localhost',
   port: Number(process.env.DB_PORT) || 3306,

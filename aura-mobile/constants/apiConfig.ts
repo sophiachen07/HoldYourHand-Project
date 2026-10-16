@@ -30,7 +30,16 @@ export function getHostIp(): string {
 export function getApiBaseUrl(): string {
   const envApiUrl = process.env.EXPO_PUBLIC_API_URL;
   if (envApiUrl && envApiUrl.trim() !== '') {
-    return envApiUrl.replace(/\/+$/, '');
+    const trimmed = envApiUrl.trim().replace(/\/+$/, '');
+    if (!__DEV__ && !trimmed.startsWith('https://')) {
+      console.warn('[Aura] 正式環境建議使用 HTTPS 通訊協定: ' + trimmed);
+    }
+    return trimmed;
+  }
+  if (!__DEV__) {
+    throw new Error(
+      '[Aura] 正式環境 EXPO_PUBLIC_API_URL 尚未設定！Release 版 APK 必須配置正確的後端伺服器網址。'
+    );
   }
   return `http://${getHostIp()}:${DEV_SERVER_PORT}`;
 }
@@ -39,16 +48,21 @@ export function getApiBaseUrl(): string {
  * 取得 WebSocket 基礎位址
  * 1. 優先讀取公開環境變數 EXPO_PUBLIC_WS_URL
  * 2. 自動將 EXPO_PUBLIC_API_URL 轉化為 ws:// 或 wss:// 協定
- * 3. 預設 Fallback 至開發主機 WebSocket 埠口
+ * 3. 預設 Fallback 至開發主機 WebSocket 埠口 (僅限開發模式)
  */
 export function getWebSocketUrl(): string {
   const envWsUrl = process.env.EXPO_PUBLIC_WS_URL;
   if (envWsUrl && envWsUrl.trim() !== '') {
-    return envWsUrl.replace(/\/+$/, '');
+    return envWsUrl.trim().replace(/\/+$/, '');
   }
   const envApiUrl = process.env.EXPO_PUBLIC_API_URL;
   if (envApiUrl && envApiUrl.trim() !== '') {
-    return envApiUrl.replace(/\/+$/, '').replace(/^http:/i, 'ws:').replace(/^https:/i, 'wss:');
+    return envApiUrl.trim().replace(/\/+$/, '').replace(/^http:/i, 'ws:').replace(/^https:/i, 'wss:');
+  }
+  if (!__DEV__) {
+    throw new Error(
+      '[Aura] 正式環境 EXPO_PUBLIC_WS_URL 尚未設定！Release 版 APK 必須配置正確的 WebSocket 網址。'
+    );
   }
   return `ws://${getHostIp()}:${DEV_SERVER_PORT}`;
 }

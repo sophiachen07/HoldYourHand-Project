@@ -21,6 +21,7 @@ import {
   type SyncPayload,
 } from '../services/userApi';
 import { getStoredToken } from '../services/tokenStorage';
+import { logger } from '../utils/logger';
 
 const STORAGE_KEY_ACCOUNT = '@aura_user_account';
 const STORAGE_KEY_GUEST = '@aura_guest_mode'; // 訪客模式：資料只存在手機，不寫入資料庫
@@ -560,8 +561,10 @@ export function UserProvider({ children }: PropsWithChildren) {
         : AsyncStorage.removeItem(STORAGE_KEY_ONBOARDING),
     ]);
 
-    console.log(
-      `[UserContext] 登入帳號 #${res.userId} ${email}${res.isNew ? '（新帳號）' : ''}`
+    // 遮蔽 email（例如：ab***@gmail.com）保護個資
+    const maskedEmail = email.replace(/^(.{2})[^@]*(@.+)$/, '$1***$2');
+    logger.debug(
+      `[UserContext] 登入帳號 #${res.userId} ${maskedEmail}${res.isNew ? '（新帳號）' : ''}`
     );
     return {
       isNew: res.isNew,
@@ -955,9 +958,13 @@ export function UserProvider({ children }: PropsWithChildren) {
     });
   }, []);
 
-  // 測試指令 a: 注入過去假資料 (預設 60 天，每天 0~15 次)
+  // 測試指令 a: 注入過去假資料 (僅限開發除錯模式，正式版直接阻斷)
   const injectMockHistory = useCallback(
     async (days: number = 60) => {
+      if (!__DEV__) {
+        console.warn('[UserContext] injectMockHistory 僅限開發模式使用，正式版已阻斷執行。');
+        return;
+      }
       const validDays = typeof days === 'number' && days > 0 ? days : 60;
       const today = getTaiwanDate();
       const mockDaily: Record<string, DailyRecord> = {};
@@ -1035,8 +1042,12 @@ export function UserProvider({ children }: PropsWithChildren) {
     [profile.bfrbType]
   );
 
-  // 測試指令 c: 強制觸發 00:00 跨夜換日結算
+  // 測試指令 c: 強制觸發 00:00 跨夜換日結算 (僅限開發除錯模式，正式版直接阻斷)
   const triggerMidnightReset = useCallback(async () => {
+    if (!__DEV__) {
+      console.warn('[UserContext] triggerMidnightReset 手動測試僅限開發模式使用，正式版已阻斷執行。');
+      return;
+    }
     const todayStr = getTaiwanDateString();
 
     setBehaviorStats((prevStats) => {
