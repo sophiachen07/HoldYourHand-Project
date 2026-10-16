@@ -17,6 +17,25 @@ if (isProduction) {
   }
 }
 
+// 智慧判斷是否為遠端雲端資料庫（如 Aiven, AWS RDS, GCP Cloud SQL 等）
+const isRemoteHost = Boolean(
+  process.env.DB_HOST &&
+  process.env.DB_HOST !== 'localhost' &&
+  !process.env.DB_HOST.startsWith('127.')
+);
+
+// 雲端 SSL 配置：若連線遠端資料庫或明確開啟 DB_SSL，啟用 TLS 加密
+let sslConfig = undefined;
+if (process.env.DB_SSL === 'true' || isRemoteHost) {
+  sslConfig = {
+    // 預設 rejectUnauthorized 設為 false，方便直接連線 Aiven，不需要另外貼 CA 憑證字串
+    rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED === 'true',
+  };
+  if (process.env.DB_SSL_CA) {
+    sslConfig.ca = process.env.DB_SSL_CA;
+  }
+}
+
 const DB_CONFIG = {
   host: process.env.DB_HOST || 'localhost',
   port: Number(process.env.DB_PORT) || 3306,
@@ -39,19 +58,26 @@ function loadTableStatements() {
     .filter((s) => /^CREATE TABLE/i.test(s));
 }
 
-/** 建立資料庫（若不存在）、建立資料表，並建立連線池 */
+/** 建立資料庫（若為本機環境且支援）、建立資料表，並建立連線池 */
 async function initDatabase() {
   if (!/^[A-Za-z0-9_]+$/.test(DB_NAME)) {
     throw new Error(`DB_NAME 只能包含英文、數字、底線：${DB_NAME}`);
   }
 
-  const conn = await mysql.createConnection(DB_CONFIG);
-  try {
-    await conn.query(
-      `CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
-    );
-  } finally {
-    await conn.end();
+  // 若為本機開發環境，嘗試自動建立資料庫；若是遠端雲端資料庫（如 Aiven），資料庫已建立，略過此步驟以防權限不足報錯
+  if (!isRemoteHost) {
+    try {
+      const conn = await mysql.createConnection(DB_CONFIG);
+      try {
+        await conn.query(
+          `CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
+        );
+      } finally {
+        await conn.end();
+      }
+    } catch (err) {
+      console.warn(`[DB] 本地嘗試建立資料庫略過（若資料庫已存在可忽略）: ${err.message}`);
+    }
   }
 
   pool = mysql.createPool({
@@ -61,7 +87,12 @@ async function initDatabase() {
     connectionLimit: 10,
     dateStrings: true, // DATE 直接回傳 'YYYY-MM-DD' 字串，避免時區位移
     charset: 'utf8mb4',
+    ssl: sslConfig,
   });
+
+  // 測試連線連通性
+  const testConn = await pool.getConnection();
+  testConn.release();
 
   for (const statement of loadTableStatements()) {
     await pool.query(statement);
