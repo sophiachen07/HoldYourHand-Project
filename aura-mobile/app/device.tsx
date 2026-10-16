@@ -213,54 +213,56 @@ export default function DeviceScreen() {
           <Text style={styles.navigationTitle}>裝置連線管理</Text>
         </View>
 
-        {/* 模式切換器 (BLE 真機 / 模擬器) */}
-        <View style={styles.modeToggleContainer}>
-          <Pressable
-            style={[styles.modeTab, mode === 'ble' && styles.modeTabActive]}
-            onPress={() => {
-              if (mode !== 'ble') {
-                disconnectDevice();
-                setMode('ble');
-              }
-            }}
-          >
-            <Bluetooth
-              size={15}
-              color={mode === 'ble' ? '#1A2151' : '#64748B'}
-            />
-            <Text
-              style={[
-                styles.modeTabText,
-                mode === 'ble' && styles.modeTabTextActive,
-              ]}
+        {/* 模式切換器 (僅在開發除錯模式下提供 WebSocket 模擬器切換) */}
+        {__DEV__ && (
+          <View style={styles.modeToggleContainer}>
+            <Pressable
+              style={[styles.modeTab, mode === 'ble' && styles.modeTabActive]}
+              onPress={() => {
+                if (mode !== 'ble') {
+                  disconnectDevice();
+                  setMode('ble');
+                }
+              }}
             >
-              BLE 藍牙真機
-            </Text>
-          </Pressable>
+              <Bluetooth
+                size={15}
+                color={mode === 'ble' ? '#1A2151' : '#64748B'}
+              />
+              <Text
+                style={[
+                  styles.modeTabText,
+                  mode === 'ble' && styles.modeTabTextActive,
+                ]}
+              >
+                BLE 藍牙真機
+              </Text>
+            </Pressable>
 
-          <Pressable
-            style={[styles.modeTab, mode === 'simulator' && styles.modeTabActive]}
-            onPress={() => {
-              if (mode !== 'simulator') {
-                disconnectDevice();
-                setMode('simulator');
-              }
-            }}
-          >
-            <Server
-              size={15}
-              color={mode === 'simulator' ? '#1A2151' : '#64748B'}
-            />
-            <Text
-              style={[
-                styles.modeTabText,
-                mode === 'simulator' && styles.modeTabTextActive,
-              ]}
+            <Pressable
+              style={[styles.modeTab, mode === 'simulator' && styles.modeTabActive]}
+              onPress={() => {
+                if (mode !== 'simulator') {
+                  disconnectDevice();
+                  setMode('simulator');
+                }
+              }}
             >
-              WebSocket 模擬器
-            </Text>
-          </Pressable>
-        </View>
+              <Server
+                size={15}
+                color={mode === 'simulator' ? '#1A2151' : '#64748B'}
+              />
+              <Text
+                style={[
+                  styles.modeTabText,
+                  mode === 'simulator' && styles.modeTabTextActive,
+                ]}
+              >
+                WebSocket 模擬器
+              </Text>
+            </Pressable>
+          </View>
+        )}
 
         {/* 標題區 */}
         <View style={styles.header}>
