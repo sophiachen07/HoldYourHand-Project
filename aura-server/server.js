@@ -15,6 +15,8 @@ const userRoutes = require('./userRoutes');
 const app = express();
 const PORT = process.env.PORT || 8080;
 const HF_API_KEY = process.env.HF_API_KEY;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
 
 // 啟用中介軟體
 app.use(cors());
@@ -23,7 +25,7 @@ app.use(express.json({ limit: '1mb' }));
 // 預設安撫回覆字串
 const DEFAULT_FALLBACK_REPLY = '我現在有點累在休息，但我會一直陪著你，我們一起深呼吸好嗎？';
 
-// 未設定 HF_API_KEY 時直接告知，不假裝是 AI 回覆
+// 未設定 AI Key 時直接告知，不假裝是 AI 回覆
 const AI_NOT_CONFIGURED_REPLY = '目前未設定連線，小樹洞暫無法使用。';
 
 // AI 聊天端點頻率限制器：每個 IP 每分鐘最多 15 次請求
@@ -74,7 +76,7 @@ app.post('/api/chat', chatLimiter, optionalAuthenticate, async (req, res) => {
       });
     }
 
-    if (!HF_API_KEY) {
+    if (!GEMINI_API_KEY && !HF_API_KEY) {
       return res.status(503).json({
         code: 'AI_NOT_CONFIGURED',
         reply: AI_NOT_CONFIGURED_REPLY,
@@ -143,42 +145,60 @@ app.post('/api/chat', chatLimiter, optionalAuthenticate, async (req, res) => {
     // 組裝 System Prompt
     const systemPrompt = `你是一個溫柔的心理陪伴助手。這位使用者的背景為（年齡：${age}、性別：${gender}），其身體集中重複行為(BFRB)類型為${bfrbType}，內在驅動篩查結果為${innerDriver}，目前狀態與次數：${statusAndCount}。請根據上述心理與行為背景，用簡短、口語且溫暖的一句話安撫對方的焦慮，不要說教，且絕對不能提供醫療診斷或處方。`;
 
-    // 指定模型為 Qwen/Qwen2.5-7B-Instruct
-    const primaryModel = process.env.HF_MODEL || 'Qwen/Qwen2.5-7B-Instruct';
-    const fallbackModel = 'Qwen/Qwen2.5-72B-Instruct';
+    let reply = null;
 
-    let hfResponse;
-    try {
-      hfResponse = await axios.post(
-        'https://router.huggingface.co/v1/chat/completions',
-        {
-          model: primaryModel,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: trimmedMessage },
-          ],
-          max_tokens: 200,
-          temperature: 0.7,
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${HF_API_KEY}`,
-            'Content-Type': 'application/json',
+    // 1. 若有設定 Google Gemini API，優先呼叫 Gemini（完全免費、繁體中文自然流暢且回應迅速）
+    if (GEMINI_API_KEY) {
+      try {
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+        const geminiResponse = await axios.post(
+          geminiUrl,
+          {
+            system_instruction: {
+              parts: [{ text: systemPrompt }],
+            },
+            contents: [
+              {
+                role: 'user',
+                parts: [{ text: trimmedMessage }],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 200,
+            },
           },
-          timeout: 15000, // 15 秒超時
+          {
+            headers: { 'Content-Type': 'application/json' },
+            timeout: 15000,
+          }
+        );
+
+        const geminiText =
+          geminiResponse.data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        if (geminiText) {
+          reply = geminiText;
         }
-      );
-    } catch (primaryErr) {
-      // 若指定 7B 模型在當前 provider 不可用時，自動 fallback 到 Qwen2.5 相容模型
-      if (
-        primaryErr.response?.data?.error?.code === 'model_not_supported' ||
-        primaryErr.response?.data?.error?.message?.includes('not supported')
-      ) {
-        console.warn(`[HF API] ${primaryModel} 在當前 provider 不可用，自動嘗試相容模型 ${fallbackModel}`);
+      } catch (geminiErr) {
+        console.warn(
+          '[Gemini API Warning]',
+          geminiErr.response?.status,
+          geminiErr.response?.data?.error?.message || geminiErr.message
+        );
+      }
+    }
+
+    // 2. 若未設定 Gemini 或 Gemini 呼叫失敗，嘗試使用 Hugging Face 作為備援
+    if (!reply && HF_API_KEY) {
+      const primaryModel = process.env.HF_MODEL || 'Qwen/Qwen2.5-7B-Instruct';
+      const fallbackModel = 'Qwen/Qwen2.5-72B-Instruct';
+
+      let hfResponse;
+      try {
         hfResponse = await axios.post(
           'https://router.huggingface.co/v1/chat/completions',
           {
-            model: fallbackModel,
+            model: primaryModel,
             messages: [
               { role: 'system', content: systemPrompt },
               { role: 'user', content: trimmedMessage },
@@ -194,14 +214,42 @@ app.post('/api/chat', chatLimiter, optionalAuthenticate, async (req, res) => {
             timeout: 15000,
           }
         );
-      } else {
-        throw primaryErr;
+      } catch (primaryErr) {
+        if (
+          primaryErr.response?.data?.error?.code === 'model_not_supported' ||
+          primaryErr.response?.data?.error?.message?.includes('not supported')
+        ) {
+          console.warn(`[HF API] ${primaryModel} 在當前 provider 不可用，自動嘗試相容模型 ${fallbackModel}`);
+          hfResponse = await axios.post(
+            'https://router.huggingface.co/v1/chat/completions',
+            {
+              model: fallbackModel,
+              messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: trimmedMessage },
+              ],
+              max_tokens: 200,
+              temperature: 0.7,
+            },
+            {
+              headers: {
+                'Authorization': `Bearer ${HF_API_KEY}`,
+                'Content-Type': 'application/json',
+              },
+              timeout: 15000,
+            }
+          );
+        } else {
+          throw primaryErr;
+        }
       }
+
+      reply = hfResponse.data?.choices?.[0]?.message?.content?.trim();
     }
 
-    const reply =
-      hfResponse.data?.choices?.[0]?.message?.content?.trim() ||
-      DEFAULT_FALLBACK_REPLY;
+    if (!reply) {
+      throw new Error('AI 服務無法產生回覆');
+    }
 
     return res.json({ reply });
   } catch (error) {
@@ -330,8 +378,12 @@ if (require.main === module) {
     console.log('按 Ctrl + C 可以停止伺服器');
     console.log('----------------------------------------');
 
-    if (!HF_API_KEY) {
-      console.warn('⚠️  未設定 HF_API_KEY：小樹洞 AI 無法使用（請在 .env 填入 Hugging Face Key）');
+    if (!GEMINI_API_KEY && !HF_API_KEY) {
+      console.warn('⚠️  未設定 GEMINI_API_KEY 或 HF_API_KEY：小樹洞 AI 無法使用（請在 .env 或 Render 設定 GEMINI_API_KEY）');
+    } else if (GEMINI_API_KEY) {
+      console.log(`🤖 小樹洞 AI：已啟用 Google Gemini API (${GEMINI_MODEL})`);
+    } else {
+      console.log('🤖 小樹洞 AI：已啟用 Hugging Face API');
     }
 
     // 連線 MySQL（失敗時伺服器照常運作，只有 /api/users 會回 503）
