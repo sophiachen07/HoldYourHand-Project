@@ -30,15 +30,22 @@ const DEFAULT_FALLBACK_REPLY = '我現在有點累在休息，但我會一直陪
 // 未設定 AI Key 時直接告知，不假裝是 AI 回覆
 const AI_NOT_CONFIGURED_REPLY = '目前未設定連線，小樹洞暫無法使用。';
 
-// AI 聊天端點頻率限制器：每個 IP 每分鐘最多 15 次請求
+// AI 聊天端點頻率限制器：每個 IP 每分鐘最多 60 次請求
 const chatLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 15,
+  max: 60,
   standardHeaders: true,
   legacyHeaders: false,
-  validate: { xForwardedForHeader: false },
+  validate: { xForwardedForHeader: false, default: false },
+  keyGenerator: (req) => {
+    const forwarded = req.headers['x-forwarded-for'];
+    if (forwarded && typeof forwarded === 'string') {
+      return forwarded.split(',')[0].trim();
+    }
+    return req.ip || req.socket.remoteAddress || 'unknown';
+  },
   message: {
-    reply: '小樹洞剛聽了好多話有點累了，我們先稍稍深呼吸休息 30 秒好嗎？',
+    reply: '小樹洞剛剛聽了好多話，我們先放鬆深呼吸休息 20 秒再繼續聊好嗎？🌱',
     error: '請求過於頻繁，請稍候再試',
     code: 'RATE_LIMITED',
   },
@@ -54,10 +61,18 @@ function parseJsonColumn(value, fallback) {
   }
 }
 
-let cachedGeminiModel = process.env.GEMINI_MODEL || null;
+let cachedGeminiModel = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 
 async function resolveGeminiModel(apiKey) {
-  if (cachedGeminiModel) return cachedGeminiModel;
+  // 若快取中不是已失效的舊版 2.5 或 1.5 模型，直接沿用
+  if (
+    cachedGeminiModel &&
+    !cachedGeminiModel.includes('2.5') &&
+    !cachedGeminiModel.includes('1.5') &&
+    !cachedGeminiModel.includes('2.0')
+  ) {
+    return cachedGeminiModel;
+  }
 
   try {
     const listRes = await axios.get(
@@ -71,10 +86,19 @@ async function resolveGeminiModel(apiKey) {
         m.name?.includes('gemini')
     );
 
-    // 優先挑選合適的 Flash 旗艦模型 (如 gemini-2.5-flash, gemini-3.8-flash, gemini-3.5-flash-lite)
+    // 優先挑選最新 3.8-flash 或 3.5-flash-lite，明確避開已下線的 2.5 / 2.0 / 1.5
     const flashModel =
-      supported.find((m) => m.name.includes('flash') && !m.name.includes('lite')) ||
-      supported.find((m) => m.name.includes('flash')) ||
+      supported.find((m) => m.name.includes('3.8-flash')) ||
+      supported.find((m) => m.name.includes('3.5-flash-lite')) ||
+      supported.find((m) => m.name.includes('3.5-flash')) ||
+      supported.find((m) => m.name.includes('3.6-flash')) ||
+      supported.find(
+        (m) =>
+          m.name.includes('flash') &&
+          !m.name.includes('2.5') &&
+          !m.name.includes('2.0') &&
+          !m.name.includes('1.5')
+      ) ||
       supported[0];
 
     if (flashModel) {
@@ -86,7 +110,8 @@ async function resolveGeminiModel(apiKey) {
     console.warn('[Gemini] 動態探測可用模型失敗，改用相容候選清單:', err.response?.status, err.message);
   }
 
-  return 'gemini-2.5-flash';
+  cachedGeminiModel = 'gemini-3.8-flash';
+  return cachedGeminiModel;
 }
 
 // ==========================================
@@ -195,13 +220,11 @@ app.post('/api/chat', chatLimiter, optionalAuthenticate, async (req, res) => {
       if (discovered && !candidateModels.includes(discovered)) {
         candidateModels.push(discovered);
       }
-      // 容錯備用候選清單：由新至舊自動嘗試相容模型
+      // 容錯備用候選清單：以 3.8-flash 為主，3.5-flash-lite 為備援
       const fallbackList = [
-        'gemini-2.5-flash',
         'gemini-3.8-flash',
         'gemini-3.5-flash-lite',
-        'gemini-2.0-flash',
-        'gemini-1.5-flash',
+        'gemini-3.6-flash',
       ];
       for (const m of fallbackList) {
         if (!candidateModels.includes(m)) candidateModels.push(m);
@@ -344,9 +367,15 @@ app.post('/api/chat', chatLimiter, optionalAuthenticate, async (req, res) => {
     return res.json({ reply });
   } catch (error) {
     // 安全錯誤處理：日誌記錄內部詳細資訊，但對客戶端僅回傳保底內容，避免洩露 API Key 或伺服器細節
-    console.error('[Chat API Error]', error.response?.status, error.message);
+    const isRateLimit =
+      error.response?.status === 429 ||
+      error.message?.includes('429') ||
+      error.message?.includes('ResourceExhausted');
+    console.error('[Chat API Error]', error.response?.status || error.name, error.message);
     return res.status(500).json({
-      reply: DEFAULT_FALLBACK_REPLY,
+      reply: isRateLimit
+        ? '小樹洞剛剛聽得太專心有點喘不過氣，我們先深呼吸放鬆 10 秒鐘再繼續聊好嗎？🌱'
+        : DEFAULT_FALLBACK_REPLY,
       error: '陪伴助手連線逾時或暫時忙碌中，請稍後再試',
     });
   }
