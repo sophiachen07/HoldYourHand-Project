@@ -16,7 +16,9 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 const HF_API_KEY = process.env.HF_API_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+
+// 信任反向代理 (解決 Render / Heroku 雲端環境下 X-Forwarded-For 報錯問題)
+app.set('trust proxy', 1);
 
 // 啟用中介軟體
 app.use(cors());
@@ -34,6 +36,7 @@ const chatLimiter = rateLimit({
   max: 15,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
   message: {
     reply: '小樹洞剛聽了好多話有點累了，我們先稍稍深呼吸休息 30 秒好嗎？',
     error: '請求過於頻繁，請稍候再試',
@@ -49,6 +52,41 @@ function parseJsonColumn(value, fallback) {
   } catch {
     return fallback;
   }
+}
+
+let cachedGeminiModel = process.env.GEMINI_MODEL || null;
+
+async function resolveGeminiModel(apiKey) {
+  if (cachedGeminiModel) return cachedGeminiModel;
+
+  try {
+    const listRes = await axios.get(
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
+      { timeout: 8000 }
+    );
+    const models = listRes.data?.models || [];
+    const supported = models.filter(
+      (m) =>
+        m.supportedGenerationMethods?.includes('generateContent') &&
+        m.name?.includes('gemini')
+    );
+
+    // 優先挑選合適的 Flash 旗艦模型 (如 gemini-2.5-flash, gemini-3.8-flash, gemini-3.5-flash-lite)
+    const flashModel =
+      supported.find((m) => m.name.includes('flash') && !m.name.includes('lite')) ||
+      supported.find((m) => m.name.includes('flash')) ||
+      supported[0];
+
+    if (flashModel) {
+      cachedGeminiModel = flashModel.name.replace(/^models\//, '');
+      console.log(`[Gemini] 自動匹配到可用模型: ${cachedGeminiModel}`);
+      return cachedGeminiModel;
+    }
+  } catch (err) {
+    console.warn('[Gemini] 動態探測可用模型失敗，改用相容候選清單:', err.response?.status, err.message);
+  }
+
+  return 'gemini-2.5-flash';
 }
 
 // ==========================================
@@ -149,42 +187,68 @@ app.post('/api/chat', chatLimiter, optionalAuthenticate, async (req, res) => {
 
     // 1. 若有設定 Google Gemini API，優先呼叫 Gemini（完全免費、繁體中文自然流暢且回應迅速）
     if (GEMINI_API_KEY) {
-      try {
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
-        const geminiResponse = await axios.post(
-          geminiUrl,
-          {
-            system_instruction: {
-              parts: [{ text: systemPrompt }],
-            },
-            contents: [
-              {
-                role: 'user',
-                parts: [{ text: trimmedMessage }],
-              },
-            ],
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 200,
-            },
-          },
-          {
-            headers: { 'Content-Type': 'application/json' },
-            timeout: 15000,
-          }
-        );
+      const candidateModels = [];
+      if (process.env.GEMINI_MODEL) {
+        candidateModels.push(process.env.GEMINI_MODEL);
+      }
+      const discovered = await resolveGeminiModel(GEMINI_API_KEY);
+      if (discovered && !candidateModels.includes(discovered)) {
+        candidateModels.push(discovered);
+      }
+      // 容錯備用候選清單：由新至舊自動嘗試相容模型
+      const fallbackList = [
+        'gemini-2.5-flash',
+        'gemini-3.8-flash',
+        'gemini-3.5-flash-lite',
+        'gemini-2.0-flash',
+        'gemini-1.5-flash',
+      ];
+      for (const m of fallbackList) {
+        if (!candidateModels.includes(m)) candidateModels.push(m);
+      }
 
-        const geminiText =
-          geminiResponse.data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-        if (geminiText) {
-          reply = geminiText;
+      for (const modelName of candidateModels) {
+        try {
+          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`;
+          const geminiResponse = await axios.post(
+            geminiUrl,
+            {
+              system_instruction: {
+                parts: [{ text: systemPrompt }],
+              },
+              contents: [
+                {
+                  role: 'user',
+                  parts: [{ text: trimmedMessage }],
+                },
+              ],
+              generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 200,
+              },
+            },
+            {
+              headers: { 'Content-Type': 'application/json' },
+              timeout: 15000,
+            }
+          );
+
+          const geminiText =
+            geminiResponse.data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+          if (geminiText) {
+            reply = geminiText;
+            cachedGeminiModel = modelName;
+            break;
+          }
+        } catch (geminiErr) {
+          console.warn(
+            `[Gemini API Warning] 模型 ${modelName} 呼叫失敗:`,
+            geminiErr.response?.status,
+            geminiErr.response?.data?.error?.message || geminiErr.message
+          );
+          // 若為 404 等錯誤，自動嘗試下一個候選模型
+          continue;
         }
-      } catch (geminiErr) {
-        console.warn(
-          '[Gemini API Warning]',
-          geminiErr.response?.status,
-          geminiErr.response?.data?.error?.message || geminiErr.message
-        );
       }
     }
 
@@ -381,7 +445,7 @@ if (require.main === module) {
     if (!GEMINI_API_KEY && !HF_API_KEY) {
       console.warn('⚠️  未設定 GEMINI_API_KEY 或 HF_API_KEY：小樹洞 AI 無法使用（請在 .env 或 Render 設定 GEMINI_API_KEY）');
     } else if (GEMINI_API_KEY) {
-      console.log(`🤖 小樹洞 AI：已啟用 Google Gemini API (${GEMINI_MODEL})`);
+      console.log('🤖 小樹洞 AI：已啟用 Google Gemini API (自動適配最佳 Flash 模型)');
     } else {
       console.log('🤖 小樹洞 AI：已啟用 Hugging Face API');
     }
