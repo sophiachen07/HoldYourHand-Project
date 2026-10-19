@@ -181,7 +181,7 @@ app.post('/api/chat', chatLimiter, optionalAuthenticate, async (req, res) => {
     }
 
     // 組裝 System Prompt
-    const systemPrompt = `你是一個溫柔的心理陪伴助手。這位使用者的背景為（年齡：${age}、性別：${gender}），其身體集中重複行為(BFRB)類型為${bfrbType}，內在驅動篩查結果為${innerDriver}，目前狀態與次數：${statusAndCount}。請根據上述心理與行為背景，用簡短、口語且溫暖的一句話安撫對方的焦慮，不要說教，且絕對不能提供醫療診斷或處方。`;
+    const systemPrompt = `你是一個溫柔的心理陪伴助手。這位使用者的背景為（年齡：${age}、性別：${gender}），其身體集中重複行為(BFRB)類型為${bfrbType}，內在驅動篩查結果為${innerDriver}，目前狀態與次數：${statusAndCount}。請根據上述心理與行為背景，用簡短、口語且溫暖的一兩句話安撫對方的焦慮，語氣自然溫柔，句子必須完整說完，不要說教，且絕對不能提供醫療診斷或處方。`;
 
     let reply = null;
 
@@ -210,33 +210,59 @@ app.post('/api/chat', chatLimiter, optionalAuthenticate, async (req, res) => {
       for (const modelName of candidateModels) {
         try {
           const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`;
-          const geminiResponse = await axios.post(
-            geminiUrl,
-            {
-              system_instruction: {
-                parts: [{ text: systemPrompt }],
+          
+          // 關閉 thinkingBudget (設為 0)，避免模型內部漫長思考延遲與消耗 Token 導致句子斷斷續續
+          const payload = {
+            system_instruction: {
+              parts: [{ text: systemPrompt }],
+            },
+            contents: [
+              {
+                role: 'user',
+                parts: [{ text: trimmedMessage }],
               },
-              contents: [
-                {
-                  role: 'user',
-                  parts: [{ text: trimmedMessage }],
-                },
-              ],
-              generationConfig: {
-                temperature: 0.7,
-                maxOutputTokens: 200,
+            ],
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 1000,
+              thinkingConfig: {
+                thinkingBudget: 0,
               },
             },
-            {
+          };
+
+          let geminiResponse;
+          try {
+            geminiResponse = await axios.post(geminiUrl, payload, {
               headers: { 'Content-Type': 'application/json' },
               timeout: 15000,
+            });
+          } catch (postErr) {
+            // 若該模型不支援 thinkingConfig 報錯 400，降級不帶 thinkingConfig 重試
+            if (
+              postErr.response?.status === 400 &&
+              postErr.response?.data?.error?.message?.includes('thinkingConfig')
+            ) {
+              delete payload.generationConfig.thinkingConfig;
+              geminiResponse = await axios.post(geminiUrl, payload, {
+                headers: { 'Content-Type': 'application/json' },
+                timeout: 15000,
+              });
+            } else {
+              throw postErr;
             }
-          );
+          }
 
-          const geminiText =
-            geminiResponse.data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-          if (geminiText) {
-            reply = geminiText;
+          // 提取所有非思考區塊的完整文字，防止截斷或抓到思考過程
+          const parts = geminiResponse.data?.candidates?.[0]?.content?.parts || [];
+          const fullText = parts
+            .filter((p) => !p.thought && p.text)
+            .map((p) => p.text)
+            .join('')
+            .trim();
+
+          if (fullText) {
+            reply = fullText;
             cachedGeminiModel = modelName;
             break;
           }
