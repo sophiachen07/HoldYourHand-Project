@@ -61,18 +61,10 @@ function parseJsonColumn(value, fallback) {
   }
 }
 
-let cachedGeminiModel = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+let cachedGeminiModel = process.env.GEMINI_MODEL || null;
 
 async function resolveGeminiModel(apiKey) {
-  // 若快取中不是已失效的舊版 2.5 或 1.5 模型，直接沿用
-  if (
-    cachedGeminiModel &&
-    !cachedGeminiModel.includes('2.5') &&
-    !cachedGeminiModel.includes('1.5') &&
-    !cachedGeminiModel.includes('2.0')
-  ) {
-    return cachedGeminiModel;
-  }
+  if (cachedGeminiModel) return cachedGeminiModel;
 
   try {
     const listRes = await axios.get(
@@ -86,19 +78,14 @@ async function resolveGeminiModel(apiKey) {
         m.name?.includes('gemini')
     );
 
-    // 優先挑選最新 3.8-flash 或 3.5-flash-lite，明確避開已下線的 2.5 / 2.0 / 1.5
+    // 優先挑選可用 Flash 旗艦模型，兼具速度與穩定度
     const flashModel =
       supported.find((m) => m.name.includes('3.8-flash')) ||
+      supported.find((m) => m.name.includes('2.5-flash')) ||
+      supported.find((m) => m.name.includes('1.5-flash')) ||
+      supported.find((m) => m.name.includes('2.0-flash')) ||
       supported.find((m) => m.name.includes('3.5-flash-lite')) ||
-      supported.find((m) => m.name.includes('3.5-flash')) ||
       supported.find((m) => m.name.includes('3.6-flash')) ||
-      supported.find(
-        (m) =>
-          m.name.includes('flash') &&
-          !m.name.includes('2.5') &&
-          !m.name.includes('2.0') &&
-          !m.name.includes('1.5')
-      ) ||
       supported[0];
 
     if (flashModel) {
@@ -220,9 +207,12 @@ app.post('/api/chat', chatLimiter, optionalAuthenticate, async (req, res) => {
       if (discovered && !candidateModels.includes(discovered)) {
         candidateModels.push(discovered);
       }
-      // 容錯備用候選清單：以 3.8-flash 為主，3.5-flash-lite 為備援
+      // 容錯備用候選清單：涵蓋各版本 Flash 模型，確保遇尖峰負載 (503) 或微超時時無縫切換
       const fallbackList = [
         'gemini-3.8-flash',
+        'gemini-2.5-flash',
+        'gemini-1.5-flash',
+        'gemini-2.0-flash',
         'gemini-3.5-flash-lite',
         'gemini-3.6-flash',
       ];
@@ -258,18 +248,18 @@ app.post('/api/chat', chatLimiter, optionalAuthenticate, async (req, res) => {
           try {
             geminiResponse = await axios.post(geminiUrl, payload, {
               headers: { 'Content-Type': 'application/json' },
-              timeout: 15000,
+              timeout: 25000,
             });
           } catch (postErr) {
-            // 若該模型不支援 thinkingConfig 報錯 400，降級不帶 thinkingConfig 重試
+            // 若該模型因不支援 thinkingConfig 報錯 400，降級不帶 thinkingConfig 自動重試
             if (
               postErr.response?.status === 400 &&
-              postErr.response?.data?.error?.message?.includes('thinkingConfig')
+              payload.generationConfig?.thinkingConfig
             ) {
               delete payload.generationConfig.thinkingConfig;
               geminiResponse = await axios.post(geminiUrl, payload, {
                 headers: { 'Content-Type': 'application/json' },
-                timeout: 15000,
+                timeout: 25000,
               });
             } else {
               throw postErr;
@@ -295,7 +285,7 @@ app.post('/api/chat', chatLimiter, optionalAuthenticate, async (req, res) => {
             geminiErr.response?.status,
             geminiErr.response?.data?.error?.message || geminiErr.message
           );
-          // 若為 404 等錯誤，自動嘗試下一個候選模型
+          // 若為 404, 400, 503 等錯誤或超時，自動嘗試下一個候選模型
           continue;
         }
       }
