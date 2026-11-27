@@ -38,3 +38,17 @@ npx eas build -p android --profile preview
 
 // 方法二 (本機打包，需本機已配置 Android SDK / Java JDK):
 npx expo run:android --variant release
+
+
+【 四、 注入測試假資料（產生起伏折線圖截圖） 】
+※ 共有兩種超方便的方式可以立刻注入 35 天波浪起伏示範資料：
+
+[ 方式 1：手機 App 內一鍵注入（最推薦） ]
+1. 手機打開 HoldYourHand App。
+2. 進入「健康儀表板」→ 點擊上方「統計分析」切換分頁。
+3. 在折線圖右上角點擊【示範數據】按鈕（或到「設定」頁面點擊【📊 注入 35 天起伏示範數據】）。
+4. 點擊確認後立即更新！橫向滑動折線圖即可截圖各週起伏優美的趨勢圖！
+
+[ 方式 2：後端終端機指令（寫入 MySQL 資料庫） ]
+在 c:\project\aura-server 目錄執行：
+node scripts/inject-mock.js

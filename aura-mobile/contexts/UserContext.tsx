@@ -782,10 +782,10 @@ export function UserProvider({ children }: PropsWithChildren) {
             key === '拔毛髮'
               ? '💇'
               : key === '咬指甲'
-              ? '🦷'
-              : key === '其他'
-              ? '✨'
-              : '🖐️',
+                ? '🦷'
+                : key === '其他'
+                  ? '✨'
+                  : '🖐️',
           description: '即時感測事件紀錄。',
           count: 0,
           todayCount: 0,

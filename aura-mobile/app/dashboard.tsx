@@ -165,11 +165,11 @@ export default function DashboardScreen() {
     (
       stressScore / 100
     ) *
-      GAUGE_CIRCUMFERENCE;
+    GAUGE_CIRCUMFERENCE;
 
   const connectionColor =
     status === 'connected' &&
-    sensorData?.connected
+      sensorData?.connected
       ? '#2E7D6E'
       : status === 'connecting'
         ? '#C59B27'
@@ -212,15 +212,15 @@ export default function DashboardScreen() {
               <ChevronLeft size={18} color="#333333" />
             </Pressable>
 
-          <View>
-            <Text style={styles.navigationTitle}>
-              健康儀表板
-            </Text>
+            <View>
+              <Text style={styles.navigationTitle}>
+                健康儀表板
+              </Text>
 
-            <Text style={styles.navigationSubtitle}>
-              Hold your hand 即時生理監測
-            </Text>
-          </View>
+              <Text style={styles.navigationSubtitle}>
+                Hold your hand 即時生理監測
+              </Text>
+            </View>
           </View>
 
           <View style={styles.headerButtons}>
@@ -318,14 +318,14 @@ export default function DashboardScreen() {
                   status === 'connected' && sensorData?.connected
                     ? '#CAE7E0'
                     : status === 'reconnecting' || status === 'connecting'
-                    ? '#FEF3C7'
-                    : '#F5C0C0',
+                      ? '#FEF3C7'
+                      : '#F5C0C0',
                 borderColor:
                   status === 'connected' && sensorData?.connected
                     ? 'rgba(46, 125, 110, 0.3)'
                     : status === 'reconnecting' || status === 'connecting'
-                    ? 'rgba(217, 119, 6, 0.3)'
-                    : 'rgba(217, 83, 79, 0.3)',
+                      ? 'rgba(217, 119, 6, 0.3)'
+                      : 'rgba(217, 83, 79, 0.3)',
               },
             ]}
           >
@@ -337,8 +337,8 @@ export default function DashboardScreen() {
                     status === 'connected' && sensorData?.connected
                       ? '#10B981'
                       : status === 'reconnecting' || status === 'connecting'
-                      ? '#F59E0B'
-                      : '#EF4444',
+                        ? '#F59E0B'
+                        : '#EF4444',
                 },
               ]}
             />
@@ -351,8 +351,8 @@ export default function DashboardScreen() {
                     status === 'connected' && sensorData?.connected
                       ? '#2E7D6E'
                       : status === 'reconnecting' || status === 'connecting'
-                      ? '#B45309'
-                      : '#9C4146',
+                        ? '#B45309'
+                        : '#9C4146',
                 },
               ]}
             >
@@ -370,7 +370,7 @@ export default function DashboardScreen() {
               </Text>
 
               <Text style={styles.thresholdText}>
-                BFRB 智慧防護指標：手部距離 ＜ 50 mm · 角速度 20~150 deg/s · 心率 ＞ 80 BPM
+                BFRB 智慧防護指標：手部距離 ＜ 50 mm · 角速度 20~150 deg/s
               </Text>
             </View>
 
@@ -579,10 +579,10 @@ export default function DashboardScreen() {
                     {isOutOfRange
                       ? '超出量測範圍 (>1.2m)'
                       : distance < 50
-                      ? '🚨 進入頭部/皮膚觸發區 (<50mm)'
-                      : distance <= 100
-                      ? '⚠️ 接近中 (50~100mm)'
-                      : '安全距離'}
+                        ? '🚨 進入頭部/皮膚觸發區 (<50mm)'
+                        : distance <= 100
+                          ? '⚠️ 接近中 (50~100mm)'
+                          : '安全距離'}
                   </Text>
                 </View>
 
@@ -645,8 +645,8 @@ export default function DashboardScreen() {
                     {angularVelocity < 20
                       ? '平穩放鬆 (<20 dps)'
                       : angularVelocity <= 150
-                      ? '🚨 疑似重複摳抓微動 (20~150 dps)'
-                      : '劇烈活動 (>150 dps)'}
+                        ? '🚨 疑似重複摳抓微動 (20~150 dps)'
+                        : '劇烈活動 (>150 dps)'}
                   </Text>
                 </View>
 
@@ -732,10 +732,10 @@ export default function DashboardScreen() {
                 value={
                   lastMessageAt
                     ? new Date(
-                        lastMessageAt
-                      ).toLocaleTimeString(
-                        'zh-TW'
-                      )
+                      lastMessageAt
+                    ).toLocaleTimeString(
+                      'zh-TW'
+                    )
                     : '--'
                 }
               />
@@ -894,7 +894,7 @@ function DashboardTabButton({
       style={[
         styles.tabButton,
         active &&
-          styles.tabButtonActive,
+        styles.tabButtonActive,
       ]}
       onPress={onPress}
     >
@@ -910,7 +910,7 @@ function DashboardTabButton({
         style={[
           styles.tabText,
           active &&
-            styles.tabTextActive,
+          styles.tabTextActive,
         ]}
       >
         {label}
@@ -964,7 +964,7 @@ function MetricCard({
       style={[
         styles.metricCard,
         warning &&
-          styles.warningCard,
+        styles.warningCard,
       ]}
     >
       <View style={styles.metricHeader}>
@@ -1169,23 +1169,23 @@ function computeWeekPeriods(
   return periods.length > 0
     ? periods
     : [
-        {
-          id: todayStr,
-          rangeLabel: '本週',
-          days: [
-            {
-              dateStr: todayStr,
-              weekday: getWeekdayName(todayStr),
-              dayLabel: formatMonthDay(todayStr),
-              value: dailyHistory[todayStr]?.occurred || 0,
-              isToday: true,
-              isFuture: false,
-            },
-          ],
-          total: dailyHistory[todayStr]?.occurred || 0,
-          isCurrentWeek: true,
-        },
-      ];
+      {
+        id: todayStr,
+        rangeLabel: '本週',
+        days: [
+          {
+            dateStr: todayStr,
+            weekday: getWeekdayName(todayStr),
+            dayLabel: formatMonthDay(todayStr),
+            value: dailyHistory[todayStr]?.occurred || 0,
+            isToday: true,
+            isFuture: false,
+          },
+        ],
+        total: dailyHistory[todayStr]?.occurred || 0,
+        isCurrentWeek: true,
+      },
+    ];
 }
 
 function computeMonthPeriods(
@@ -1743,10 +1743,10 @@ function StatisticsContent() {
           type === '拔毛髮'
             ? '💇'
             : type === '咬指甲'
-            ? '🦷'
-            : type === '其他'
-            ? '✨'
-            : '🖐️',
+              ? '🦷'
+              : type === '其他'
+                ? '✨'
+                : '🖐️',
         description: '高發情境：任務瓶頸焦慮、缺乏刺激時。',
         count: 0,
         todayCount: 0,
@@ -1925,15 +1925,15 @@ function StatisticsContent() {
                 {timeFilter === 'day'
                   ? '每日事件次數趨勢'
                   : timeFilter === 'week'
-                  ? '每週事件次數趨勢'
-                  : '每月事件次數趨勢'}
+                    ? '每週事件次數趨勢'
+                    : '每月事件次數趨勢'}
               </Text>
               <Text style={styles.chartSubtitle}>
                 {timeFilter === 'day'
                   ? '橫向滑動可追溯歷史日數據 · 顯示每日累計摳抓次數'
                   : timeFilter === 'week'
-                  ? '橫向滑動可追溯歷史週次 · 顯示每週平均摳抓次數'
-                  : '橫向滑動可追溯歷史月份 · 顯示每月平均摳抓次數'}
+                    ? '橫向滑動可追溯歷史週次 · 顯示每週平均摳抓次數'
+                    : '橫向滑動可追溯歷史月份 · 顯示每月平均摳抓次數'}
               </Text>
             </View>
             <View style={styles.swipeHintBadge}>
@@ -1942,8 +1942,8 @@ function StatisticsContent() {
                 {timeFilter === 'day'
                   ? '每日趨勢'
                   : timeFilter === 'week'
-                  ? '每週趨勢'
-                  : '每月趨勢'}
+                    ? '每週趨勢'
+                    : '每月趨勢'}
               </Text>
             </View>
           </View>

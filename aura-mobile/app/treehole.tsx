@@ -158,10 +158,10 @@ export default function TreeholeChatScreen() {
         statusAndCount: `今日發生 ${todayCount} 次`,
       };
 
-      // 3. 建立 15 秒超時 AbortController
+      // 3. 建立 40 秒超時 AbortController（適應 Render 免費版冷啟動與 AI 模型容錯切換）
       const controller = new AbortController();
       abortControllerRef.current = controller;
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const timeoutId = setTimeout(() => controller.abort(), 40000);
 
       try {
         const authToken = await getStoredToken();

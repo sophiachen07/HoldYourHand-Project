@@ -43,18 +43,16 @@ export function AlertProvider({ children }: PropsWithChildren) {
   const hasData = sensorData !== null;
   const distance = sensorData?.distance ?? 9999;
   const angularVelocity = sensorData?.angularVelocity ?? 0;
-  const heartRate = sensorData?.heartRate ?? 0;
   const motorStatus = sensorData?.motorStatus ?? false;
 
-  // 綜合 BFRB 摳抓判定：ESP32 馬達震動中 或 (距離 < 50mm 且 角速度 20~150 deg/s 且 心率 >= 80 BPM)
+  // 綜合 BFRB 摳抓判定：ESP32 馬達震動中 或 (未超出測距範圍 且 距離 < 50mm 且 角速度 20~150 deg/s)
   const isPicking = Boolean(
     hasData &&
       (motorStatus ||
         (!sensorData?.isOutOfRange &&
           distance < 50 &&
           angularVelocity >= 20.0 &&
-          angularVelocity <= 150.0 &&
-          heartRate >= 80.0))
+          angularVelocity <= 150.0))
   );
 
   // 異常時，只要目前具有提醒資格，就跳出全域提醒視窗並記錄行為
